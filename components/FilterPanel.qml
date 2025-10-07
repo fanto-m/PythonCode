@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQml
 
 Rectangle {
     id: filterPanel
@@ -21,7 +22,6 @@ Rectangle {
         anchors.margins: 10
         spacing: 10
 
-        // Текущая дата и время
         Rectangle {
             Layout.preferredWidth: 180
             Layout.fillHeight: true
@@ -38,7 +38,6 @@ Rectangle {
                 color: "#495057"
             }
 
-            // Автообновление каждую секунду
             Timer {
                 interval: 1000
                 repeat: true
@@ -49,7 +48,6 @@ Rectangle {
             }
         }
 
-        // Поле поиска
         TextField {
             id: filterField
             placeholderText: "Введите запрос для фильтрации..."
@@ -74,7 +72,6 @@ Rectangle {
             }
         }
 
-        // Выбор поля для фильтрации
         ComboBox {
             id: filterComboBox
             Layout.preferredWidth: 180
@@ -118,7 +115,29 @@ Rectangle {
             }
         }
 
-        // Кнопка очистки фильтра
+        Button {
+            id: sortButton
+            text: sortAscending ? "↑ Сортировать" : "↓ Сортировать"
+            Layout.preferredWidth: 200
+            Layout.fillHeight: true
+            property bool sortAscending: true
+
+            onClicked: {
+                let field = filterComboBox.currentValue
+                let order = sortAscending ? "ascending" : "descending"
+                consoleHandler.log("Sorting by " + field + " (" + order + ")")
+                itemsModel.setSort(field, order)
+                sortAscending = !sortAscending // Toggle sort order
+            }
+
+            background: Rectangle {
+                color: parent.pressed ? "#e9ecef" : (parent.hovered ? "#f8f9fa" : "white")
+                border.color: "#ced4da"
+                border.width: 1
+                radius: 4
+            }
+        }
+
         Button {
             text: "Очистить"
             Layout.preferredWidth: 100
