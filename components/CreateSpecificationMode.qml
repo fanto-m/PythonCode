@@ -787,7 +787,7 @@ Rectangle {
 
                 delegate: Rectangle {
                     width: warehouseListView.width
-                    height: 60
+                    height: 80  // Increased height to accommodate image
                     color: mouseArea.containsMouse ? "#f0f0f0" : "white"
                     border.color: "#e0e0e0"
                     border.width: 1
@@ -818,8 +818,38 @@ Rectangle {
                         anchors.margins: 10
                         spacing: 10
 
+                        // Image viewer
+                        Rectangle {
+                            Layout.preferredWidth: 60
+                            Layout.preferredHeight: 60
+                            color: "#f5f5f5"
+                            border.color: "#d0d0d0"
+                            border.width: 1
+                            radius: 4
+
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 2
+                                source: model.image_path ? "../images/" + model.image_path : ""
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                                visible: model.image_path && model.image_path !== ""
+                            }
+
+                            // Placeholder icon when no image
+                            Text {
+                                anchors.centerIn: parent
+                                text: "📦"
+                                font.pointSize: 24
+                                visible: !model.image_path || model.image_path === ""
+                                color: "#999"
+                            }
+                        }
+
+                        // Item details
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.fillHeight: true
                             spacing: 2
 
                             Text {
@@ -834,13 +864,23 @@ Rectangle {
                                 font.pointSize: 9
                                 color: "#666"
                             }
+
+                            // Category (if available)
+                            Text {
+                                text: "Категория: " + (model.category || "Не указана")
+                                font.pointSize: 8
+                                color: "#999"
+                                visible: model.category !== undefined
+                            }
                         }
 
+                        // Price
                         Text {
                             text: model.price.toFixed(2) + " ₽"
-                            font.pointSize: 10
+                            font.pointSize: 11
                             font.bold: true
                             color: "#007bff"
+                            Layout.alignment: Qt.AlignVCenter
                         }
                     }
                 }
@@ -851,6 +891,10 @@ Rectangle {
                     text: "Товары не найдены"
                     font.pointSize: 10
                     color: "#999"
+                }
+
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
                 }
             }
         }
