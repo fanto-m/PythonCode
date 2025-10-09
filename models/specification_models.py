@@ -5,6 +5,7 @@ models/specification_models.py
 
 from PySide6.QtCore import QObject, Signal, Slot, QAbstractListModel, Qt, QModelIndex
 from typing import Optional, List
+from PySide6.QtGui import QColor
 
 
 class SpecificationItemsModel(QAbstractListModel):
@@ -16,6 +17,8 @@ class SpecificationItemsModel(QAbstractListModel):
     UnitRole = Qt.ItemDataRole.UserRole + 4
     PriceRole = Qt.ItemDataRole.UserRole + 5
     NotesRole = Qt.ItemDataRole.UserRole + 6
+    ImagePathRole = Qt.ItemDataRole.UserRole + 7 #добавлено
+    CategoryRole = Qt.ItemDataRole.UserRole + 8 #добавлено
 
     def __init__(self, db_manager, parent=None):
         super().__init__(parent)
@@ -30,7 +33,9 @@ class SpecificationItemsModel(QAbstractListModel):
             self.QuantityRole: b"quantity",
             self.UnitRole: b"unit",
             self.PriceRole: b"price",
-            self.NotesRole: b"notes"
+            self.NotesRole: b"notes",
+            self.ImagePathRole: b"image_path",#добавлено
+            self. CategoryRole: b"category",
         }
 
     def rowCount(self, parent=QModelIndex()):
@@ -54,7 +59,10 @@ class SpecificationItemsModel(QAbstractListModel):
             return item['price']
         elif role == self.NotesRole:
             return item.get('notes', '')
-
+        elif role == self.ImagePathRole:    #добавлено
+            return item.get('image_path', '')
+        elif role == self.CategoryRole:
+            return item.get('category', '')
         return None
 
     def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
@@ -77,8 +85,8 @@ class SpecificationItemsModel(QAbstractListModel):
 
         return False
 
-    @Slot(str, str, float, str, float)
-    def addItem(self, article, name, quantity, unit, price):
+    @Slot(str, str, float, str, float, str, str)
+    def addItem(self, article, name, quantity, unit, price, image_path, category):
         """Добавляет материал в список"""
         # Check if item already exists
         for existing_item in self.items:
@@ -93,7 +101,9 @@ class SpecificationItemsModel(QAbstractListModel):
             'quantity': quantity,
             'unit': unit,
             'price': price,
-            'notes': ''
+            'notes': '',
+            'image_path': image_path,
+            'category': category
         })
         self.endInsertRows()
         print(f"DEBUG: Added item {article} to specification")
@@ -124,7 +134,7 @@ class SpecificationItemsModel(QAbstractListModel):
 
         db_items = self.db.load_specification_items(spec_id)
         for row in db_items:
-            # row: (id, spec_id, article, quantity, notes, name, unit, price, stock)
+            # row: (id, spec_id, article, quantity, notes, name, unit, price, image_path)
             self.items.append({
                 'id': row[0],
                 'article': row[2],
@@ -132,7 +142,9 @@ class SpecificationItemsModel(QAbstractListModel):
                 'quantity': row[3],
                 'unit': row[6],
                 'price': row[7],
-                'notes': row[4] or ''
+                'notes': row[4] or '',
+                'image_path': row[8] or '',#добавлено
+                'category': row[9] or '',
             })
 
         self.endResetModel()
@@ -182,7 +194,9 @@ class SpecificationsModel(QObject):
                 {
                     'article': item['article'],
                     'quantity': item['quantity'],
-                    'notes': item.get('notes', '')
+                    'notes': item.get('notes', ''),
+                    'image_path': item.get('image_path', ''),#добавлено
+                    'category': item.get('category', ''),#добавлено
                 }
                 for item in items
             ]
@@ -276,7 +290,9 @@ class SpecificationsModel(QObject):
                     'quantity': item[3],
                     'unit': item[6],
                     'price': item[7],
-                    'total': item[3] * item[7]
+                    'total': item[3] * item[7],
+                    'image_path': item[8] or '',#добавлено
+                    'category': item[9]
                 })
             return result
         except Exception as e:

@@ -478,7 +478,7 @@ class DatabaseManager:
                                  i.name,
                                  i.unit,
                                  i.price,
-                                 i.stock
+                                 i.image_path
                           FROM specification_items si
                                    JOIN items i ON si.article = i.article
                           WHERE si.specification_id = ?

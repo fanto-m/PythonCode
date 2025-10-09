@@ -21,7 +21,7 @@ Rectangle {
     property real totalCost: 0
 
     function calculateCosts() {
-        materialsCost = specificationItemsModel.getTotalMaterialsCost()
+        materialsCost = specificationItemsModel.getTotalMaterialsCost() || 0
         laborCost = parseFloat(laborCostField.text) || 0
         var overheadPercent = parseFloat(overheadField.text) || 0
         overheadCost = materialsCost * (overheadPercent / 100)
@@ -107,9 +107,9 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-
+            contentWidth: availableWidth
             ColumnLayout {
-                width: Math.min(parent.width - 20, 1400)  // максимум 1000px, но не больше ширины ScrollView
+                width: Math.min(parent.width - 20, 1400)
                 //width: parent.width - 20
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 15
@@ -295,49 +295,72 @@ Rectangle {
                                         spacing: 0
 
                                         Text {
+                                            text: "Вид"
+                                            font.bold: true
+                                            font.pointSize: 12
+                                            verticalAlignment: Text.AlignVCenter
+                                            Layout.preferredWidth: 60  // Match image width
+                                            Layout.leftMargin: 10
+                                        }
+
+                                        Text {
                                             text: "Артикул"
                                             font.bold: true
-                                            font.pointSize: 9
+                                            font.pointSize: 12
+                                            verticalAlignment: Text.AlignVCenter
                                             Layout.preferredWidth: 100
                                             Layout.leftMargin: 10
                                         }
                                         Text {
                                             text: "Название"
                                             font.bold: true
-                                            font.pointSize: 9
+                                            font.pointSize: 12
+                                            verticalAlignment: Text.AlignVCenter
+                                            Layout.fillWidth: true
+                                            Layout.leftMargin: 10
+                                        }
+                                        Text {
+                                            text: "Категория"
+                                            font.bold: true
+                                            font.pointSize: 12
+                                            verticalAlignment: Text.AlignVCenter
                                             Layout.fillWidth: true
                                             Layout.leftMargin: 10
                                         }
                                         Text {
                                             text: "Кол-во"
                                             font.bold: true
-                                            font.pointSize: 9
+                                            font.pointSize: 12
+                                            verticalAlignment: Text.AlignVCenter
                                             Layout.preferredWidth: 80
                                             Layout.leftMargin: 10
                                         }
                                         Text {
                                             text: "Ед."
                                             font.bold: true
-                                            font.pointSize: 9
+                                            font.pointSize: 12
+                                            verticalAlignment: Text.AlignVCenter
                                             Layout.preferredWidth: 50
                                             Layout.leftMargin: 10
                                         }
                                         Text {
                                             text: "Цена"
                                             font.bold: true
-                                            font.pointSize: 9
+                                            font.pointSize: 12
+                                            verticalAlignment: Text.AlignVCenter
                                             Layout.preferredWidth: 90
                                             Layout.leftMargin: 10
                                         }
                                         Text {
                                             text: "Сумма"
                                             font.bold: true
-                                            font.pointSize: 9
+                                            font.pointSize: 12
+                                            verticalAlignment: Text.AlignVCenter
                                             Layout.preferredWidth: 90
                                             Layout.leftMargin: 10
                                         }
                                         Item {
-                                            Layout.preferredWidth: 50
+                                            Layout.preferredWidth: 50  // Space for delete button
                                         }
                                     }
                                 }
@@ -352,7 +375,7 @@ Rectangle {
 
                                     delegate: Rectangle {
                                         width: itemsListView.width
-                                        height: 40
+                                        height: 60
                                         color: index % 2 ? "white" : "#f9f9f9"
                                         border.color: "#e0e0e0"
                                         border.width: 1
@@ -361,16 +384,55 @@ Rectangle {
                                             anchors.fill: parent
                                             spacing: 0
 
+                                            // Image - 60px width to match header
+                                            Rectangle {
+                                                Layout.preferredWidth: 60
+                                                Layout.preferredHeight: 50
+                                                Layout.leftMargin: 10
+                                                Layout.alignment: Qt.AlignVCenter
+                                                color: "#f5f5f5"
+                                                border.color: "#d0d0d0"
+                                                border.width: 1
+                                                radius: 4
+
+                                                Image {
+                                                    anchors.fill: parent
+                                                    anchors.margins: 2
+                                                    source: model.image_path ? "../images/" + model.image_path : ""
+                                                    fillMode: Image.PreserveAspectFit
+                                                    smooth: true
+                                                    visible: model.image_path && model.image_path !== ""
+                                                }
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "📦"
+                                                    font.pointSize: 20
+                                                    visible: !model.image_path || model.image_path === ""
+                                                    color: "#999"
+                                                }
+                                            }
+
                                             Text {
                                                 text: model.article
-                                                font.pointSize: 9
+                                                font.pointSize: 12
+                                                verticalAlignment: Text.AlignVCenter
                                                 Layout.preferredWidth: 100
                                                 Layout.leftMargin: 10
                                                 elide: Text.ElideRight
                                             }
                                             Text {
                                                 text: model.name
-                                                font.pointSize: 9
+                                                font.pointSize: 12
+                                                verticalAlignment: Text.AlignVCenter
+                                                Layout.fillWidth: true
+                                                Layout.leftMargin: 10
+                                                elide: Text.ElideRight
+                                            }
+                                            Text {
+                                                text: model.category
+                                                font.pointSize: 12
+                                                verticalAlignment: Text.AlignVCenter
                                                 Layout.fillWidth: true
                                                 Layout.leftMargin: 10
                                                 elide: Text.ElideRight
@@ -380,7 +442,8 @@ Rectangle {
                                                 text: model.quantity.toString()
                                                 Layout.preferredWidth: 70
                                                 Layout.leftMargin: 10
-                                                font.pointSize: 9
+                                                font.pointSize: 12
+                                                verticalAlignment: Text.AlignVCenter
                                                 horizontalAlignment: Text.AlignRight
                                                 validator: DoubleValidator { bottom: 0; decimals: 3 }
 
@@ -404,13 +467,15 @@ Rectangle {
                                             }
                                             Text {
                                                 text: model.unit
-                                                font.pointSize: 9
+                                                font.pointSize: 12
+                                                verticalAlignment: Text.AlignVCenter
                                                 Layout.preferredWidth: 50
                                                 Layout.leftMargin: 10
                                             }
                                             Text {
                                                 text: model.price.toFixed(2) + " ₽"
-                                                font.pointSize: 9
+                                                font.pointSize: 12
+                                                verticalAlignment: Text.AlignVCenter
                                                 Layout.preferredWidth: 90
                                                 Layout.leftMargin: 10
                                                 horizontalAlignment: Text.AlignRight
@@ -418,8 +483,9 @@ Rectangle {
                                             }
                                             Text {
                                                 text: (model.quantity * model.price).toFixed(2) + " ₽"
-                                                font.pointSize: 9
+                                                font.pointSize: 12
                                                 font.bold: true
+                                                verticalAlignment: Text.AlignVCenter
                                                 Layout.preferredWidth: 90
                                                 Layout.leftMargin: 10
                                                 horizontalAlignment: Text.AlignRight
@@ -429,6 +495,7 @@ Rectangle {
                                                 text: "🗑️"
                                                 Layout.preferredWidth: 40
                                                 Layout.preferredHeight: 30
+                                                Layout.alignment: Qt.AlignVCenter
                                                 font.pointSize: 10
                                                 onClicked: {
                                                     specificationItemsModel.removeItem(index)
@@ -617,7 +684,7 @@ Rectangle {
                         text: "💾 Сохранить"
                         Layout.fillWidth: true
                         Layout.preferredHeight: 45
-                        enabled: nameField.text.trim() !== "" && itemsListView.count > 0
+                        enabled: nameField.text.trim().length > 0 && itemsListView.count > 0
                         font.pointSize: 11
 
                         background: Rectangle {
@@ -682,7 +749,11 @@ Rectangle {
                         }
 
                         onClicked: {
-                            specificationsModel.exportToExcel(currentSpecId)
+                            var result = specificationsModel.exportToExcel(currentSpecId);
+                            if (!result) {
+                                successDialog.message = "Ошибка при экспорте в Excel!";
+                                successDialog.open();
+                            }
                         }
                     }
 
@@ -712,7 +783,11 @@ Rectangle {
                         }
 
                         onClicked: {
-                            specificationsModel.exportToPDF(currentSpecId)
+                            var result = specificationsModel.exportToPDF(currentSpecId);
+                            if (!result) {
+                                successDialog.message = "Ошибка при экспорте в PDF!";
+                                successDialog.open();
+                            }
                         }
                     }
 
@@ -799,12 +874,14 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            specificationItemsModel.addItem(
+                            specificationItemsModel.addItem( //line 802
                                 model.article,
                                 model.name,
                                 1.0,  // default quantity
                                 model.unit,
-                                model.price
+                                model.price,
+                                model.image_path || "",  // Added missing image_path parameter
+                                model.category || ""
                             )
                             hasChanges = true
                             calculateCosts()
