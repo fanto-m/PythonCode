@@ -21,6 +21,10 @@ QtObject {
     property color dangerDark: "#c82333"    // Темный оттенок для pressed
     property color dangerHover: "#e02535"   // Цвет при наведении
 
+    property color warning: "#FFB900"        //
+    property color warningDark: "#CC9000"    //
+    property color warningHover: "#E6A700"  //
+
     property color neutral: "#6c757d"       // Нейтральный цвет (серый, для "Очистить")
     property color neutralDark: "#5a6268"   // Темный оттенок для pressed
     property color neutralHover: "#6c757d"  // Цвет при наведении

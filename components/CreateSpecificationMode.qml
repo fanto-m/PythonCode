@@ -6,9 +6,9 @@ import "./" as Local
 
 Rectangle {
     id: root
-    color: theme_csm.background
+    color: theme.background
     Local.Theme_CSM {
-        id:theme_csm
+        id:theme
     }
 
     signal backToMain()
@@ -28,6 +28,11 @@ Rectangle {
         materialsCost = specificationItemsModel.getTotalMaterialsCost() || 0
         laborCost = parseFloat(laborCostField.text) || 0
         var overheadPercent = parseFloat(overheadField.text) || 0
+        if (isNaN(laborCost) || isNaN(overheadPercent)) {
+            console.warn("Invalid input in laborCostField or overheadField")
+            laborCost = 0
+            overheadPercent = 0
+        }
         overheadCost = materialsCost * (overheadPercent / 100)
         totalCost = materialsCost + laborCost + overheadCost
     }
@@ -55,7 +60,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 60
-            color: theme_csm.primary
+            color: theme.primary
 
             RowLayout {
                 anchors.fill: parent
@@ -74,15 +79,15 @@ Rectangle {
                     }
 
                     background: Rectangle {
-                        color: parent.down ? theme_csm.primaryDark : (parent.hovered ? theme_csm.primaryHover : "transparent")
+                        color: parent.down ? theme.primaryDark : (parent.hovered ? theme.primaryHover : "transparent")
                         radius: 4
-                        border.color: theme_csm.textWhite
+                        border.color: theme.textWhite
                         border.width: 2
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        color: theme_csm.textWhite
+                        color: theme.textWhite
                         font.pointSize: 11
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -93,7 +98,7 @@ Rectangle {
                     text: isEditMode ? "Редактирование спецификации" : "Создание спецификации"
                     font.pointSize: 18
                     font.bold: true
-                    color: theme_csm.textWhite
+                    color: theme.textWhite
                     Layout.fillWidth: true
                 }
 
@@ -127,8 +132,8 @@ Rectangle {
                     font.bold: true
 
                     background: Rectangle {
-                        color: theme_csm.white
-                        border.color: theme_csm.border
+                        color: theme.white
+                        border.color: theme.border
                         radius: 6
                         y: parent.topPadding - parent.bottomPadding
                     }
@@ -160,8 +165,8 @@ Rectangle {
                                     onTextChanged: hasChanges = true
 
                                     background: Rectangle {
-                                        color: theme_csm.white
-                                        border.color: nameField.activeFocus ? theme_csm.primary : theme_csm.border
+                                        color: theme.white
+                                        border.color: nameField.activeFocus ? theme.primary : theme.border
                                         border.width: nameField.activeFocus ? 2 : 1
                                         radius: 4
                                     }
@@ -188,8 +193,8 @@ Rectangle {
                                     onCurrentIndexChanged: hasChanges = true
 
                                     background: Rectangle {
-                                        color: theme_csm.white
-                                        border.color: statusComboBox.activeFocus ? theme_csm.primary : theme_csm.border
+                                        color: theme.white
+                                        border.color: statusComboBox.activeFocus ? theme.primary : theme.border
                                         border.width: statusComboBox.activeFocus ? 2 : 1
                                         radius: 4
                                     }
@@ -222,8 +227,8 @@ Rectangle {
                                     onTextChanged: hasChanges = true
 
                                     background: Rectangle {
-                                        color: theme_csm.white
-                                        border.color: descriptionField.activeFocus ? theme_csm.primary : theme_csm.border
+                                        color: theme.white
+                                        border.color: descriptionField.activeFocus ? theme.primary : theme.border
                                         border.width: descriptionField.activeFocus ? 2 : 1
                                         radius: 4
                                     }
@@ -241,8 +246,8 @@ Rectangle {
                     font.bold: true
 
                     background: Rectangle {
-                        color: theme_csm.white
-                        border.color: theme_csm.border
+                        color: theme.white
+                        border.color: theme.border
                         radius: 6
                         y: parent.topPadding - parent.bottomPadding
                     }
@@ -257,13 +262,13 @@ Rectangle {
                             font.pointSize: 10
 
                             background: Rectangle {
-                                color: parent.down ? theme_csm.successDark : (parent.hovered ? theme_csm.successHover : theme_csm.success)
+                                color: parent.down ? theme.successDark : (parent.hovered ? theme.successHover : theme.success)
                                 radius: 4
                             }
 
                             contentItem: Text {
                                 text: parent.text
-                                color: theme_csm.textWhite
+                                color: theme.textWhite
                                 font: parent.font
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
@@ -278,10 +283,10 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 500
-                            border.color: theme_csm.border
+                            border.color: theme.border
                             border.width: 1
                             radius: 4
-                            color: theme_csm.background
+                            color: theme.background
 
                             ColumnLayout {
                                 anchors.fill: parent
@@ -292,7 +297,7 @@ Rectangle {
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 35
-                                    color: theme_csm.tableHeader
+                                    color: theme.tableHeader
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -380,8 +385,8 @@ Rectangle {
                                     delegate: Rectangle {
                                         width: itemsListView.width
                                         height: 60
-                                        color: index % 2 ? theme_csm.white : theme_csm.tableAlternate
-                                        border.color: theme_csm.border
+                                        color: index % 2 ? theme.white : theme.tableAlternate
+                                        border.color: theme.border
                                         border.width: 1
 
                                         RowLayout {
@@ -394,8 +399,8 @@ Rectangle {
                                                 Layout.preferredHeight: 50
                                                 Layout.leftMargin: 10
                                                 Layout.alignment: Qt.AlignVCenter
-                                                color: theme_csm.background
-                                                border.color: theme_csm.border
+                                                color: theme.background
+                                                border.color: theme.border
                                                 border.width: 1
                                                 radius: 4
 
@@ -413,7 +418,7 @@ Rectangle {
                                                     text: "📦"
                                                     font.pointSize: 20
                                                     visible: !model.image_path || model.image_path === ""
-                                                    color: theme_csm.textPlaceholder
+                                                    color: theme.textPlaceholder
                                                 }
                                             }
 
@@ -463,8 +468,8 @@ Rectangle {
                                                 }
 
                                                 background: Rectangle {
-                                                    color: theme_csm.white
-                                                    border.color: quantityField.activeFocus ? theme_csm.primary : theme_csm.border
+                                                    color: theme.white
+                                                    border.color: quantityField.activeFocus ? theme.primary : theme.border
                                                     border.width: 1
                                                     radius: 3
                                                 }
@@ -483,7 +488,7 @@ Rectangle {
                                                 Layout.preferredWidth: 90
                                                 Layout.leftMargin: 10
                                                 horizontalAlignment: Text.AlignRight
-                                                color: theme_csm.textPrimary
+                                                color: theme.textPrimary
                                             }
                                             Text {
                                                 text: (model.quantity * model.price).toFixed(2) + " ₽"
@@ -493,7 +498,7 @@ Rectangle {
                                                 Layout.preferredWidth: 90
                                                 Layout.leftMargin: 10
                                                 horizontalAlignment: Text.AlignRight
-                                                color: theme_csm.textSuccess
+                                                color: theme.textSuccess
                                             }
                                             Button {
                                                 text: "🗑️"
@@ -508,7 +513,7 @@ Rectangle {
                                                 }
 
                                                 background: Rectangle {
-                                                    color: parent.hovered ? theme_csm.danger : "transparent"
+                                                    color: parent.hovered ? theme.danger : "transparent"
                                                     radius: 3
                                                 }
                                             }
@@ -520,7 +525,7 @@ Rectangle {
                                         visible: itemsListView.count === 0
                                         text: "Нет материалов\nДобавьте позиции из склада"
                                         font.pointSize: 10
-                                        color: theme_csm.textPlaceholder
+                                        color: theme.textPlaceholder
                                         horizontalAlignment: Text.AlignHCenter
                                     }
 
@@ -539,8 +544,8 @@ Rectangle {
                     font.bold: true
 
                     background: Rectangle {
-                        color: theme_csm.white
-                        border.color: theme_csm.border
+                        color: theme.white
+                        border.color: theme.border
                         radius: 6
                         y: parent.topPadding - parent.bottomPadding
                     }
@@ -569,8 +574,8 @@ Rectangle {
                             }
 
                             background: Rectangle {
-                                color: theme_csm.white
-                                border.color: laborCostField.activeFocus ? theme_csm.primary : theme_csm.border
+                                color: theme.white
+                                border.color: laborCostField.activeFocus ? theme.primary : theme.border
                                 border.width: laborCostField.activeFocus ? 2 : 1
                                 radius: 4
                             }
@@ -594,8 +599,8 @@ Rectangle {
                             }
 
                             background: Rectangle {
-                                color: theme_csm.white
-                                border.color: overheadField.activeFocus ? theme_csm.primary : theme_csm.border
+                                color: theme.white
+                                border.color: overheadField.activeFocus ? theme.primary : theme.border
                                 border.width: overheadField.activeFocus ? 2 : 1
                                 radius: 4
                             }
@@ -606,14 +611,14 @@ Rectangle {
                             Layout.columnSpan: 2
                             Layout.fillWidth: true
                             height: 2
-                            color: theme_csm.tableHeader
+                            color: theme.tableHeader
                         }
 
                         // Cost breakdown
                         Text {
                             text: "Материалы:"
                             font.pointSize: 10
-                            color: theme_csm.textSecondary
+                            color: theme.textSecondary
                         }
                         Text {
                             text: materialsCost.toFixed(2) + " ₽"
@@ -621,13 +626,13 @@ Rectangle {
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
-                            color: theme_csm.textPrimary
+                            color: theme.textPrimary
                         }
 
                         Text {
                             text: "Работа:"
                             font.pointSize: 10
-                            color: theme_csm.textSecondary
+                            color: theme.textSecondary
                         }
                         Text {
                             text: laborCost.toFixed(2) + " ₽"
@@ -635,13 +640,13 @@ Rectangle {
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
-                            color: theme_csm.textPrimary
+                            color: theme.textPrimary
                         }
 
                         Text {
                             text: "Накладные:"
                             font.pointSize: 10
-                            color: theme_csm.textSecondary
+                            color: theme.textSecondary
                         }
                         Text {
                             text: overheadCost.toFixed(2) + " ₽"
@@ -649,7 +654,7 @@ Rectangle {
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
-                            color: theme_csm.textPrimary
+                            color: theme.textPrimary
                         }
 
                         // Total
@@ -657,14 +662,14 @@ Rectangle {
                             Layout.columnSpan: 2
                             Layout.fillWidth: true
                             height: 2
-                            color: theme_csm.textSuccess
+                            color: theme.textSuccess
                         }
 
                         Text {
                             text: "ИТОГО:"
                             font.pointSize: 12
                             font.bold: true
-                            color: theme_csm.textSuccess
+                            color: theme.textSuccess
                         }
                         Text {
                             text: totalCost.toFixed(2) + " ₽"
@@ -672,7 +677,7 @@ Rectangle {
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
-                            color: theme_csm.textSuccess
+                            color: theme.textSuccess
                         }
                     }
                 }
@@ -693,10 +698,10 @@ Rectangle {
 
                         background: Rectangle {
                             color: {
-                                if (!parent.enabled) return theme_csm.disabled
-                                if (parent.down) return theme_csm.successDark
-                                if (parent.hovered) return theme_csm.successHover
-                                return theme_csm.success
+                                if (!parent.enabled) return theme.disabled
+                                if (parent.down) return theme.successDark
+                                if (parent.hovered) return theme.successHover
+                                return theme.success
                             }
                             radius: 4
                         }
@@ -704,7 +709,7 @@ Rectangle {
                         contentItem: Text {
                             text: parent.text
                             font: parent.font
-                            color: parent.enabled ? theme_csm.textWhite : theme_csm.textPlaceholder
+                            color: parent.enabled ? theme.textWhite : theme.textPlaceholder
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -721,8 +726,15 @@ Rectangle {
 
                             if (specId > 0) {
                                 hasChanges = false
-                                successDialog.message = "Спецификация успешно сохранена!"
-                                successDialog.open()
+                                notificationDialog.dialogType = "success"
+                                notificationDialog.message = "Спецификация успешно сохранена!"
+                                notificationDialog.showCancelButton = false
+                                notificationDialog.open()
+                            } else {
+                                notificationDialog.dialogType = "error"
+                                notificationDialog.message = "Ошибка при сохранении спецификации!"
+                                notificationDialog.showCancelButton = false
+                                notificationDialog.open()
                             }
                         }
                     }
@@ -736,10 +748,10 @@ Rectangle {
 
                         background: Rectangle {
                             color: {
-                                if (!parent.enabled) return theme_csm.disabled
-                                if (parent.down) return theme_csm.infoDark
-                                if (parent.hovered) return theme_csm.infoHover
-                                return theme_csm.info
+                                if (!parent.enabled) return theme.disabled
+                                if (parent.down) return theme.infoDark
+                                if (parent.hovered) return theme.infoHover
+                                return theme.info
                             }
                             radius: 4
                         }
@@ -747,17 +759,17 @@ Rectangle {
                         contentItem: Text {
                             text: parent.text
                             font: parent.font
-                            color: parent.enabled ? theme_csm.textWhite : theme_csm.textPlaceholder
+                            color: parent.enabled ? theme.textWhite : theme.textPlaceholder
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
 
                         onClicked: {
-                            var result = specificationsModel.exportToExcel(currentSpecId);
-                            if (!result) {
-                                successDialog.message = "Ошибка при экспорте в Excel!";
-                                successDialog.open();
-                            }
+                            var result = specificationsModel.exportToExcel(currentSpecId)
+                            notificationDialog.dialogType = result ? "success" : "error"
+                            notificationDialog.message = result ? "Успешно экспортировано в Excel!" : "Ошибка при экспорте в Excel!"
+                            notificationDialog.showCancelButton = false
+                            notificationDialog.open()
                         }
                     }
 
@@ -770,10 +782,10 @@ Rectangle {
 
                         background: Rectangle {
                             color: {
-                                if (!parent.enabled) return theme_csm.disabled
-                                if (parent.down) return theme_csm.dangerDark
-                                if (parent.hovered) return theme_csm.dangerHover
-                                return theme_csm.danger
+                                if (!parent.enabled) return theme.disabled
+                                if (parent.down) return theme.dangerDark
+                                if (parent.hovered) return theme.dangerHover
+                                return theme.danger
                             }
                             radius: 4
                         }
@@ -781,17 +793,17 @@ Rectangle {
                         contentItem: Text {
                             text: parent.text
                             font: parent.font
-                            color: parent.enabled ? theme_csm.textWhite : theme_csm.textPlaceholder
+                            color: parent.enabled ? theme.textWhite : theme.textPlaceholder
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
 
                         onClicked: {
-                            var result = specificationsModel.exportToPDF(currentSpecId);
-                            if (!result) {
-                                successDialog.message = "Ошибка при экспорте в PDF!";
-                                successDialog.open();
-                            }
+                            var result = specificationsModel.exportToPDF(currentSpecId)
+                            notificationDialog.dialogType = result ? "success" : "error"
+                            notificationDialog.message = result ? "Успешно экспортировано в PDF!" : "Ошибка при экспорте в PDF!"
+                            notificationDialog.showCancelButton = false
+                            notificationDialog.open()
                         }
                     }
 
@@ -802,14 +814,14 @@ Rectangle {
                         font.pointSize: 11
 
                         background: Rectangle {
-                            color: parent.down ? theme_csm.neutralDark : (parent.hovered ? theme_csm.neutralHover : theme_csm.neutral)
+                            color: parent.down ? theme.neutralDark : (parent.hovered ? theme.neutralHover : theme.neutral)
                             radius: 4
                         }
 
                         contentItem: Text {
                             text: parent.text
                             font: parent.font
-                            color: theme_csm.textWhite
+                            color: theme.textWhite
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -856,8 +868,8 @@ Rectangle {
                     itemsModel.setFilterString(text)
                 }
                 background: Rectangle {
-                    color: theme_csm.white
-                    border.color: searchField.activeFocus ? theme_csm.primary : theme_csm.border
+                    color: theme.white
+                    border.color: searchField.activeFocus ? theme.primary : theme.border
                     border.width: searchField.activeFocus ? 2 : 1
                     radius: 4
                 }
@@ -873,8 +885,8 @@ Rectangle {
                 delegate: Rectangle {
                     width: warehouseListView.width
                     height: 80  // Increased height to accommodate image
-                    color: mouseArea.containsMouse ? theme_csm.tableAlternate : theme_csm.white
-                    border.color: theme_csm.border
+                    color: mouseArea.containsMouse ? theme.tableAlternate : theme.white
+                    border.color: theme.border
                     border.width: 1
 
                     MouseArea {
@@ -909,8 +921,8 @@ Rectangle {
                         Rectangle {
                             Layout.preferredWidth: 60
                             Layout.preferredHeight: 60
-                            color: theme_csm.background
-                            border.color: theme_csm.border
+                            color: theme.background
+                            border.color: theme.border
                             border.width: 1
                             radius: 4
 
@@ -929,7 +941,7 @@ Rectangle {
                                 text: "📦"
                                 font.pointSize: 24
                                 visible: !model.image_path || model.image_path === ""
-                                color: theme_csm.textPlaceholder
+                                color: theme.textPlaceholder
                             }
                         }
 
@@ -949,14 +961,14 @@ Rectangle {
                             Text {
                                 text: "Артикул: " + model.article + " | На складе: " + model.stock + " " + model.unit
                                 font.pointSize: 9
-                                color: theme_csm.textSecondary
+                                color: theme.textSecondary
                             }
 
                             // Category (if available)
                             Text {
                                 text: "Категория: " + (model.category || "Не указана")
                                 font.pointSize: 8
-                                color: theme_csm.textPlaceholder
+                                color: theme.textPlaceholder
                                 visible: model.category !== undefined
                             }
                         }
@@ -966,7 +978,7 @@ Rectangle {
                             text: model.price.toFixed(2) + " ₽"
                             font.pointSize: 11
                             font.bold: true
-                            color: theme_csm.textPrimary
+                            color: theme.textPrimary
                             Layout.alignment: Qt.AlignVCenter
                         }
                     }
@@ -977,7 +989,7 @@ Rectangle {
                     visible: warehouseListView.count === 0
                     text: "Товары не найдены"
                     font.pointSize: 10
-                    color: theme_csm.textPlaceholder
+                    color: theme.textPlaceholder
                 }
 
                 ScrollBar.vertical: ScrollBar {
@@ -995,13 +1007,13 @@ Rectangle {
                 }
 
                 background: Rectangle {
-                    color: parent.down ? theme_csm.neutralDark : (parent.hovered ? theme_csm.neutralHover : theme_csm.neutral)
+                    color: parent.down ? theme.neutralDark : (parent.hovered ? theme.neutralHover : theme.neutral)
                     radius: 4
                 }
 
                 contentItem: Text {
                     text: parent.text
-                    color: theme_csm.textWhite
+                    color: theme.textWhite
                     font: parent.font
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -1009,19 +1021,19 @@ Rectangle {
             }
         }
     }
+    //Universal notification dialog
+    Local.NotificationDialog {
+        id: notificationDialog
+        onAccepted: {} // Пустой обработчик, будет переопределяться при необходимости
+        onRejected: {} // Пустой обработчик, будет переопределяться при необходимости
+    }
 
     // Confirm exit dialog
-    Dialog {
+    Local.NotificationDialog {
         id: confirmExitDialog
-        title: "Несохраненные изменения"
-        modal: true
-        standardButtons: Dialog.Yes | Dialog.No
-
-        Text {
-            text: "У вас есть несохраненные изменения.\nВыйти без сохранения?"
-            color: theme_csm.textSecondary
-        }
-
+        dialogType: "warning"
+        message: "У вас есть несохраненные изменения. \n Выйти без сохранения?"
+        showCancelButton: true
         onAccepted: {
             clearForm()
             backToMain()
@@ -1029,57 +1041,14 @@ Rectangle {
     }
 
     // Confirm clear dialog
-    Dialog {
+    Local.NotificationDialog {
         id: confirmClearDialog
-        title: "Очистить форму"
-        modal: true
-        standardButtons: Dialog.Yes | Dialog.No
-
-        Text {
-            text: "Вы уверены, что хотите очистить форму?\nВсе несохраненные данные будут потеряны."
-            color: theme_csm.textSecondary
-        }
-
-        onAccepted: clearForm()
-    }
-
-    // Success dialog
-    Dialog {
-        id: successDialog
-        title: "Успех"
-        modal: true
-        anchors.centerIn: parent
-        width: 300
-        height: 150
-
-        property string message: ""
-
-        contentItem: Text {
-            text: successDialog.message
-            wrapMode: Text.WordWrap
-            anchors.centerIn: parent
-            padding: 20
-            color: theme_csm.textSecondary
-        }
-
-        footer: DialogButtonBox {
-            Button {
-                text: "OK"
-                onClicked: successDialog.close()
-
-                background: Rectangle {
-                    color: parent.down ? theme_csm.neutralDark : (parent.hovered ? theme_csm.neutralHover : theme_csm.neutral)
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: theme_csm.textWhite
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
+        dialogType: "warning"
+        message: "Вы уверены, что хотите очистить форму? \n Все несохраненные данные будут потеряны."
+        showCancelButton: true
+        onAccepted: {
+            clearForm()
         }
     }
+
 }
