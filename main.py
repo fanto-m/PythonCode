@@ -1,6 +1,6 @@
-
 import sys
 import os
+import json
 from database import DatabaseManager
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QGuiApplication
@@ -12,6 +12,8 @@ from suppliers_model import SuppliersModel
 from item_suppliers_model import ItemSuppliersModel
 from suppliers_table_model import SuppliersTableModel
 from models.specification_models import SpecificationItemsModel, SpecificationsModel
+from config_manager import ConfigManager
+
 
 
 class Backend(QObject):
@@ -73,21 +75,31 @@ if __name__ == "__main__":
     item_suppliers_model = ItemSuppliersModel()
 
     # ========================================
-    # 3. INITIALIZE SPECIFICATION MODELS (NEW)
+    # 3. INITIALIZE SPECIFICATION MODELS
     # ========================================
     specification_items_model = SpecificationItemsModel(db_manager)
-    specifications_model = SpecificationsModel(db_manager, specification_items_model)  # Pass the shared instance
+    specifications_model = SpecificationsModel(db_manager, specification_items_model)
     print("DEBUG: Specification models initialized")
 
     # ========================================
-    # 4. INITIALIZE BACKEND
+    # 4. INITIALIZE CONFIG MANAGER
+    # ========================================
+    config_manager = ConfigManager("config.json")
+    print("DEBUG: Config manager initialized")
+
+    # ========================================
+    # 5. INITIALIZE BACKEND
     # ========================================
     backend = Backend(db_manager)
     consoleHandler = QMLConsoleHandler()
 
     # ========================================
-    # 5. REGISTER WITH QML
+    # 6. REGISTER WITH QML
     # ========================================
+
+    # Register config manager FIRST (before other context properties)
+    engine.rootContext().setContextProperty("configManager", config_manager)
+    print("DEBUG: Config manager registered with QML context")
 
     # Register models as context properties
     engine.rootContext().setContextProperty("backend", backend)
@@ -99,7 +111,7 @@ if __name__ == "__main__":
     engine.rootContext().setContextProperty("itemSuppliersModel", item_suppliers_model)
     engine.rootContext().setContextProperty("consoleHandler", consoleHandler)
 
-    # Register specification models (NEW)
+    # Register specification models
     engine.rootContext().setContextProperty("specificationItemsModel", specification_items_model)
     engine.rootContext().setContextProperty("specificationsModel", specifications_model)
 
@@ -110,7 +122,7 @@ if __name__ == "__main__":
 
 
     # ========================================
-    # 6. SETUP WARNING HANDLER
+    # 7. SETUP WARNING HANDLER
     # ========================================
     def handle_qml_warnings(warnings):
         for warning in warnings:
@@ -122,7 +134,7 @@ if __name__ == "__main__":
     print("QML debugging is enabled. Only use this in a safe environment.")
 
     # ========================================
-    # 7. LOAD QML
+    # 8. LOAD QML
     # ========================================
     qml_file = os.path.join(os.path.dirname(__file__), "main.qml")
     engine.load(qml_file)

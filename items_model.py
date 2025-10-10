@@ -1,3 +1,4 @@
+#items_model.py
 from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex, Slot, Signal
 from database import DatabaseManager
 from validators import validate_item

@@ -29,6 +29,7 @@ ApplicationWindow {
         }
     }
 
+
     Component.onCompleted: {
         if (categoryModel && categoryModel.errorOccurred) {
             categoryModel.errorOccurred.connect(errorDialog.showMessage)

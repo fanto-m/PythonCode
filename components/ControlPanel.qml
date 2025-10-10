@@ -441,6 +441,10 @@ Rectangle {
             }
 
             // Price and Stock row
+            // Updated Price and Stock section for ControlPanel.qml
+            // Replace the existing "Price and Stock row" section with this:
+
+            // Price and Stock row
             RowLayout {
                 Layout.fillWidth: true
                 spacing: baseSpacing
@@ -462,26 +466,90 @@ Rectangle {
                         anchors.fill: parent
                         spacing: 4
 
-                        TextField {
-                            id: priceField
+                        RowLayout {
                             Layout.fillWidth: true
-                            placeholderText: "0.00"
-                            font.pointSize: baseFontSize
-                            inputMethodHints: Qt.ImhFormattedNumbersOnly
-                            property bool hasError: false
+                            spacing: 8
 
-                            background: Rectangle {
-                                color: "white"
-                                border.color: {
-                                    if (priceField.hasError) return errorColor
-                                    if (priceField.activeFocus) return focusBorderColor
-                                    return borderColor
+                            TextField {
+                                id: priceField
+                                Layout.preferredWidth: 80
+                                placeholderText: "0.00"
+                                font.pointSize: baseFontSize
+                                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                property bool hasError: false
+
+                                background: Rectangle {
+                                    color: "white"
+                                    border.color: {
+                                        if (priceField.hasError) return errorColor
+                                        if (priceField.activeFocus) return focusBorderColor
+                                        return borderColor
+                                    }
+                                    border.width: priceField.activeFocus ? 2 : 1
+                                    radius: 4
                                 }
-                                border.width: priceField.activeFocus ? 2 : 1
-                                radius: 4
+
+                                onTextChanged: if (hasError && text.trim() !== "") hasError = false
                             }
 
-                            onTextChanged: if (hasError && text.trim() !== "") hasError = false
+                            CheckBox {
+                                id: vatIncluded
+                                Layout.fillWidth: true
+                                font.pointSize: 8
+                                text: "Цена с НДС"
+
+                                // Bind to config manager (with null check)
+                                Component.onCompleted: {
+                                    if (configManager) {
+                                        checked = configManager.vatIncluded
+                                    }
+                                }
+
+                                // Save when user changes it
+                                onCheckedChanged: {
+                                    if (configManager) {
+                                        configManager.vatIncluded = checked
+                                    }
+                                }
+
+                                // Listen to external changes
+                                Connections {
+                                    target: configManager
+                                    function onVatIncludedChanged() {
+                                        vatIncluded.checked = configManager.vatIncluded
+                                    }
+                                }
+                            }
+                        }
+
+                        // Display VAT calculation info
+                        Text {
+                            id: vatInfoText
+                            visible: vatIncluded.checked && priceField.text.trim() !== "" && configManager
+                            font.pointSize: baseFontSize - 2
+                            color: "#616161"
+
+                            // Property to hold current VAT rate for binding
+                            property real currentVatRate: configManager ? configManager.vatRate : 20.0
+
+                            text: {
+                                if (!configManager) return ""
+
+                                let price = parseFloat(priceField.text)
+                                if (!isNaN(price) && price > 0) {
+                                    let priceWithoutVAT = configManager.calculatePriceWithoutVAT(price)
+                                    return `Без НДС: ${priceWithoutVAT.toFixed(2)} (${currentVatRate}%)`
+                                }
+                                return ""
+                            }
+
+                            // Update when VAT rate changes
+                            Connections {
+                                target: configManager
+                                function onVatRateChanged() {
+                                    vatInfoText.currentVatRate = configManager.vatRate
+                                }
+                            }
                         }
 
                         Text {
@@ -732,13 +800,18 @@ Rectangle {
                     onClicked: {
                         if (!validateFields()) return
 
+                        let inputPrice = parseFloat(priceField.text) || 0.0
+                        let finalPrice = vatIncluded.checked
+                            ? configManager.calculatePriceWithoutVAT(inputPrice)
+                            : inputPrice
+
                         var updatedData = {
                             "article": articleField.text.trim(),
                             "name": nameField.text.trim(),
                             "description": descriptionField.text.trim(),
                             "image_path": imageField.text,
                             "category": categoryComboBox.currentText || "",
-                            "price": parseFloat(priceField.text) || 0.0,
+                            "price": finalPrice,
                             "stock": parseInt(stockField.text) || 0,
                             "status": statusComboBox.currentText,
                             "unit": unitComboBox.currentText,
