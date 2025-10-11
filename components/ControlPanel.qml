@@ -37,6 +37,7 @@ Rectangle {
 
     // Properties
     property alias imageField: imageField
+    property alias documentField: documentField
     property int currentItemId: -1
     property string currentArticle: ""
     property bool isEditMode: currentItemId !== -1
@@ -54,6 +55,8 @@ Rectangle {
         imageField.text = data.image_path.split("/").pop()
         priceField.text = String(data.price)
         stockField.text = String(data.stock)
+        manufacturerField.text = String(data.manufacturer || "")
+        documentField.text = data.document.split("/").pop()
 
         var statusIndex = statusComboBox.model.indexOf(data.status || "в наличии")
         statusComboBox.currentIndex = statusIndex >= 0 ? statusIndex : 0
@@ -440,10 +443,77 @@ Rectangle {
                 }
             }
 
+            GroupBox {
+                Layout.fillWidth: true
+                title: "Документ"
+                font.pointSize: baseFontSize
+                font.bold: true
+
+                background: Rectangle {
+                    color: "#fafafa"
+                    border.color: borderColor
+                    radius: 4
+                    y: parent.topPadding - parent.bottomPadding
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 6
+
+                    TextField {
+                        id: documentField
+                        Layout.fillWidth: true
+                        placeholderText: "Выберите файл..."
+                        readOnly: true
+                        font.pointSize: baseFontSize
+
+                        background: Rectangle {
+                            color: "#f5f5f5"
+                            border.color: borderColor
+                            radius: 4
+                        }
+                    }
+
+                    Button {
+                        text: "📁"
+                        font.pointSize: baseFontSize + 2
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Выбрать файл"
+                        onClicked: documentDialog.open()
+                    }
+                }
+            }
+
+            GroupBox {
+                Layout.fillWidth: true
+                title: "Производитель"
+                font.pointSize: baseFontSize
+                font.bold: true
+
+                background: Rectangle {
+                    color: "#fafafa"
+                    border.color: borderColor
+                    radius: 4
+                    y: parent.topPadding - parent.bottomPadding
+                }
+                TextField {
+                    id: manufacturerField
+                    anchors.fill: parent
+                    placeholderText: "Введите название"
+                    font.pointSize: baseFontSize
+
+                    background: Rectangle {
+                        color: "white"
+                        border.color: nameField.activeFocus ? focusBorderColor : borderColor
+                        border.width: manufacturerField.activeFocus ? 2 : 1
+                        radius: 4
+                    }
+                }
+            }
+
             // Price and Stock row
             // Updated Price and Stock section for ControlPanel.qml
             // Replace the existing "Price and Stock row" section with this:
-
             // Price and Stock row
             RowLayout {
                 Layout.fillWidth: true
@@ -815,8 +885,8 @@ Rectangle {
                             "stock": parseInt(stockField.text) || 0,
                             "status": statusComboBox.currentText,
                             "unit": unitComboBox.currentText,
-                            "manufacturer": "",
-                            "barcode": ""
+                            "manufacturer": manufacturerField.text.trim() ||"",
+                            "document": documentField.text
                         }
                         saveItemClicked(currentItemId, updatedData)
                     }

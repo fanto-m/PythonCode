@@ -134,3 +134,4 @@ class ConfigManager(QObject):
         self.vatRateChanged.emit(self._config["vat_rate"])
         self.defaultCurrencyChanged.emit(self._config["default_currency"])
         print("DEBUG: Configuration reset to defaults")
+

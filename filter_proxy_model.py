@@ -107,7 +107,7 @@ class FilterProxyModel(QSortFilterProxyModel):
             print(f"DEBUG: Error in FilterProxyModel.addItem: {str(e)}")
 
     @Slot(int, str, str, str, str, str, float, int, str, str, str, str)
-    def updateItem(self, proxy_row, article, name, description, image_path, category, price, stock, status, unit, manufacturer, barcode):
+    def updateItem(self, proxy_row, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document):
         print(f"DEBUG: FilterProxyModel.updateItem called with proxy_row: {proxy_row}, redirecting to sourceModel")
         try:
             proxy_index = self.index(proxy_row, 0)
@@ -121,7 +121,7 @@ class FilterProxyModel(QSortFilterProxyModel):
 
             price = float(price) if price is not None and str(price).strip() else 0.0
             stock = int(stock) if stock is not None and str(stock).strip() else 0
-            self.sourceModel().updateItem(source_row, article, name, description, image_path, category, price, stock, status, unit, manufacturer, barcode)
+            self.sourceModel().updateItem(source_row, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document)
             print("DEBUG: FilterProxyModel.updateItem completed")
         except Exception as e:
             print(f"DEBUG: Error in FilterProxyModel.updateItem: {str(e)}")

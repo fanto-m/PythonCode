@@ -73,7 +73,7 @@ ColumnLayout {
                         "status": model.status,
                         "unit": model.unit,
                         "manufacturer": model.manufacturer,
-                        "barcode": model.barcode
+                        "document": model.document
                     }
                     itemSelected(selectedData)
                 }
@@ -169,10 +169,10 @@ ColumnLayout {
                         visible: model.manufacturer !== undefined && model.manufacturer !== null && model.manufacturer !== ""
                     }
                     Text {
-                        text: model.barcode ? "Штрихкод: " + model.barcode : ""
+                        text: model.document ? "Ссылка на документ: " + model.document : ""
                         font.pointSize: 9
                         color: "#777"
-                        visible: model.barcode !== undefined && model.barcode !== null && model.barcode !== ""
+                        visible: model.document!== undefined && model.document !== null && model.barcode !== ""
                     }
                     Text {
                         text: "Добавлено: " + (model.created_date ? model.created_date.split(" ")[0] : "")
@@ -252,6 +252,49 @@ ColumnLayout {
                             font.pointSize: 10
                         }
                     }
+
+                    Button {
+                        text: "Документ"
+
+                        Layout.preferredWidth: 120
+                        Layout.preferredHeight: 40
+
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Открыть документацию"
+                        ToolTip.delay: 500
+
+                        // Улучшенная проверка
+                        enabled: model.document !== undefined &&
+                                 model.document !== null &&
+                                 model.document !== "" &&
+                                 String(model.document).trim().length > 0
+
+                        onClicked: {
+                            if (model.document && String(model.document).trim() !== "") {
+                                documentDialog.openDocument(model.document)
+                            }
+                        }
+
+                        background: Rectangle {
+                            color: parent.enabled ?
+                                   (parent.down ? "#0056b3" : (parent.hovered ? "#0069d9" : "#007bff")) :
+                                   "#cccccc"  // Цвет для неактивной кнопки
+                            radius: 4
+                            border.color: parent.enabled ? "#0056b3" : "#999999"
+                            border.width: 1
+
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: parent.enabled ? "white" : "#666666"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.pointSize: 10
+                        }
+                    }
+
 
                     Button {
                         text: "Удалить"

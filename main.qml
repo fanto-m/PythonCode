@@ -19,6 +19,7 @@ ApplicationWindow {
 
     // Shared properties
     property string selectedImagePath: ""
+    property string selectedDocumentPath: ""
 
     onVisibilityChanged: {
         if (visibility === Window.Windowed) {
@@ -364,6 +365,7 @@ ApplicationWindow {
                         onItemSelected: (itemData) => {
                             controlPanel.populateFields(itemData)
                             mainWindow.selectedImagePath = itemData.image_path
+                            mainWindow.selectedDocumentPath = itemData.document
                         }
 
                         onDeleteRequested: (index, name, article) => {
@@ -420,7 +422,7 @@ ApplicationWindow {
                                 itemData.status,
                                 itemData.unit,
                                 itemData.manufacturer || "",
-                                itemData.barcode || ""
+                                itemData.document || ""
                             )
                             if (errorMessage) {
                                 errorDialog.message = errorMessage
@@ -601,7 +603,7 @@ ApplicationWindow {
     }
 
     Components.ImageFileDialog {
-        id: fileDialog
+        id: fileDialogselectedDocumentPath
         onImageSelected: (path) => {
             var fileName = path.split("/").pop()
             mainWindow.selectedImagePath = "images/" + fileName
@@ -610,6 +612,19 @@ ApplicationWindow {
             }
         }
     }
+
+    Components.DocumentFileDialog {
+        id: documentDialog
+        onDocumentSelected: (path) => {
+            // Сохраняем только имя файла из полного пути
+            var fileName = path.split("/").pop()
+            mainWindow.selectedDocumentPath = "documents/" + fileName
+            if (controlPanel && controlPanel.documentField) {
+                controlPanel.documentField.text = fileName
+            }
+        }
+    }
+
 
     Components.ErrorDialog {
         id: errorDialog

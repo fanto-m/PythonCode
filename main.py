@@ -1,8 +1,9 @@
 import sys
 import os
+
 import json
 from database import DatabaseManager
-from PySide6.QtCore import QObject, Slot
+from PySide6.QtCore import QObject, Slot, QDir
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine, QQmlError, qmlRegisterType
 from items_model import ItemsModel
@@ -48,7 +49,9 @@ if __name__ == "__main__":
     os.environ["QT_QUICK_CONTROLS_STYLE"] = "FluentWinUI3"
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
-
+    # Получаем путь к директории приложения
+    current_dir = QDir.currentPath()
+    engine.rootContext().setContextProperty("applicationDirPath", current_dir)
     # ========================================
     # 1. INITIALIZE DATABASE FIRST
     # ========================================

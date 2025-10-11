@@ -29,7 +29,7 @@ class DatabaseManager:
                         status TEXT DEFAULT 'в наличии',
                         unit TEXT DEFAULT 'шт.',
                         manufacturer TEXT,
-                        barcode TEXT,
+                        document TEXT,
                         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
                     )
                 ''')
@@ -276,60 +276,60 @@ class DatabaseManager:
         except sqlite3.Error as e:
             print(f"Database error while setting suppliers for article {article}: {e}")
             return False
+
     def load_data(self):
         """Загружает все записи из таблицы items."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 c = conn.cursor()
                 c.execute("""
-                            SELECT 
-                                i.article, 
-                                i.name, 
-                                i.description, 
-                                i.image_path, 
-                                COALESCE(c.name, 'Без категории') AS category_name,  -- ← заменяем category_id на имя
-                                i.price, 
-                                i.stock, 
-                                i.created_date, 
-                                i.status, 
-                                i.unit, 
-                                i.manufacturer, 
-                                i.barcode 
-                            FROM items i
-                            LEFT JOIN categories c ON i.category_id = c.id
-                        """)
+                          SELECT i.article,
+                                 i.name,
+                                 i.description,
+                                 i.image_path,
+                                 COALESCE(c.name, 'Без категории') AS category_name,
+                                 i.price,
+                                 i.stock,
+                                 i.created_date,
+                                 i.status,
+                                 i.unit,
+                                 i.manufacturer,
+                                 i.document
+                          FROM items i
+                                   LEFT JOIN categories c ON i.category_id = c.id
+                          """)
                 items = c.fetchall()
-            print(f"DEBUG: Loaded {len(items)} items from database")
-            for i, item in enumerate(items):
-                print(f"DEBUG: Item {i}: {item}")
-            return items
+                print(f"DEBUG: Loaded {len(items)} items from database")
+                for i, item in enumerate(items):
+                    print(f"DEBUG: Item {i} document: {item[11]}")  # Выводим значение документа
+                return items
         except Exception as e:
             print(f"DEBUG: Error loading data: {str(e)}")
             return []
 
-    def add_item(self, article, name, description, image_path, category_id, price, stock, status='в наличии', unit='шт.', manufacturer=None, barcode=None):
+    def add_item(self, article, name, description, image_path, category_id, price, stock, status='в наличии', unit='шт.', manufacturer=None, document=None):
         """Добавляет новую запись в таблицу items."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 c = conn.cursor()
                 c.execute(
-                    "INSERT INTO items (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, barcode)
+                    "INSERT INTO items (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document)
                 )
             print("DEBUG: Item added successfully to database")
         except Exception as e:
             print(f"DEBUG: Error adding item: {str(e)}")
             raise
 
-    def update_item(self, old_article, article, name, description, image_path, category_id, price, stock, status='в наличии', unit='шт.', manufacturer=None, barcode=None):
+    def update_item(self, old_article, article, name, description, image_path, category_id, price, stock, status='в наличии', unit='шт.', manufacturer=None, document=None):
         """Обновляет запись в таблице items по старому артикулу."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 c = conn.cursor()
                 c.execute(
-                    """UPDATE items SET article=?, name=?, description=?, image_path=?, category_id=?, price=?, stock=?, status=?, unit=?, manufacturer=?, barcode=?
+                    """UPDATE items SET article=?, name=?, description=?, image_path=?, category_id=?, price=?, stock=?, status=?, unit=?, manufacturer=?, document=?
                        WHERE article=?""",
-                    (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, barcode, old_article)
+                    (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document, old_article)
                 )
 
             print("DEBUG: Item updated successfully in database")
