@@ -438,7 +438,7 @@ Rectangle {
                         font.pointSize: baseFontSize + 2
                         ToolTip.visible: hovered
                         ToolTip.text: "Выбрать файл"
-                        onClicked: fileDialog.open()
+                        onClicked: fileDialogInternal.open()
                     }
                 }
             }

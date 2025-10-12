@@ -95,13 +95,13 @@ class FilterProxyModel(QSortFilterProxyModel):
         print(f"DEBUG: Filter result for row {sourceRow}: {result}")
         return result
 
-    @Slot(str, str, str, str, str, float, int)
-    def addItem(self, article, name, description, image_path, category, price, stock):
+    @Slot(str, str, str, str, str, float, int, str)
+    def addItem(self, article, name, description, image_path, category, price, stock,document=""):
         print("DEBUG: FilterProxyModel.addItem called, redirecting to sourceModel")
         try:
             price = float(price) if price is not None and str(price).strip() else 0.0
             stock = int(stock) if stock is not None and str(stock).strip() else 0
-            self.sourceModel().addItem(article, name, description, image_path, category, price, stock)
+            self.sourceModel().addItem(article, name, description, image_path, category, price, stock, document)
             print("DEBUG: FilterProxyModel.addItem completed")
         except Exception as e:
             print(f"DEBUG: Error in FilterProxyModel.addItem: {str(e)}")

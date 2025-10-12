@@ -404,7 +404,8 @@ ApplicationWindow {
                                 itemData.image_path,
                                 categoryId,
                                 itemData.price,
-                                itemData.stock
+                                itemData.stock,
+                                itemData.document
                             )
                             if (errorMessage) {
                                 errorDialog.message = errorMessage
@@ -609,7 +610,7 @@ ApplicationWindow {
     }
 
     Components.ImageFileDialog {
-        id: fileDialogselectedDocumentPath
+        id: fileDialogInternal
         onImageSelected: (path) => {
             var fileName = path.split("/").pop()
             mainWindow.selectedImagePath = "images/" + fileName
