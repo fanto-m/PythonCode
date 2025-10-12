@@ -13,8 +13,8 @@ from suppliers_model import SuppliersModel
 from item_suppliers_model import ItemSuppliersModel
 from suppliers_table_model import SuppliersTableModel
 from models.specification_models import SpecificationItemsModel, SpecificationsModel
+from specification_items_table_model import SpecificationItemsTableModel  # NEW IMPORT
 from config_manager import ConfigManager
-
 
 
 class Backend(QObject):
@@ -52,6 +52,7 @@ if __name__ == "__main__":
     # Получаем путь к директории приложения
     current_dir = QDir.currentPath()
     engine.rootContext().setContextProperty("applicationDirPath", current_dir)
+
     # ========================================
     # 1. INITIALIZE DATABASE FIRST
     # ========================================
@@ -80,8 +81,13 @@ if __name__ == "__main__":
     # ========================================
     # 3. INITIALIZE SPECIFICATION MODELS
     # ========================================
+    # Original list-based model (keep for compatibility if needed)
     specification_items_model = SpecificationItemsModel(db_manager)
-    specifications_model = SpecificationsModel(db_manager, specification_items_model)
+
+    # NEW: Table-based model for improved performance
+    specification_items_table_model = SpecificationItemsTableModel()
+
+    specifications_model = SpecificationsModel(db_manager, specification_items_table_model)
     print("DEBUG: Specification models initialized")
 
     # ========================================
@@ -115,7 +121,8 @@ if __name__ == "__main__":
     engine.rootContext().setContextProperty("consoleHandler", consoleHandler)
 
     # Register specification models
-    engine.rootContext().setContextProperty("specificationItemsModel", specification_items_model)
+    # Keep both for backward compatibility
+    engine.rootContext().setContextProperty("specificationItemsModel", specification_items_table_model)
     engine.rootContext().setContextProperty("specificationsModel", specifications_model)
 
     print("DEBUG: All models registered with QML context")
@@ -123,6 +130,17 @@ if __name__ == "__main__":
     # Register types for QML
     qmlRegisterType(ItemSuppliersModel, "Models", 1, 0, "ItemSuppliersModel")
 
+    engine.loadData(b"""
+        import QtQuick
+        QtObject {
+            Component.onCompleted: {
+                var customConsole = {
+                    log: function(msg) { consoleHandler.log(msg) },
+                }
+                console = customConsole
+            }
+        }
+    """)
 
     # ========================================
     # 7. SETUP WARNING HANDLER

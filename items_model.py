@@ -81,51 +81,51 @@ class ItemsModel(QAbstractListModel):
             self.ManufacturerRole: b"manufacturer",
             self.DocumentCodeRole: b"document"
         }
-        print(f"DEBUG: roleNames called, returning: {roles}")
+        #print(f"DEBUG: roleNames called, returning: {roles}")
         return roles
 
     @Slot(str, str, str, str, str, float, int, result=str)
     def addItem(self, article, name, description, image_path, category, price, stock, document):
-        print(f"DEBUG: addItem called with: article={article}, name={name}, description={description}, image_path={image_path}, category={category}, price={price}, stock={stock}, document={document}")
+        #print(f"DEBUG: addItem called with: article={article}, name={name}, description={description}, image_path={image_path}, category={category}, price={price}, stock={stock}, document={document}")
         try:
             is_valid, error_message = validate_item(article, name, description, image_path, category, price, stock)
             if not is_valid:
-                print(f"DEBUG: Validation failed in addItem: {error_message}")
+                #print(f"DEBUG: Validation failed in addItem: {error_message}")
                 self.errorOccurred.emit(error_message)
                 return error_message
             self.db_manager.add_item(article, name, description, image_path, category, price, stock, document)
-            print("DEBUG: Item added via DatabaseManager. Resetting model...")
+            #print("DEBUG: Item added via DatabaseManager. Resetting model...")
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
-            print("DEBUG: Model reset complete.")
+            #print("DEBUG: Model reset complete.")
             return ""
         except Exception as e:
             error_message = str(e)
-            print(f"DEBUG: Error in addItem: {error_message}")
+            #print(f"DEBUG: Error in addItem: {error_message}")
             self.errorOccurred.emit(error_message)
             return error_message
 
     @Slot(int, str, str, str, str, int, float, int, str, str, str, str)
     def updateItem(self, row, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document):
-        print(f"DEBUG: updateItem called with: row={row}, article={article}, name={name}, description={description}, image_path={image_path}, category={category}, price={price}, stock={stock}, status={status}, unit={unit}, manufacturer={manufacturer}, document={document}")
+        #print(f"DEBUG: updateItem called with: row={row}, article={article}, name={name}, description={description}, image_path={image_path}, category={category}, price={price}, stock={stock}, status={status}, unit={unit}, manufacturer={manufacturer}, document={document}")
         try:
             is_valid, error_message = validate_item(article, name, description, image_path, category, price, stock)
             if not is_valid:
-                print(f"DEBUG: Validation failed in updateItem: {error_message}")
+                #print(f"DEBUG: Validation failed in updateItem: {error_message}")
                 self.errorOccurred.emit(error_message)
                 return error_message
             old_article = self.items[row][0]
             self.db_manager.update_item(old_article, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document),
-            print("DEBUG: Item updated via DatabaseManager. Resetting model...")
+            #print("DEBUG: Item updated via DatabaseManager. Resetting model...")
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
-            print("DEBUG: Model reset complete.")
+            #print("DEBUG: Model reset complete.")
             return ""
         except Exception as e:
             error_message = str(e)
-            print(f"DEBUG: Error in updateItem: {error_message}")
+            #print(f"DEBUG: Error in updateItem: {error_message}")
             self.errorOccurred.emit(error_message)
             return error_message
 

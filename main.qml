@@ -13,6 +13,9 @@ ApplicationWindow {
     title: "Система управления складом"
     visibility: Window.Maximized
 
+
+
+
     property string currentMode: "main" // "main", "edit", "view", "create_spec", "view_spec"
     property int defaultWidth: 1000
     property int defaultHeight: 800
@@ -187,7 +190,10 @@ ApplicationWindow {
                     Button {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 80
-                        onClicked: currentMode = "create_spec"
+                        onClicked: {
+                            currentMode = "create_spec"
+                            console.log("SpecificationItemsTable: Component completed")
+                        }
 
                         background: Rectangle {
                             color: parent.down ? "#d68910" : (parent.hovered ? "#f39c12" : "#f39c12")

@@ -75,9 +75,9 @@ class FilterProxyModel(QSortFilterProxyModel):
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.isValid():
             return False
-        print(f"DEBUG: filterAcceptsRow called for row: {sourceRow}, filterField: {self._filter_field}, filterString: {self._filter_string}")
+        #print(f"DEBUG: filterAcceptsRow called for row: {sourceRow}, filterField: {self._filter_field}, filterString: {self._filter_string}")
         if not self._filter_string:
-            print(f"DEBUG: Empty filter string, accepting row {sourceRow}")
+            #print(f"DEBUG: Empty filter string, accepting row {sourceRow}")
             return True
         role_map = {
             "article": ItemsModel.ArticleRole,

@@ -114,7 +114,7 @@ class ConfigManager(QObject):
     def calculatePriceWithoutVAT(self, price_with_vat):
         """Calculate price without VAT from price with VAT."""
         vat_rate = self._get_vat_rate()
-        result = price_with_vat / (1 + vat_rate / 100)
+        result = round(price_with_vat / (1 + vat_rate / 100), 2)
         print(f"DEBUG: Calculate price without VAT: {price_with_vat} -> {result} (rate: {vat_rate}%)")
         return result
 
@@ -122,7 +122,7 @@ class ConfigManager(QObject):
     def calculatePriceWithVAT(self, price_without_vat):
         """Calculate price with VAT from price without VAT."""
         vat_rate = self._get_vat_rate()
-        return price_without_vat * (1 + vat_rate / 100)
+        return round(price_without_vat * (1 + vat_rate / 100), 2)
 
     @Slot()
     def resetToDefaults(self):

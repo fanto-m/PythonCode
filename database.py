@@ -274,7 +274,7 @@ class DatabaseManager:
                 conn.commit()
                 return True
         except sqlite3.Error as e:
-            print(f"Database error while setting suppliers for article {article}: {e}")
+            #print(f"Database error while setting suppliers for article {article}: {e}")
             return False
 
     def load_data(self):
@@ -299,12 +299,13 @@ class DatabaseManager:
                                    LEFT JOIN categories c ON i.category_id = c.id
                           """)
                 items = c.fetchall()
-                print(f"DEBUG: Loaded {len(items)} items from database")
-                for i, item in enumerate(items):
-                    print(f"DEBUG: Item {i} document: {item[11]}")  # Выводим значение документа
+                # Убрана отладочная печать
+                # print(f"DEBUG: Loaded {len(items)} items from database")
+                # for i, item in enumerate(items):
+                #     print(f"DEBUG: Item {i} document: {item[11]}")
                 return items
         except Exception as e:
-            print(f"DEBUG: Error loading data: {str(e)}")
+            # print(f"DEBUG: Error loading data: {str(e)}")
             return []
 
     def add_item(self, article, name, description, image_path, category_id, price, stock, status='в наличии', unit='шт.', manufacturer=None, document=None):
@@ -316,9 +317,9 @@ class DatabaseManager:
                     "INSERT INTO items (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document)
                 )
-            print("DEBUG: Item added successfully to database")
+            #print("DEBUG: Item added successfully to database")
         except Exception as e:
-            print(f"DEBUG: Error adding item: {str(e)}")
+            #print(f"DEBUG: Error adding item: {str(e)}")
             raise
 
     def update_item(self, old_article, article, name, description, image_path, category_id, price, stock, status='в наличии', unit='шт.', manufacturer=None, document=None):

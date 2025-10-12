@@ -277,10 +277,10 @@ ColumnLayout {
 
                         background: Rectangle {
                             color: parent.enabled ?
-                                   (parent.down ? "#0056b3" : (parent.hovered ? "#0069d9" : "#007bff")) :
+                                   (parent.down ? "#68a225" : (parent.hovered ? "#68a225" : "#86ac41")) :
                                    "#cccccc"  // Цвет для неактивной кнопки
                             radius: 4
-                            border.color: parent.enabled ? "#0056b3" : "#999999"
+                            border.color: parent.enabled ? "#265c00" : "#999999"
                             border.width: 1
 
                             Behavior on color { ColorAnimation { duration: 150 } }

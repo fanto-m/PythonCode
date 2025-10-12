@@ -1,46 +1,68 @@
+// Theme_CSM.qml - Theme for Create Specification Mode
 import QtQuick
 
 QtObject {
-    id: theme
+    // Main colors
+    readonly property color primary: "#2196F3"
+    readonly property color primaryDark: "#1976D2"
+    readonly property color primaryHover: "#42A5F5"
 
-    // Основные цвета
-    property color primary: "#f39c12"       // Основной акцентный цвет (оранжевый)
-    property color primaryDark: "#d68910"   // Темный оттенок основного цвета (для pressed)
-    property color primaryHover: "#2c3e50"  // Цвет при наведении на кнопки
+    readonly property color success: "#4CAF50"
+    readonly property color successDark: "#388E3C"
+    readonly property color successHover: "#66BB6A"
 
-    // Цвета для кнопок действий
-    property color success: "#28a745"       // Цвет для успешных действий (зеленый, для "Сохранить")
-    property color successDark: "#1e7e34"   // Темный оттенок для pressed
-    property color successHover: "#218838"  // Цвет при наведении
+    readonly property color danger: "#F44336"
+    readonly property color dangerDark: "#D32F2F"
+    readonly property color dangerHover: "#EF5350"
 
-    property color info: "#17a2b8"          // Цвет для информационных действий (голубой, для "Экспорт в Excel")
-    property color infoDark: "#117a8b"      // Темный оттенок для pressed
-    property color infoHover: "#138496"     // Цвет при наведении
+    readonly property color warning: "#FF9800"
+    readonly property color warningDark: "#F57C00"
+    readonly property color warningHover: "#FFB74D"
 
-    property color danger: "#dc3545"        // Цвет для опасных действий (красный, для "Экспорт в PDF")
-    property color dangerDark: "#c82333"    // Темный оттенок для pressed
-    property color dangerHover: "#e02535"   // Цвет при наведении
+    readonly property color info: "#2196F3"
+    readonly property color infoDark: "#1976D2"
+    readonly property color infoHover: "#42A5F5"
 
-    property color warning: "#FFB900"        //
-    property color warningDark: "#CC9000"    //
-    property color warningHover: "#E6A700"   //
+    readonly property color neutral: "#9E9E9E"
+    readonly property color neutralDark: "#757575"
+    readonly property color neutralHover: "#BDBDBD"
 
-    property color neutral: "#6c757d"       // Нейтральный цвет (серый, для "Очистить")
-    property color neutralDark: "#5a6268"   // Темный оттенок для pressed
-    property color neutralHover: "#6c757d"  // Цвет при наведении
+    readonly property color disabled: "#E0E0E0"
 
-    // Цвета фона и границ
-    property color background: "#f5f5f5"    // Основной цвет фона
-    property color white: "#ffffff"         // Белый для элементов
-    property color border: "#d0d0d0"        // Цвет границ
-    property color tableHeader: "#e0e0e0"   // Цвет заголовка таблицы
-    property color tableAlternate: "#f9f9f9" // Цвет чередующихся строк таблицы
-    property color disabled: "#e0e0e0"      // Цвет для неактивных элементов
+    // Background colors
+    readonly property color background: "#F5F5F5"
+    readonly property color white: "#FFFFFF"
+    readonly property color tableHeader: "#E3F2FD"
+    readonly property color tableAlternate: "#FAFAFA"
 
-    // Цвета текста
-    property color textPrimary: "#007bff"   // Основной цвет текста (синий, для цен)
-    property color textSuccess: "#28a745"   // Цвет текста для успешных операций
-    property color textSecondary: "#555"    // Вторичный цвет текста (темно-серый)
-    property color textPlaceholder: "#999"  // Цвет для placeholder-текста
-    property color textWhite: "#ffffff"     // Белый текст для заголовков и кнопок
+    // Border colors
+    readonly property color border: "#D0D0D0"
+    readonly property color borderFocus: "#2196F3"
+
+    // Text colors
+    readonly property color textPrimary: "#212121"
+    readonly property color textSecondary: "#757575"
+    readonly property color textPlaceholder: "#9E9E9E"
+    readonly property color textWhite: "#FFFFFF"
+    readonly property color textSuccess: "#2E7D32"
+    readonly property color textDanger: "#C62828"
+    readonly property color textWarning: "#F57C00"
+
+    // Spacing
+    readonly property int spacing: 10
+    readonly property int spacingSmall: 5
+    readonly property int spacingLarge: 15
+
+    // Font sizes
+    readonly property int fontSizeSmall: 9
+    readonly property int fontSizeNormal: 10
+    readonly property int fontSizeMedium: 11
+    readonly property int fontSizeLarge: 12
+    readonly property int fontSizeXLarge: 14
+    readonly property int fontSizeTitle: 18
+
+    // Border radius
+    readonly property int radiusSmall: 3
+    readonly property int radiusNormal: 4
+    readonly property int radiusLarge: 6
 }

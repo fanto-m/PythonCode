@@ -101,8 +101,8 @@ class SuppliersTableModel(QAbstractTableModel):
             is_checked = int(sid) in self._checked
             # Return integer value, not enum object
             result = Qt.Checked.value if is_checked else Qt.Unchecked.value
-            print(
-                f"DEBUG data(): row={index.row()}, col={index.column()}, sid={sid}, checked={is_checked}, returning={result}")
+            #print(
+            #    f"DEBUG data(): row={index.row()}, col={index.column()}, sid={sid}, checked={is_checked}, returning={result}")
             return result
 
         return None

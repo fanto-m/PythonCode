@@ -1,4 +1,4 @@
-// CreateSpecificationMode.qml
+// CreateSpecificationMode.qml - Updated with SpecificationItemsTable
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -6,10 +6,13 @@ import "./" as Local
 
 Rectangle {
     id: root
-    color: theme.background
+
+    // Theme must be loaded first
     Local.Theme_CSM {
-        id:theme
+        id: theme
     }
+
+    color: theme.background
 
     signal backToMain()
 
@@ -48,6 +51,14 @@ Rectangle {
         specificationItemsModel.clear()
         hasChanges = false
         calculateCosts()
+    }
+
+    // Connect to model's totalCostChanged signal
+    Connections {
+        target: specificationItemsModel
+        function onTotalCostChanged() {
+            calculateCosts()
+        }
     }
 
     ColumnLayout {
@@ -103,7 +114,7 @@ Rectangle {
                 }
 
                 Text {
-                    text: "📝"
+                    text: "📋"
                     font.pointSize: 24
                 }
             }
@@ -117,9 +128,9 @@ Rectangle {
             Layout.fillHeight: true
             clip: true
             contentWidth: availableWidth
+
             ColumnLayout {
                 width: Math.min(parent.width - 20, 1400)
-                //width: parent.width - 20
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 15
                 anchors.topMargin: 15
@@ -256,6 +267,23 @@ Rectangle {
                         anchors.fill: parent
                         spacing: 10
 
+                        // Status indicator
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 30
+                            color: "#e3f2fd"
+                            radius: 4
+                            visible: itemsTable.rowCount > 0
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "📦 Добавлено позиций: " + itemsTable.rowCount + " | Стоимость материалов: " + materialsCost.toFixed(2) + " ₽"
+                                font.pointSize: 10
+                                font.bold: true
+                                color: theme.primary
+                            }
+                        }
+
                         Button {
                             text: "➕ Добавить позицию из склада"
                             Layout.fillWidth: true
@@ -279,258 +307,22 @@ Rectangle {
                             }
                         }
 
-                        // Items table
-                        Rectangle {
+                        // Use the new SpecificationItemsTable component
+                        Local.SpecificationItemsTable {
+                            id: itemsTable
                             Layout.fillWidth: true
                             Layout.preferredHeight: 500
-                            border.color: theme.border
-                            border.width: 1
-                            radius: 4
-                            color: theme.background
+                            theme: root.theme  // Pass theme explicitly
+                            model: specificationItemsModel
 
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 1
-                                spacing: 0
+                            onItemQuantityChanged: function(row, newQuantity) {
+                                specificationItemsModel.updateQuantity(row, newQuantity)
+                                hasChanges = true
+                            }
 
-                                // Header
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 35
-                                    color: theme.tableHeader
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        spacing: 0
-
-                                        Text {
-                                            text: "Вид"
-                                            font.bold: true
-                                            font.pointSize: 12
-                                            verticalAlignment: Text.AlignVCenter
-                                            Layout.preferredWidth: 60  // Match image width
-                                            Layout.leftMargin: 10
-                                        }
-
-                                        Text {
-                                            text: "Артикул"
-                                            font.bold: true
-                                            font.pointSize: 12
-                                            verticalAlignment: Text.AlignVCenter
-                                            Layout.preferredWidth: 100
-                                            Layout.leftMargin: 10
-                                        }
-                                        Text {
-                                            text: "Название"
-                                            font.bold: true
-                                            font.pointSize: 12
-                                            verticalAlignment: Text.AlignVCenter
-                                            Layout.fillWidth: true
-                                            Layout.leftMargin: 10
-                                        }
-                                        Text {
-                                            text: "Категория"
-                                            font.bold: true
-                                            font.pointSize: 12
-                                            verticalAlignment: Text.AlignVCenter
-                                            Layout.fillWidth: true
-                                            Layout.leftMargin: 10
-                                        }
-                                        Text {
-                                            text: "Кол-во"
-                                            font.bold: true
-                                            font.pointSize: 12
-                                            verticalAlignment: Text.AlignVCenter
-                                            Layout.preferredWidth: 80
-                                            Layout.leftMargin: 10
-                                        }
-                                        Text {
-                                            text: "Ед."
-                                            font.bold: true
-                                            font.pointSize: 12
-                                            verticalAlignment: Text.AlignVCenter
-                                            Layout.preferredWidth: 50
-                                            Layout.leftMargin: 10
-                                        }
-                                        Text {
-                                            text: "Цена"
-                                            font.bold: true
-                                            font.pointSize: 12
-                                            verticalAlignment: Text.AlignVCenter
-                                            Layout.preferredWidth: 90
-                                            Layout.leftMargin: 10
-                                        }
-                                        Text {
-                                            text: "Сумма"
-                                            font.bold: true
-                                            font.pointSize: 12
-                                            verticalAlignment: Text.AlignVCenter
-                                            Layout.preferredWidth: 90
-                                            Layout.leftMargin: 10
-                                        }
-                                        Item {
-                                            Layout.preferredWidth: 50  // Space for delete button
-                                        }
-                                    }
-                                }
-
-                                // Items list
-                                ListView {
-                                    id: itemsListView
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    clip: true
-                                    model: specificationItemsModel
-
-                                    delegate: Rectangle {
-                                        width: itemsListView.width
-                                        height: 60
-                                        color: index % 2 ? theme.white : theme.tableAlternate
-                                        border.color: theme.border
-                                        border.width: 1
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            spacing: 0
-
-                                            // Image - 60px width to match header
-                                            Rectangle {
-                                                Layout.preferredWidth: 60
-                                                Layout.preferredHeight: 50
-                                                Layout.leftMargin: 10
-                                                Layout.alignment: Qt.AlignVCenter
-                                                color: theme.background
-                                                border.color: theme.border
-                                                border.width: 1
-                                                radius: 4
-
-                                                Image {
-                                                    anchors.fill: parent
-                                                    anchors.margins: 2
-                                                    source: model.image_path ? "../images/" + model.image_path : ""
-                                                    fillMode: Image.PreserveAspectFit
-                                                    smooth: true
-                                                    visible: model.image_path && model.image_path !== ""
-                                                }
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: "📦"
-                                                    font.pointSize: 20
-                                                    visible: !model.image_path || model.image_path === ""
-                                                    color: theme.textPlaceholder
-                                                }
-                                            }
-
-                                            Text {
-                                                text: model.article
-                                                font.pointSize: 12
-                                                verticalAlignment: Text.AlignVCenter
-                                                Layout.preferredWidth: 100
-                                                Layout.leftMargin: 10
-                                                elide: Text.ElideRight
-                                            }
-                                            Text {
-                                                text: model.name
-                                                font.pointSize: 12
-                                                verticalAlignment: Text.AlignVCenter
-                                                Layout.fillWidth: true
-                                                Layout.leftMargin: 10
-                                                elide: Text.ElideRight
-                                            }
-                                            Text {
-                                                text: model.category
-                                                font.pointSize: 12
-                                                verticalAlignment: Text.AlignVCenter
-                                                Layout.fillWidth: true
-                                                Layout.leftMargin: 10
-                                                elide: Text.ElideRight
-                                            }
-                                            TextField {
-                                                id: quantityField
-                                                text: model.quantity.toString()
-                                                Layout.preferredWidth: 70
-                                                Layout.leftMargin: 10
-                                                font.pointSize: 12
-                                                verticalAlignment: Text.AlignVCenter
-                                                horizontalAlignment: Text.AlignRight
-                                                validator: DoubleValidator { bottom: 0; decimals: 3 }
-
-                                                onEditingFinished: {
-                                                    if (text !== "" && text !== model.quantity.toString()) {
-                                                        var newValue = parseFloat(text)
-                                                        if (!isNaN(newValue)) {
-                                                            model.quantity = newValue
-                                                            hasChanges = true
-                                                            calculateCosts()
-                                                        }
-                                                    }
-                                                }
-
-                                                background: Rectangle {
-                                                    color: theme.white
-                                                    border.color: quantityField.activeFocus ? theme.primary : theme.border
-                                                    border.width: 1
-                                                    radius: 3
-                                                }
-                                            }
-                                            Text {
-                                                text: model.unit
-                                                font.pointSize: 12
-                                                verticalAlignment: Text.AlignVCenter
-                                                Layout.preferredWidth: 50
-                                                Layout.leftMargin: 10
-                                            }
-                                            Text {
-                                                text: model.price.toFixed(2) + " ₽"
-                                                font.pointSize: 12
-                                                verticalAlignment: Text.AlignVCenter
-                                                Layout.preferredWidth: 90
-                                                Layout.leftMargin: 10
-                                                horizontalAlignment: Text.AlignRight
-                                                color: theme.textPrimary
-                                            }
-                                            Text {
-                                                text: (model.quantity * model.price).toFixed(2) + " ₽"
-                                                font.pointSize: 12
-                                                font.bold: true
-                                                verticalAlignment: Text.AlignVCenter
-                                                Layout.preferredWidth: 90
-                                                Layout.leftMargin: 10
-                                                horizontalAlignment: Text.AlignRight
-                                                color: theme.textSuccess
-                                            }
-                                            Button {
-                                                text: "🗑️"
-                                                Layout.preferredWidth: 40
-                                                Layout.preferredHeight: 30
-                                                Layout.alignment: Qt.AlignVCenter
-                                                font.pointSize: 10
-                                                onClicked: {
-                                                    specificationItemsModel.removeItem(index)
-                                                    hasChanges = true
-                                                    calculateCosts()
-                                                }
-
-                                                background: Rectangle {
-                                                    color: parent.hovered ? theme.danger : "transparent"
-                                                    radius: 3
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Label {
-                                        anchors.centerIn: parent
-                                        visible: itemsListView.count === 0
-                                        text: "Нет материалов\nДобавьте позиции из склада"
-                                        font.pointSize: 10
-                                        color: theme.textPlaceholder
-                                        horizontalAlignment: Text.AlignHCenter
-                                    }
-
-                                    ScrollBar.vertical: ScrollBar {}
-                                }
+                            onItemRemoved: function(row) {
+                                specificationItemsModel.removeItem(row)
+                                hasChanges = true
                             }
                         }
                     }
@@ -693,7 +485,7 @@ Rectangle {
                         text: "💾 Сохранить"
                         Layout.fillWidth: true
                         Layout.preferredHeight: 45
-                        enabled: nameField.text.trim().length > 0 && itemsListView.count > 0
+                        enabled: nameField.text.trim().length > 0 && itemsTable.rowCount > 0
                         font.pointSize: 11
 
                         background: Rectangle {
@@ -715,6 +507,9 @@ Rectangle {
                         }
 
                         onClicked: {
+                            // Debug: print items before save
+                            specificationItemsModel.debugPrintItems()
+
                             var specId = specificationsModel.saveSpecification(
                                 currentSpecId,
                                 nameField.text,
@@ -774,7 +569,7 @@ Rectangle {
                     }
 
                     Button {
-                        text: "📑 Экспорт в PDF"
+                        text: "📕 Экспорт в PDF"
                         Layout.fillWidth: true
                         Layout.preferredHeight: 45
                         enabled: currentSpecId > 0
@@ -884,7 +679,7 @@ Rectangle {
 
                 delegate: Rectangle {
                     width: warehouseListView.width
-                    height: 80  // Increased height to accommodate image
+                    height: 80
                     color: mouseArea.containsMouse ? theme.tableAlternate : theme.white
                     border.color: theme.border
                     border.width: 1
@@ -896,17 +691,24 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            specificationItemsModel.addItem( //line 802
-                                model.article,
-                                model.name,
+                            // Prepare data with safe defaults
+                            let articleValue = model.article || ""
+                            let nameValue = model.name || ""
+                            let unitValue = model.unit || "шт."
+                            let priceValue = (model.price !== undefined && model.price !== null) ? parseFloat(model.price) : 0.0
+                            let imageValue = model.image_path || ""
+                            let categoryValue = model.category || ""
+
+                            specificationItemsModel.addItem(
+                                articleValue,
+                                nameValue,
                                 1.0,  // default quantity
-                                model.unit,
-                                model.price,
-                                model.image_path || "",  // Added missing image_path parameter
-                                model.category || ""
+                                unitValue,
+                                priceValue,
+                                imageValue,
+                                categoryValue
                             )
                             hasChanges = true
-                            calculateCosts()
                             addItemDialog.close()
                             searchField.text = ""
                         }
@@ -935,7 +737,6 @@ Rectangle {
                                 visible: model.image_path && model.image_path !== ""
                             }
 
-                            // Placeholder icon when no image
                             Text {
                                 anchors.centerIn: parent
                                 text: "📦"
@@ -964,7 +765,6 @@ Rectangle {
                                 color: theme.textSecondary
                             }
 
-                            // Category (if available)
                             Text {
                                 text: "Категория: " + (model.category || "Не указана")
                                 font.pointSize: 8
@@ -1021,11 +821,12 @@ Rectangle {
             }
         }
     }
-    //Universal notification dialog
+
+    // Universal notification dialog
     Local.NotificationDialog {
         id: notificationDialog
-        onAccepted: {} // Пустой обработчик, будет переопределяться при необходимости
-        onRejected: {} // Пустой обработчик, будет переопределяться при необходимости
+        onAccepted: {}
+        onRejected: {}
     }
 
     // Confirm exit dialog
@@ -1050,5 +851,4 @@ Rectangle {
             clearForm()
         }
     }
-
 }
