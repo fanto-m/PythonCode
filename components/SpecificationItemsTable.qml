@@ -243,6 +243,28 @@ Rectangle {
                     }
                 }
 
+                Rectangle {
+                    Layout.preferredWidth: 90
+                    Layout.fillHeight: true
+                    color: "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Статус"
+                        font.bold: true
+                        font.pointSize: 11
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: 1
+                        color: activeTheme.border
+                    }
+                }
+
                 // Delete column
                 Rectangle {
                     Layout.preferredWidth: 50
@@ -266,7 +288,7 @@ Rectangle {
 
             // Explicitly define column widths to match header exactly
             columnWidthProvider: function(column) {
-                var totalFixedWidth = 60 + 100 + 80 + 50 + 90 + 90 + 50  // Sum of fixed widths
+                var totalFixedWidth = 60 + 100 + 80 + 50 + 90 + 90 + 90 + 50  // ✅ Добавлено +90 для Status
                 var flexibleSpace = tableView.width - totalFixedWidth
                 var halfFlexible = flexibleSpace / 2
 
@@ -279,7 +301,8 @@ Rectangle {
                     case 5: return 50   // Unit
                     case 6: return 90   // Price
                     case 7: return 90   // Total
-                    case 8: return 50   // Delete button
+                    case 8: return 90   // Status ✅ Изменено с 50 на 90
+                    case 9: return 50   // Delete button
                     default: return 100
                 }
             }
@@ -318,7 +341,7 @@ Rectangle {
                 required property var model
 
                 // Access the data through display role which returns the full item dictionary
-                readonly property var itemData: model.display || {}
+                readonly property var itemData: (model && model.display) ? model.display : {}
 
                 // Load data based on column
                 Loader {
@@ -338,7 +361,8 @@ Rectangle {
                             case 5: return unitComponent
                             case 6: return priceComponent
                             case 7: return totalComponent
-                            case 8: return deleteComponent
+                            case 8: return statusComponent
+                            case 9: return deleteComponent
                             default: return null
                         }
                     }
@@ -527,6 +551,18 @@ Rectangle {
     }
 
     Component {
+        id: statusComponent
+
+        Text {
+            readonly property var data: parent.itemData || {}
+            text: data.status || ""
+            font.pointSize: 11
+            verticalAlignment: Text.AlignVCenter
+            width: parent.width
+        }
+    }
+
+    Component {
         id: deleteComponent
 
         Button {
@@ -539,7 +575,9 @@ Rectangle {
             property int rowIndex: parent.rowIndex
 
             onClicked: {
-                root.itemRemoved(rowIndex)
+                if (rowIndex >= 0) {
+                    root.itemRemoved(rowIndex)
+                }
             }
 
             background: Rectangle {

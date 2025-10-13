@@ -84,7 +84,7 @@ class ItemsModel(QAbstractListModel):
         #print(f"DEBUG: roleNames called, returning: {roles}")
         return roles
 
-    @Slot(str, str, str, str, str, float, int, result=str)
+    @Slot(str, str, str, str, str, float, int, str, result=str)
     def addItem(self, article, name, description, image_path, category, price, stock, document):
         #print(f"DEBUG: addItem called with: article={article}, name={name}, description={description}, image_path={image_path}, category={category}, price={price}, stock={stock}, document={document}")
         try:
@@ -116,7 +116,7 @@ class ItemsModel(QAbstractListModel):
                 self.errorOccurred.emit(error_message)
                 return error_message
             old_article = self.items[row][0]
-            self.db_manager.update_item(old_article, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document),
+            self.db_manager.update_item(old_article, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document)
             #print("DEBUG: Item updated via DatabaseManager. Resetting model...")
             self.beginResetModel()
             self.loadData()

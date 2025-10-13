@@ -871,7 +871,7 @@ Rectangle {
                         if (!validateFields()) return
 
                         let inputPrice = parseFloat(priceField.text) || 0.0
-                        let finalPrice = vatIncluded.checked
+                        let finalPrice = (vatIncluded.checked && configManager)
                             ? configManager.calculatePriceWithoutVAT(inputPrice)
                             : inputPrice
 
@@ -885,7 +885,7 @@ Rectangle {
                             "stock": parseInt(stockField.text) || 0,
                             "status": statusComboBox.currentText,
                             "unit": unitComboBox.currentText,
-                            "manufacturer": manufacturerField.text.trim() ||"",
+                            "manufacturer": manufacturerField.text.trim() || "",
                             "document": documentField.text
                         }
                         saveItemClicked(currentItemId, updatedData)

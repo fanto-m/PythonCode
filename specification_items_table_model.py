@@ -17,9 +17,10 @@ class SpecificationItemsTableModel(QAbstractTableModel):
     COL_UNIT = 5
     COL_PRICE = 6
     COL_TOTAL = 7
-    COL_DELETE = 8
+    COL_STATUS = 8
+    COL_DELETE = 9
 
-    COLUMN_COUNT = 9
+    COLUMN_COUNT = 10
 
     # Custom signals
     totalCostChanged = Signal(float)
@@ -29,7 +30,7 @@ class SpecificationItemsTableModel(QAbstractTableModel):
         self._items = []
         self._headers = [
             "Вид", "Артикул", "Название", "Категория",
-            "Кол-во", "Ед.", "Цена", "Сумма", ""
+            "Кол-во", "Ед.", "Цена", "Сумма", "Статус", "Удалить"
         ]
 
     def rowCount(self, parent=QModelIndex()):
@@ -85,6 +86,10 @@ class SpecificationItemsTableModel(QAbstractTableModel):
                 quantity = item.get('quantity', 0.0)
                 price = item.get('price', 0.0)
                 return float(quantity) * float(price) if (quantity is not None and price is not None) else 0.0
+            elif role == Qt.UserRole + 9:  # status
+                value = item.get('status', '')
+                return value if value is not None else ''
+            return None
 
         # Handle DisplayRole for column-based access (TableView)
         if role == Qt.DisplayRole or role == Qt.EditRole:
@@ -152,15 +157,17 @@ class SpecificationItemsTableModel(QAbstractTableModel):
             Qt.UserRole + 5: b"quantity",
             Qt.UserRole + 6: b"unit",
             Qt.UserRole + 7: b"price",
-            Qt.UserRole + 8: b"total"
+            Qt.UserRole + 8: b"total",
+            Qt.UserRole + 9: b"status"
+
         }
 
         # For TableView to work properly, we also need the column data accessible by name
         # This maps model.property_name in QML delegates
         return roles
 
-    @Slot(str, str, float, str, float, str, str)
-    def addItem(self, article, name, quantity, unit, price, image_path="", category=""):
+    @Slot(str, str, float, str, float, str, str, str)
+    def addItem(self, article, name, quantity, unit, price, image_path="", category="", status=""):
         """Add new item to specification"""
         print(f"\n=== DEBUG: addItem called ===")
         print(f"Article: {article} (type: {type(article)})")
@@ -170,6 +177,7 @@ class SpecificationItemsTableModel(QAbstractTableModel):
         print(f"Price: {price} (type: {type(price)})")
         print(f"Image: {image_path} (type: {type(image_path)})")
         print(f"Category: {category} (type: {type(category)})")
+        print(f"Status: {status} (type: {type(status)})")
 
         row = len(self._items)
         self.beginInsertRows(QModelIndex(), row, row)
@@ -182,7 +190,8 @@ class SpecificationItemsTableModel(QAbstractTableModel):
             'unit': str(unit) if unit is not None else 'шт.',
             'price': float(price) if price is not None else 0.0,
             'image_path': str(image_path) if image_path is not None else '',
-            'category': str(category) if category is not None else ''
+            'category': str(category) if category is not None else '',
+            'status': str(status) if status is not None else '',
         }
 
         print(f"Created item dict: {item}")
@@ -300,7 +309,8 @@ class SpecificationItemsTableModel(QAbstractTableModel):
                 'unit': str(item_data.get('unit', 'шт.')) if item_data.get('unit') is not None else 'шт.',
                 'price': float(item_data.get('price', 0.0)) if item_data.get('price') is not None else 0.0,
                 'image_path': str(item_data.get('image_path', '')) if item_data.get('image_path') is not None else '',
-                'category': str(item_data.get('category', '')) if item_data.get('category') is not None else ''
+                'category': str(item_data.get('category', '')) if item_data.get('category') is not None else '',
+                'status': str(item_data.get('status', '')) if item_data.get('status') is not None else ''
             }
             self._items.append(item)
 

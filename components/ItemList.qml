@@ -172,7 +172,7 @@ ColumnLayout {
                         text: model.document ? "Ссылка на документ: " + model.document : ""
                         font.pointSize: 9
                         color: "#777"
-                        visible: model.document!== undefined && model.document !== null && model.barcode !== ""
+                        visible: model.document!== undefined && model.document !== null && model.document !== ""
                     }
                     Text {
                         text: "Добавлено: " + (model.created_date ? model.created_date.split(" ")[0] : "")

@@ -698,6 +698,7 @@ Rectangle {
                             let priceValue = (model.price !== undefined && model.price !== null) ? parseFloat(model.price) : 0.0
                             let imageValue = model.image_path || ""
                             let categoryValue = model.category || ""
+                            let statusValue = model.status || "active"
 
                             specificationItemsModel.addItem(
                                 articleValue,
@@ -706,7 +707,9 @@ Rectangle {
                                 unitValue,
                                 priceValue,
                                 imageValue,
-                                categoryValue
+                                categoryValue,
+                                statusValue
+
                             )
                             hasChanges = true
                             addItemDialog.close()
