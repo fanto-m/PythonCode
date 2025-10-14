@@ -56,9 +56,6 @@ class SpecificationItemsTableModel(QAbstractTableModel):
         item = self._items[index.row()]
         column = index.column()
 
-        # For TableView in QML, we need to handle both column-based and role-based access
-        # TableView uses DisplayRole with column indices
-
         # Handle custom roles for direct property access (model.property_name)
         if role >= Qt.UserRole:
             if role == Qt.UserRole + 1:  # image_path
@@ -159,34 +156,53 @@ class SpecificationItemsTableModel(QAbstractTableModel):
             Qt.UserRole + 7: b"price",
             Qt.UserRole + 8: b"total",
             Qt.UserRole + 9: b"status"
-
         }
-
-        # For TableView to work properly, we also need the column data accessible by name
-        # This maps model.property_name in QML delegates
         return roles
 
-    @Slot(str, str, float, str, float, str, str, str)
+    # ✅ Добавлен возвращаемый тип bool
+    @Slot(str, str, float, str, float, str, str, str, result=bool)
     def addItem(self, article, name, quantity, unit, price, image_path="", category="", status=""):
-        """Add new item to specification"""
-        print(f"\n=== DEBUG: addItem called ===")
-        print(f"Article: {article} (type: {type(article)})")
-        print(f"Name: {name} (type: {type(name)})")
-        print(f"Quantity: {quantity} (type: {type(quantity)})")
-        print(f"Unit: {unit} (type: {type(unit)})")
-        print(f"Price: {price} (type: {type(price)})")
-        print(f"Image: {image_path} (type: {type(image_path)})")
-        print(f"Category: {category} (type: {type(category)})")
-        print(f"Status: {status} (type: {type(status)})")
+        """
+        Add new item to specification.
+        If article already exists, increase quantity and update the item.
+        Returns True if item was added, False if quantity was updated.
+        """
+        # 1. Нормализация входных данных
+        article_normalized = str(article).strip()
+        quantity_float = float(quantity) if quantity is not None else 1.0
 
+        # 2. ПРОВЕРКА НА ДУБЛИКАТ
+        for i, existing_item in enumerate(self._items):
+            existing_article = str(existing_item.get('article', '')).strip()
+
+            if existing_article == article_normalized:
+                # ✅ НАШЛИ! Увеличиваем количество
+                old_quantity = existing_item['quantity']
+                existing_item['quantity'] += quantity_float
+
+                # Уведомляем модель об изменении (количества и суммы)
+                index_start = self.index(i, self.COL_QUANTITY)
+                index_end = self.index(i, self.COL_TOTAL)
+                self.dataChanged.emit(index_start, index_end, [Qt.DisplayRole, Qt.EditRole])
+
+                # Обновляем общую стоимость
+                self._emitTotalCostChanged()
+
+                print(f"DEBUG: Quantity updated for '{article_normalized}' to {existing_item['quantity']}")
+                return False  # не добавлен, только увеличено количество
+
+        # 3. НЕ НАШЛИ - ДОБАВЛЯЕМ НОВЫЙ
+        print(f"No existing item found with article '{article_normalized}'")
+
+        # Уведомляем модель о начале вставки
         row = len(self._items)
         self.beginInsertRows(QModelIndex(), row, row)
 
-        # Ensure all values are properly typed and not None
-        item = {
-            'article': str(article) if article is not None else '',
+        # Создание нового элемента
+        new_item = {
+            'article': article_normalized,
             'name': str(name) if name is not None else '',
-            'quantity': float(quantity) if quantity is not None else 1.0,
+            'quantity': quantity_float,
             'unit': str(unit) if unit is not None else 'шт.',
             'price': float(price) if price is not None else 0.0,
             'image_path': str(image_path) if image_path is not None else '',
@@ -194,15 +210,15 @@ class SpecificationItemsTableModel(QAbstractTableModel):
             'status': str(status) if status is not None else '',
         }
 
-        print(f"Created item dict: {item}")
+        self._items.append(new_item)
 
-        self._items.append(item)
-        print(f"Total items now: {len(self._items)}")
-
+        # Уведомляем модель об окончании вставки
         self.endInsertRows()
         self._emitTotalCostChanged()
 
-        print(f"=== DEBUG: addItem completed ===\n")
+        print(f"✓ New item added successfully: {article_normalized}")
+        print(f"Current items count AFTER: {len(self._items)}")
+        return True  # добавлен новый товар
 
     @Slot(int)
     def removeItem(self, row):
@@ -325,6 +341,7 @@ class SpecificationItemsTableModel(QAbstractTableModel):
             return self._items[row].copy()
         return {}
 
+    # ✅ Реализация метода _emitTotalCostChanged
     def _emitTotalCostChanged(self):
         """Emit signal when total cost changes"""
         total = self.getTotalMaterialsCost()

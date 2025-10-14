@@ -17,27 +17,8 @@ Rectangle {
     signal calculateCostsRequested()
 
     // Properties
-    //property var theme: null  // Theme object can be passed from parent (optional)
     property alias model: tableView.model
     property int rowCount: tableView.rows
-
-    // Internal theme object - always available as fallback
-    /*QtObject {
-        id: internalTheme
-        property color background: "#f5f5f5"
-        property color white: "#ffffff"
-        property color border: "#d0d0d0"
-        property color tableHeader: "#e0e0e0"
-        property color tableAlternate: "#fafafa"
-        property color primary: "#2196F3"
-        property color danger: "#f44336"
-        property color success: "#4caf50"
-        property color textPrimary: "#212121"
-        property color textSecondary: "#757575"
-        property color textPlaceholder: "#9e9e9e"
-        property color textWhite: "#ffffff"
-        property color textSuccess: "#2e7d32"
-    }*/
 
     // Use provided theme or internal fallback - this ensures theme is ALWAYS defined
     //property var Theme: (theme && theme.background !== undefined) ? theme : internalTheme
@@ -62,7 +43,7 @@ Rectangle {
 
                 // Image column
                 Rectangle {
-                    Layout.preferredWidth: 60
+                    Layout.preferredWidth: 80
                     Layout.fillHeight: true
                     color: "transparent"
 
@@ -85,7 +66,7 @@ Rectangle {
 
                 // Article column
                 Rectangle {
-                    Layout.preferredWidth: 100
+                    Layout.preferredWidth: 80
                     Layout.fillHeight: true
                     color: "transparent"
 
@@ -289,13 +270,13 @@ Rectangle {
 
             // Explicitly define column widths to match header exactly
             columnWidthProvider: function(column) {
-                var totalFixedWidth = 60 + 100 + 80 + 50 + 90 + 90 + 90 + 50  // ✅ Добавлено +90 для Status
+                var totalFixedWidth = 80 + 80 + 80 + 50 + 90 + 90 + 90 + 50  // ✅ Добавлено +90 для Status
                 var flexibleSpace = tableView.width - totalFixedWidth
                 var halfFlexible = flexibleSpace / 2
 
                 switch(column) {
-                    case 0: return 60   // Image
-                    case 1: return 100  // Article
+                    case 0: return 80   // Image
+                    case 1: return 80  // Article
                     case 2: return halfFlexible  // Name (flexible)
                     case 3: return halfFlexible  // Category (flexible)
                     case 4: return 80   // Quantity
@@ -309,12 +290,12 @@ Rectangle {
             }
 
             rowHeightProvider: function(row) {
-                return 60
+                return 70
             }
 
             delegate: Rectangle {
                 implicitWidth: 100
-                implicitHeight: 60
+                implicitHeight: 70
                 color: row % 2 ? Theme.white : Theme.tableAlternate
                 border.color: Theme.border
                 border.width: 0
@@ -596,7 +577,5 @@ Rectangle {
             ToolTip.delay: 500
         }
     }
-    // Theme автоматически использует переданный theme
-    //property var Theme: (theme && theme.background !== undefined) ? theme : Theme
 
 }

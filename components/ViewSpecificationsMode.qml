@@ -400,9 +400,11 @@ Rectangle {
 
                                 Button {
                                     text: "🗑️"
+                                    font.pointSize: 12
+                                    font.family: "Segoe UI Emoji"  // ✅ Шрифт с поддержкой эмодзи
                                     Layout.preferredWidth: 35
                                     Layout.preferredHeight: 35
-                                    font.pointSize: 12
+
 
                                     ToolTip.visible: hovered
                                     ToolTip.text: "Удалить"

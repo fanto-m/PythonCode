@@ -93,40 +93,74 @@ class SpecificationItemsModel(QAbstractListModel):
     @Slot(str, str, float, str, float, str, str, str)
     def addItem(self, article, name, quantity, unit, price, image_path, category, status):
         """Добавляет материал в список. Если артикул уже есть — увеличивает количество."""
-        print(f"DEBUG: addItem called on model id {id(self)}")
-        print("=== DEBUG: addItem called ===")
-        print(f"Article: {article} | Name: {name} | Quantity: {quantity} | Unit: {unit} | Price: {price}")
-        print(f"Image: {image_path} | Category: {category} | Status: {status}")
 
-        # Проверяем, есть ли уже товар с таким артикулом
+        print("=" * 80)
+        print("=== DEBUG: addItem called ===")
+        print(f"Article: {article} (type: {type(article)})")
+        print(f"Name: {name} (type: {type(name)})")
+        print(f"Quantity: {quantity} (type: {type(quantity)})")
+        print(f"Unit: {unit} (type: {type(unit)})")
+        print(f"Price: {price} (type: {type(price)})")
+        print(f"Image: {image_path} (type: {type(image_path)})")
+        print(f"Category: {category} (type: {type(category)})")
+        print(f"Status: {status} (type: {type(status)})")
+        print(f"Current items count BEFORE: {len(self.items)}")
+        print("-" * 80)
+
+        # Нормализуем артикул для сравнения
+        article_normalized = str(article).strip()
+        print(f"Normalized article for comparison: '{article_normalized}'")
+
+        # ✅ ПРОВЕРЯЕМ, ЕСТЬ ЛИ УЖЕ ТОВАР С ТАКИМ АРТИКУЛОМ
         for i, existing_item in enumerate(self.items):
-            print(f"DEBUG: Comparing {existing_item['article']} == {article}?")
-            if existing_item['article'] == article:
+            existing_article = str(existing_item.get('article', '')).strip()
+
+            print(f"Comparing with item [{i}]:")
+            print(f"  Existing article: '{existing_article}'")
+            print(f"  New article:      '{article_normalized}'")
+            print(f"  Are equal? {existing_article == article_normalized}")
+
+            if existing_article == article_normalized:
+                # ✅ НАШЛИ! Увеличиваем количество
+                old_quantity = existing_item['quantity']
                 existing_item['quantity'] += quantity
+
+                print(f"  ✓ MATCH FOUND! Updating quantity:")
+                print(f"    Old quantity: {old_quantity}")
+                print(f"    Added: {quantity}")
+                print(f"    New quantity: {existing_item['quantity']}")
+
+                # Уведомляем модель об изменении
                 index = self.index(i)
                 self.dataChanged.emit(index, index, [self.QuantityRole])
-                print(f"DEBUG: Increased quantity of {article} to {existing_item['quantity']}")
-                return
 
-        # ✅ Если не найден — добавляем новый
+                print("=" * 80)
+                return  # ⚠️ ВАЖНО: Выходим из функции, не добавляя новый элемент!
+
+        # ✅ НЕ НАШЛИ - ДОБАВЛЯЕМ НОВЫЙ
+        print(f"No existing item found with article '{article_normalized}'")
+        print("Adding as NEW item...")
+
         self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
+
         new_item = {
-            'article': article,
+            'article': article_normalized,  # Используем нормализованный артикул
             'name': name,
             'quantity': quantity,
             'unit': unit,
             'price': price,
-            'notes': '',
             'image_path': image_path,
             'category': category,
-            'status': status,  # добавлено!
+            'status': status,
         }
+
         self.items.append(new_item)
         self.endInsertRows()
 
-        print(f"DEBUG: Added new item {article} to specification")
-        print(f"Total items now: {len(self.items)}")
+        print(f"✓ New item added successfully")
+        print(f"Current items count AFTER: {len(self.items)}")
         print("=== DEBUG: addItem completed ===")
+        print("=" * 80)
 
     @Slot(int)
     def removeItem(self, index):
@@ -179,6 +213,25 @@ class SpecificationItemsModel(QAbstractListModel):
     def getItems(self):
         """Возвращает список всех позиций для сохранения"""
         return self.items
+
+    @Slot()
+    def debugPrintItems(self):
+        """Выводит все элементы модели для отладки"""
+        import sys
+        print("\n" + "=" * 80, file=sys.stderr, flush=True)
+        print(f"DEBUG: Current model state (id={id(self)})", file=sys.stderr, flush=True)
+        print(f"Total items: {len(self.items)}", file=sys.stderr, flush=True)
+        print("-" * 80, file=sys.stderr, flush=True)
+
+        for i, item in enumerate(self.items):
+            print(f"[{i}] Article: '{item.get('article', '')}' | "
+                  f"Name: '{item.get('name', '')}' | "
+                  f"Qty: {item.get('quantity', 0)} | "
+                  f"Unit: '{item.get('unit', '')}' | "
+                  f"Price: {item.get('price', 0)}",
+                  file=sys.stderr, flush=True)
+
+        print("=" * 80 + "\n", file=sys.stderr, flush=True)
 
 
 class SpecificationsModel(QObject):

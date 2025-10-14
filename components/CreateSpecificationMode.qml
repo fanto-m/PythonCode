@@ -692,7 +692,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            // Prepare data with safe defaults
+
+                            // Подготовка данных
                             let articleValue = model.article || ""
                             let nameValue = model.name || ""
                             let unitValue = model.unit || "шт."
@@ -700,18 +701,23 @@ Rectangle {
                             let imageValue = model.image_path || ""
                             let categoryValue = model.category || ""
                             let statusValue = model.status || "active"
-
-                            specificationItemsModel.addItem(
+                            let wasAdded = specificationItemsModel.addItem(
                                 articleValue,
                                 nameValue,
-                                1.0,  // default quantity
+                                1.0,
                                 unitValue,
                                 priceValue,
                                 imageValue,
                                 categoryValue,
                                 statusValue
-
                             )
+
+                            if (wasAdded) {
+                                console.log("Новый товар добавлен")
+                            } else {
+                                console.log("Количество увеличено")
+                            }
+
                             hasChanges = true
                             addItemDialog.close()
                             searchField.text = ""
