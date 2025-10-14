@@ -1,7 +1,9 @@
 // Theme_CSM.qml - Theme for Create Specification Mode
+pragma Singleton
 import QtQuick
 
 QtObject {
+    //id: theme
     // Main colors
     readonly property color primary: "#2196F3"
     readonly property color primaryDark: "#1976D2"

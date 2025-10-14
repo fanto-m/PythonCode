@@ -2,13 +2,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "./"  // ✅ Импорт для доступа к Theme singleton
 
 Rectangle {
     id: root
-    border.color: activeTheme.border
+    border.color: Theme.border
     border.width: 1
     radius: 4
-    color: activeTheme.background
+    color: Theme.background
 
     // Signals
     signal itemQuantityChanged(int row, real newQuantity)
@@ -16,12 +17,12 @@ Rectangle {
     signal calculateCostsRequested()
 
     // Properties
-    property var theme: null  // Theme object can be passed from parent (optional)
+    //property var theme: null  // Theme object can be passed from parent (optional)
     property alias model: tableView.model
     property int rowCount: tableView.rows
 
     // Internal theme object - always available as fallback
-    QtObject {
+    /*QtObject {
         id: internalTheme
         property color background: "#f5f5f5"
         property color white: "#ffffff"
@@ -36,10 +37,10 @@ Rectangle {
         property color textPlaceholder: "#9e9e9e"
         property color textWhite: "#ffffff"
         property color textSuccess: "#2e7d32"
-    }
+    }*/
 
     // Use provided theme or internal fallback - this ensures theme is ALWAYS defined
-    property var activeTheme: (theme && theme.background !== undefined) ? theme : internalTheme
+    //property var Theme: (theme && theme.background !== undefined) ? theme : internalTheme
 
     ColumnLayout {
         anchors.fill: parent
@@ -50,8 +51,8 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 40
-            color: activeTheme.tableHeader
-            border.color: activeTheme.border
+            color: Theme.tableHeader
+            border.color: Theme.border
             border.width: 1
 
             RowLayout {
@@ -78,7 +79,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -101,7 +102,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -124,7 +125,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -147,7 +148,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -170,7 +171,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -193,7 +194,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -216,7 +217,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -239,7 +240,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -261,7 +262,7 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 1
-                        color: activeTheme.border
+                        color: Theme.border
                     }
                 }
 
@@ -314,8 +315,8 @@ Rectangle {
             delegate: Rectangle {
                 implicitWidth: 100
                 implicitHeight: 60
-                color: row % 2 ? activeTheme.white : activeTheme.tableAlternate
-                border.color: activeTheme.border
+                color: row % 2 ? Theme.white : Theme.tableAlternate
+                border.color: Theme.border
                 border.width: 0
 
                 // Right border for vertical line
@@ -324,7 +325,7 @@ Rectangle {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     width: 1
-                    color: activeTheme.border
+                    color: Theme.border
                 }
 
                 // Bottom border for horizontal line
@@ -333,7 +334,7 @@ Rectangle {
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     height: 1
-                    color: activeTheme.border
+                    color: Theme.border
                 }
 
                 required property int row
@@ -385,7 +386,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: "Нет материалов\nДобавьте позиции из склада"
                     font.pointSize: 11
-                    color: activeTheme.textPlaceholder
+                    color: Theme.textPlaceholder
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -405,8 +406,8 @@ Rectangle {
         id: imageComponent
 
         Rectangle {
-            color: activeTheme.background
-            border.color: activeTheme.border
+            color: Theme.background
+            border.color: Theme.border
             border.width: 1
             radius: 4
 
@@ -427,7 +428,7 @@ Rectangle {
                 text: "📦"
                 font.pointSize: 20
                 visible: !parent.hasImage
-                color: activeTheme.textPlaceholder
+                color: Theme.textPlaceholder
             }
         }
     }
@@ -498,8 +499,8 @@ Rectangle {
             }
 
             background: Rectangle {
-                color: activeTheme.white
-                border.color: parent.activeFocus ? activeTheme.primary : activeTheme.border
+                color: Theme.white
+                border.color: parent.activeFocus ? Theme.primary : Theme.border
                 border.width: 1
                 radius: 3
             }
@@ -528,7 +529,7 @@ Rectangle {
             font.pointSize: 11
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignRight
-            color: activeTheme.textPrimary
+            color: Theme.textPrimary
             width: parent.width
         }
     }
@@ -545,7 +546,7 @@ Rectangle {
             font.bold: true
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignRight
-            color: activeTheme.textSuccess
+            color: Theme.textSuccess
             width: parent.width
         }
     }
@@ -566,23 +567,28 @@ Rectangle {
         id: deleteComponent
 
         Button {
-            text: "🗑️"
             width: 40
             height: 30
             anchors.verticalCenter: parent.verticalCenter
-            font.pointSize: 10
 
             property int rowIndex: parent.rowIndex
 
             onClicked: {
-                if (rowIndex >= 0) {
-                    root.itemRemoved(rowIndex)
-                }
+                root.itemRemoved(rowIndex)
             }
 
             background: Rectangle {
-                color: parent.hovered ? activeTheme.danger : "transparent"
+                color: parent.hovered ? Theme.danger : "transparent"
                 radius: 3
+            }
+
+            contentItem: Text {
+                text: "🗑️"
+                font.pointSize: 14
+                font.family: "Segoe UI Emoji"  // ✅ Шрифт с поддержкой эмодзи
+                color: parent.parent.hovered ? Theme.textWhite : Theme.textSecondary
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
             }
 
             ToolTip.visible: hovered
@@ -590,4 +596,7 @@ Rectangle {
             ToolTip.delay: 500
         }
     }
+    // Theme автоматически использует переданный theme
+    //property var Theme: (theme && theme.background !== undefined) ? theme : Theme
+
 }

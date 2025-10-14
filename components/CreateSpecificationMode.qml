@@ -3,16 +3,17 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "./" as Local
+import "./"
 
 Rectangle {
     id: root
 
-    // Theme must be loaded first
+   /* // Theme must be loaded first
     Local.Theme_CSM {
-        id: theme
-    }
+        id: Theme
+    }*/
 
-    color: theme.background
+    color: Theme.background
 
     signal backToMain()
 
@@ -71,7 +72,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 60
-            color: theme.primary
+            color: Theme.primary
 
             RowLayout {
                 anchors.fill: parent
@@ -90,15 +91,15 @@ Rectangle {
                     }
 
                     background: Rectangle {
-                        color: parent.down ? theme.primaryDark : (parent.hovered ? theme.primaryHover : "transparent")
+                        color: parent.down ? Theme.primaryDark : (parent.hovered ? Theme.primaryHover : "transparent")
                         radius: 4
-                        border.color: theme.textWhite
+                        border.color: Theme.textWhite
                         border.width: 2
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        color: theme.textWhite
+                        color: Theme.textWhite
                         font.pointSize: 11
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -109,7 +110,7 @@ Rectangle {
                     text: isEditMode ? "Редактирование спецификации" : "Создание спецификации"
                     font.pointSize: 18
                     font.bold: true
-                    color: theme.textWhite
+                    color: Theme.textWhite
                     Layout.fillWidth: true
                 }
 
@@ -143,8 +144,8 @@ Rectangle {
                     font.bold: true
 
                     background: Rectangle {
-                        color: theme.white
-                        border.color: theme.border
+                        color: Theme.white
+                        border.color: Theme.border
                         radius: 6
                         y: parent.topPadding - parent.bottomPadding
                     }
@@ -176,8 +177,8 @@ Rectangle {
                                     onTextChanged: hasChanges = true
 
                                     background: Rectangle {
-                                        color: theme.white
-                                        border.color: nameField.activeFocus ? theme.primary : theme.border
+                                        color: Theme.white
+                                        border.color: nameField.activeFocus ? Theme.primary : Theme.border
                                         border.width: nameField.activeFocus ? 2 : 1
                                         radius: 4
                                     }
@@ -204,8 +205,8 @@ Rectangle {
                                     onCurrentIndexChanged: hasChanges = true
 
                                     background: Rectangle {
-                                        color: theme.white
-                                        border.color: statusComboBox.activeFocus ? theme.primary : theme.border
+                                        color: Theme.white
+                                        border.color: statusComboBox.activeFocus ? Theme.primary : Theme.border
                                         border.width: statusComboBox.activeFocus ? 2 : 1
                                         radius: 4
                                     }
@@ -238,8 +239,8 @@ Rectangle {
                                     onTextChanged: hasChanges = true
 
                                     background: Rectangle {
-                                        color: theme.white
-                                        border.color: descriptionField.activeFocus ? theme.primary : theme.border
+                                        color: Theme.white
+                                        border.color: descriptionField.activeFocus ? Theme.primary : Theme.border
                                         border.width: descriptionField.activeFocus ? 2 : 1
                                         radius: 4
                                     }
@@ -257,8 +258,8 @@ Rectangle {
                     font.bold: true
 
                     background: Rectangle {
-                        color: theme.white
-                        border.color: theme.border
+                        color: Theme.white
+                        border.color: Theme.border
                         radius: 6
                         y: parent.topPadding - parent.bottomPadding
                     }
@@ -280,7 +281,7 @@ Rectangle {
                                 text: "📦 Добавлено позиций: " + itemsTable.rowCount + " | Стоимость материалов: " + materialsCost.toFixed(2) + " ₽"
                                 font.pointSize: 10
                                 font.bold: true
-                                color: theme.primary
+                                color: Theme.primary
                             }
                         }
 
@@ -290,13 +291,13 @@ Rectangle {
                             font.pointSize: 10
 
                             background: Rectangle {
-                                color: parent.down ? theme.successDark : (parent.hovered ? theme.successHover : theme.success)
+                                color: parent.down ? Theme.successDark : (parent.hovered ? Theme.successHover : Theme.success)
                                 radius: 4
                             }
 
                             contentItem: Text {
                                 text: parent.text
-                                color: theme.textWhite
+                                color: Theme.textWhite
                                 font: parent.font
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
@@ -312,7 +313,7 @@ Rectangle {
                             id: itemsTable
                             Layout.fillWidth: true
                             Layout.preferredHeight: 500
-                            theme: root.theme  // Pass theme explicitly
+                            //Theme: root.Theme  // Pass Theme explicitly
                             model: specificationItemsModel
 
                             onItemQuantityChanged: function(row, newQuantity) {
@@ -336,8 +337,8 @@ Rectangle {
                     font.bold: true
 
                     background: Rectangle {
-                        color: theme.white
-                        border.color: theme.border
+                        color: Theme.white
+                        border.color: Theme.border
                         radius: 6
                         y: parent.topPadding - parent.bottomPadding
                     }
@@ -366,8 +367,8 @@ Rectangle {
                             }
 
                             background: Rectangle {
-                                color: theme.white
-                                border.color: laborCostField.activeFocus ? theme.primary : theme.border
+                                color: Theme.white
+                                border.color: laborCostField.activeFocus ? Theme.primary : Theme.border
                                 border.width: laborCostField.activeFocus ? 2 : 1
                                 radius: 4
                             }
@@ -391,8 +392,8 @@ Rectangle {
                             }
 
                             background: Rectangle {
-                                color: theme.white
-                                border.color: overheadField.activeFocus ? theme.primary : theme.border
+                                color: Theme.white
+                                border.color: overheadField.activeFocus ? Theme.primary : Theme.border
                                 border.width: overheadField.activeFocus ? 2 : 1
                                 radius: 4
                             }
@@ -403,14 +404,14 @@ Rectangle {
                             Layout.columnSpan: 2
                             Layout.fillWidth: true
                             height: 2
-                            color: theme.tableHeader
+                            color: Theme.tableHeader
                         }
 
                         // Cost breakdown
                         Text {
                             text: "Материалы:"
                             font.pointSize: 10
-                            color: theme.textSecondary
+                            color: Theme.textSecondary
                         }
                         Text {
                             text: materialsCost.toFixed(2) + " ₽"
@@ -418,13 +419,13 @@ Rectangle {
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
-                            color: theme.textPrimary
+                            color: Theme.textPrimary
                         }
 
                         Text {
                             text: "Работа:"
                             font.pointSize: 10
-                            color: theme.textSecondary
+                            color: Theme.textSecondary
                         }
                         Text {
                             text: laborCost.toFixed(2) + " ₽"
@@ -432,13 +433,13 @@ Rectangle {
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
-                            color: theme.textPrimary
+                            color: Theme.textPrimary
                         }
 
                         Text {
                             text: "Накладные:"
                             font.pointSize: 10
-                            color: theme.textSecondary
+                            color: Theme.textSecondary
                         }
                         Text {
                             text: overheadCost.toFixed(2) + " ₽"
@@ -446,7 +447,7 @@ Rectangle {
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
-                            color: theme.textPrimary
+                            color: Theme.textPrimary
                         }
 
                         // Total
@@ -454,14 +455,14 @@ Rectangle {
                             Layout.columnSpan: 2
                             Layout.fillWidth: true
                             height: 2
-                            color: theme.textSuccess
+                            color: Theme.textSuccess
                         }
 
                         Text {
                             text: "ИТОГО:"
                             font.pointSize: 12
                             font.bold: true
-                            color: theme.textSuccess
+                            color: Theme.textSuccess
                         }
                         Text {
                             text: totalCost.toFixed(2) + " ₽"
@@ -469,7 +470,7 @@ Rectangle {
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
-                            color: theme.textSuccess
+                            color: Theme.textSuccess
                         }
                     }
                 }
@@ -490,10 +491,10 @@ Rectangle {
 
                         background: Rectangle {
                             color: {
-                                if (!parent.enabled) return theme.disabled
-                                if (parent.down) return theme.successDark
-                                if (parent.hovered) return theme.successHover
-                                return theme.success
+                                if (!parent.enabled) return Theme.disabled
+                                if (parent.down) return Theme.successDark
+                                if (parent.hovered) return Theme.successHover
+                                return Theme.success
                             }
                             radius: 4
                         }
@@ -501,7 +502,7 @@ Rectangle {
                         contentItem: Text {
                             text: parent.text
                             font: parent.font
-                            color: parent.enabled ? theme.textWhite : theme.textPlaceholder
+                            color: parent.enabled ? Theme.textWhite : Theme.textPlaceholder
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -543,10 +544,10 @@ Rectangle {
 
                         background: Rectangle {
                             color: {
-                                if (!parent.enabled) return theme.disabled
-                                if (parent.down) return theme.infoDark
-                                if (parent.hovered) return theme.infoHover
-                                return theme.info
+                                if (!parent.enabled) return Theme.disabled
+                                if (parent.down) return Theme.infoDark
+                                if (parent.hovered) return Theme.infoHover
+                                return Theme.info
                             }
                             radius: 4
                         }
@@ -554,7 +555,7 @@ Rectangle {
                         contentItem: Text {
                             text: parent.text
                             font: parent.font
-                            color: parent.enabled ? theme.textWhite : theme.textPlaceholder
+                            color: parent.enabled ? Theme.textWhite : Theme.textPlaceholder
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -577,10 +578,10 @@ Rectangle {
 
                         background: Rectangle {
                             color: {
-                                if (!parent.enabled) return theme.disabled
-                                if (parent.down) return theme.dangerDark
-                                if (parent.hovered) return theme.dangerHover
-                                return theme.danger
+                                if (!parent.enabled) return Theme.disabled
+                                if (parent.down) return Theme.dangerDark
+                                if (parent.hovered) return Theme.dangerHover
+                                return Theme.danger
                             }
                             radius: 4
                         }
@@ -588,7 +589,7 @@ Rectangle {
                         contentItem: Text {
                             text: parent.text
                             font: parent.font
-                            color: parent.enabled ? theme.textWhite : theme.textPlaceholder
+                            color: parent.enabled ? Theme.textWhite : Theme.textPlaceholder
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -609,14 +610,14 @@ Rectangle {
                         font.pointSize: 11
 
                         background: Rectangle {
-                            color: parent.down ? theme.neutralDark : (parent.hovered ? theme.neutralHover : theme.neutral)
+                            color: parent.down ? Theme.neutralDark : (parent.hovered ? Theme.neutralHover : Theme.neutral)
                             radius: 4
                         }
 
                         contentItem: Text {
                             text: parent.text
                             font: parent.font
-                            color: theme.textWhite
+                            color: Theme.textWhite
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -663,8 +664,8 @@ Rectangle {
                     itemsModel.setFilterString(text)
                 }
                 background: Rectangle {
-                    color: theme.white
-                    border.color: searchField.activeFocus ? theme.primary : theme.border
+                    color: Theme.white
+                    border.color: searchField.activeFocus ? Theme.primary : Theme.border
                     border.width: searchField.activeFocus ? 2 : 1
                     radius: 4
                 }
@@ -680,8 +681,8 @@ Rectangle {
                 delegate: Rectangle {
                     width: warehouseListView.width
                     height: 80
-                    color: mouseArea.containsMouse ? theme.tableAlternate : theme.white
-                    border.color: theme.border
+                    color: mouseArea.containsMouse ? Theme.tableAlternate : Theme.white
+                    border.color: Theme.border
                     border.width: 1
 
                     MouseArea {
@@ -726,8 +727,8 @@ Rectangle {
                         Rectangle {
                             Layout.preferredWidth: 60
                             Layout.preferredHeight: 60
-                            color: theme.background
-                            border.color: theme.border
+                            color: Theme.background
+                            border.color: Theme.border
                             border.width: 1
                             radius: 4
 
@@ -745,7 +746,7 @@ Rectangle {
                                 text: "📦"
                                 font.pointSize: 24
                                 visible: !model.image_path || model.image_path === ""
-                                color: theme.textPlaceholder
+                                color: Theme.textPlaceholder
                             }
                         }
 
@@ -765,13 +766,13 @@ Rectangle {
                             Text {
                                 text: "Артикул: " + model.article + " | На складе: " + model.stock + " " + model.unit
                                 font.pointSize: 9
-                                color: theme.textSecondary
+                                color: Theme.textSecondary
                             }
 
                             Text {
                                 text: "Категория: " + (model.category || "Не указана")
                                 font.pointSize: 8
-                                color: theme.textPlaceholder
+                                color: Theme.textPlaceholder
                                 visible: model.category !== undefined
                             }
                         }
@@ -781,7 +782,7 @@ Rectangle {
                             text: model.price.toFixed(2) + " ₽"
                             font.pointSize: 11
                             font.bold: true
-                            color: theme.textPrimary
+                            color: Theme.textPrimary
                             Layout.alignment: Qt.AlignVCenter
                         }
                     }
@@ -792,7 +793,7 @@ Rectangle {
                     visible: warehouseListView.count === 0
                     text: "Товары не найдены"
                     font.pointSize: 10
-                    color: theme.textPlaceholder
+                    color: Theme.textPlaceholder
                 }
 
                 ScrollBar.vertical: ScrollBar {
@@ -810,13 +811,13 @@ Rectangle {
                 }
 
                 background: Rectangle {
-                    color: parent.down ? theme.neutralDark : (parent.hovered ? theme.neutralHover : theme.neutral)
+                    color: parent.down ? Theme.neutralDark : (parent.hovered ? Theme.neutralHover : Theme.neutral)
                     radius: 4
                 }
 
                 contentItem: Text {
                     text: parent.text
-                    color: theme.textWhite
+                    color: Theme.textWhite
                     font: parent.font
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

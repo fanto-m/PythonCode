@@ -2,13 +2,11 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "./" as Local
+import "./"
 
 Dialog {
     id: root
 
-    Local.Theme_CSM {
-        id:theme
-    }
     modal: true
     width: 400
     anchors.centerIn: parent
@@ -20,13 +18,13 @@ Dialog {
 
     background: Rectangle {
 
-        color: theme.white
+        color: Theme.white
         border.color: {
             switch (root.dialogType) {
-                case "success": return theme.success
-                case "error": return theme.danger
-                case "warning": return theme.warning
-                default: return theme.border
+                case "success": return Theme.success
+                case "error": return Theme.danger
+                case "warning": return Theme.warning
+                default: return Theme.border
             }
         }
         border.width: 2
@@ -50,7 +48,7 @@ Dialog {
             wrapMode: Text.Wrap
             Layout.fillWidth: true
             font.pointSize: 10
-            color: theme.textPrimary
+            color: Theme.textPrimary
         }
     }
 
@@ -59,12 +57,12 @@ Dialog {
             text: "OK"
             onClicked: root.accept()
             background: Rectangle {
-                color: parent.down ? theme.successDark : (parent.hovered ? theme.successHover : theme.success)
+                color: parent.down ? Theme.successDark : (parent.hovered ? Theme.successHover : Theme.success)
                 radius: 4
             }
             contentItem: Text {
                 text: parent.text
-                color: theme.textWhite
+                color: Theme.textWhite
                 font.pointSize: 10
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -74,12 +72,12 @@ Dialog {
             visible: root.showCancelButton
             onClicked: root.reject()
             background: Rectangle {
-                color: parent.down ? theme.neutralDark : (parent.hovered ? theme.neutralHover : theme.neutral)
+                color: parent.down ? Theme.neutralDark : (parent.hovered ? Theme.neutralHover : Theme.neutral)
                 radius: 4
             }
             contentItem: Text {
                 text: parent.text
-                color: theme.textWhite
+                color: Theme.textWhite
                 font.pointSize: 10
                 horizontalAlignment: Text.AlignHCenter
             }
