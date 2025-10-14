@@ -2,7 +2,7 @@
 Specifications Models for Manufacturing BOM (Bill of Materials)
 models/specification_models.py
 """
-
+#specification_models.py
 from PySide6.QtCore import QObject, Signal, Slot, QAbstractListModel, Qt, QModelIndex
 from typing import Optional, List
 from PySide6.QtGui import QColor
@@ -19,12 +19,14 @@ class SpecificationItemsModel(QAbstractListModel):
     NotesRole = Qt.ItemDataRole.UserRole + 6
     ImagePathRole = Qt.ItemDataRole.UserRole + 7 #добавлено
     CategoryRole = Qt.ItemDataRole.UserRole + 8 #добавлено
+    StatusRole = Qt.ItemDataRole.UserRole + 9
 
     def __init__(self, db_manager, parent=None):
         super().__init__(parent)
         self.db = db_manager
         self.items = []  # List of dicts: {article, name, quantity, unit, price, notes}
         self.current_spec_id = None
+        print(f"DEBUG: SpecificationItemsModel initialized at {id(self)}")
 
     def roleNames(self):
         return {
@@ -36,6 +38,7 @@ class SpecificationItemsModel(QAbstractListModel):
             self.NotesRole: b"notes",
             self.ImagePathRole: b"image_path",#добавлено
             self. CategoryRole: b"category",
+            self.StatusRole: b"status",
         }
 
     def rowCount(self, parent=QModelIndex()):
@@ -63,6 +66,8 @@ class SpecificationItemsModel(QAbstractListModel):
             return item.get('image_path', '')
         elif role == self.CategoryRole:
             return item.get('category', '')
+        elif role == self.StatusRole:
+            return item.get('status', '')
         return None
 
     def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
@@ -85,17 +90,27 @@ class SpecificationItemsModel(QAbstractListModel):
 
         return False
 
-    @Slot(str, str, float, str, float, str, str)
-    def addItem(self, article, name, quantity, unit, price, image_path, category):
-        """Добавляет материал в список"""
-        # Check if item already exists
-        for existing_item in self.items:
+    @Slot(str, str, float, str, float, str, str, str)
+    def addItem(self, article, name, quantity, unit, price, image_path, category, status):
+        """Добавляет материал в список. Если артикул уже есть — увеличивает количество."""
+        print(f"DEBUG: addItem called on model id {id(self)}")
+        print("=== DEBUG: addItem called ===")
+        print(f"Article: {article} | Name: {name} | Quantity: {quantity} | Unit: {unit} | Price: {price}")
+        print(f"Image: {image_path} | Category: {category} | Status: {status}")
+
+        # Проверяем, есть ли уже товар с таким артикулом
+        for i, existing_item in enumerate(self.items):
+            print(f"DEBUG: Comparing {existing_item['article']} == {article}?")
             if existing_item['article'] == article:
-                print(f"DEBUG: Item {article} already in specification")
+                existing_item['quantity'] += quantity
+                index = self.index(i)
+                self.dataChanged.emit(index, index, [self.QuantityRole])
+                print(f"DEBUG: Increased quantity of {article} to {existing_item['quantity']}")
                 return
 
+        # ✅ Если не найден — добавляем новый
         self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
-        self.items.append({
+        new_item = {
             'article': article,
             'name': name,
             'quantity': quantity,
@@ -103,10 +118,15 @@ class SpecificationItemsModel(QAbstractListModel):
             'price': price,
             'notes': '',
             'image_path': image_path,
-            'category': category
-        })
+            'category': category,
+            'status': status,  # добавлено!
+        }
+        self.items.append(new_item)
         self.endInsertRows()
-        print(f"DEBUG: Added item {article} to specification")
+
+        print(f"DEBUG: Added new item {article} to specification")
+        print(f"Total items now: {len(self.items)}")
+        print("=== DEBUG: addItem completed ===")
 
     @Slot(int)
     def removeItem(self, index):
