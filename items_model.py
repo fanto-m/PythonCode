@@ -1,9 +1,9 @@
-#items_model.py
-from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex, Slot, Signal
+# items_model.py - Fixed version with all issues resolved
+from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex, Slot, Signal, Property
 from database import DatabaseManager
 from validators import validate_item
 
-# Определяем класс ItemsModel
+
 class ItemsModel(QAbstractListModel):
     ArticleRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2
@@ -18,7 +18,7 @@ class ItemsModel(QAbstractListModel):
     ManufacturerRole = Qt.UserRole + 11
     DocumentCodeRole = Qt.UserRole + 12
 
-    errorOccurred = Signal(str)  # Сигнал для передачи ошибок в QML
+    errorOccurred = Signal(str)
 
     _ROLE_TO_INDEX = {
         ArticleRole: 0,
@@ -39,35 +39,65 @@ class ItemsModel(QAbstractListModel):
         super().__init__()
         self.db_manager = DatabaseManager(db_path)
         self.items = []
+        self._all_items = []  # Store all items for filtering
+        self._filter_string = ""
+        self._filter_field = "name"
         self.loadData()
         print("DEBUG: Model initialized and data loaded.")
 
     def loadData(self):
+        """Load all data from database"""
         print("DEBUG: Loading data via DatabaseManager")
-        self.items = self.db_manager.load_data()
-        print(f"DEBUG: Data loaded into model. Number of items: {len(self.items)}")
+        self._all_items = self.db_manager.load_data()
+        self._applyFilter()
+        print(f"DEBUG: Data loaded. Total items: {len(self._all_items)}, Filtered: {len(self.items)}")
+
+    def _applyFilter(self):
+        """Apply current filter to items"""
+        if not self._filter_string:
+            self.items = self._all_items.copy()
+            return
+
+        filter_lower = self._filter_string.lower()
+
+        # Map filter field to column index
+        field_map = {
+            "article": 0,
+            "name": 1,
+            "description": 2,
+            "category": 4,
+            "price": 5,
+            "stock": 6
+        }
+
+        field_index = field_map.get(self._filter_field, 1)  # Default to name
+
+        self.items = [
+            item for item in self._all_items
+            if filter_lower in str(item[field_index]).lower()
+        ]
 
     def rowCount(self, parent=QModelIndex()):
-        count = len(self.items)
-        #print(f"DEBUG: rowCount called, returning: {count}")
-        return count
+        return len(self.items)
 
     def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
+        if not index.isValid() or index.row() >= len(self.items):
             return None
+
         if role not in self._ROLE_TO_INDEX:
             return None
+
         item = self.items[index.row()]
         value = item[self._ROLE_TO_INDEX[role]]
 
-        # Специальная обработка для DocumentCodeRole
+        # Special handling for DocumentCodeRole - return empty string for None
         if role == self.DocumentCodeRole:
             return value if value is not None else ""
 
         return value
 
     def roleNames(self):
-        roles = {
+        return {
             self.ArticleRole: b"article",
             self.NameRole: b"name",
             self.DescriptionRole: b"description",
@@ -81,68 +111,219 @@ class ItemsModel(QAbstractListModel):
             self.ManufacturerRole: b"manufacturer",
             self.DocumentCodeRole: b"document"
         }
-        #print(f"DEBUG: roleNames called, returning: {roles}")
-        return roles
 
-    @Slot(str, str, str, str, str, float, int, str, result=str)
-    def addItem(self, article, name, description, image_path, category, price, stock, document):
-        #print(f"DEBUG: addItem called with: article={article}, name={name}, description={description}, image_path={image_path}, category={category}, price={price}, stock={stock}, document={document}")
+    @Slot(str, str, str, str, int, float, int, str, result=str)
+    def addItem(self, article, name, description, image_path, category_id, price, stock, document):
+        """
+        Add new item to database
+
+        Args:
+            article: Article/SKU code
+            name: Item name
+            description: Item description
+            image_path: Path to item image
+            category_id: Category ID (integer)
+            price: Item price
+            stock: Stock quantity
+            document: Document path
+
+        Returns:
+            Empty string on success, error message on failure
+        """
         try:
-            is_valid, error_message = validate_item(article, name, description, image_path, category, price, stock)
+            # Validate input
+            is_valid, error_message = validate_item(
+                article, name, description, image_path,
+                category_id, price, stock
+            )
             if not is_valid:
-                #print(f"DEBUG: Validation failed in addItem: {error_message}")
+                print(f"DEBUG: Validation failed in addItem: {error_message}")
                 self.errorOccurred.emit(error_message)
                 return error_message
-            self.db_manager.add_item(article, name, description, image_path, category, price, stock, document)
-            #print("DEBUG: Item added via DatabaseManager. Resetting model...")
+
+            # Add to database
+            self.db_manager.add_item(
+                article, name, description, image_path,
+                category_id, price, stock, document
+            )
+
+            print("DEBUG: Item added successfully. Reloading data...")
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
-            #print("DEBUG: Model reset complete.")
+            print("DEBUG: Model reset complete.")
+
             return ""
+
         except Exception as e:
-            error_message = str(e)
-            #print(f"DEBUG: Error in addItem: {error_message}")
+            error_message = f"Ошибка добавления товара: {str(e)}"
+            print(f"DEBUG: Error in addItem: {error_message}")
             self.errorOccurred.emit(error_message)
             return error_message
 
-    @Slot(int, str, str, str, str, int, float, int, str, str, str, str)
-    def updateItem(self, row, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document):
-        #print(f"DEBUG: updateItem called with: row={row}, article={article}, name={name}, description={description}, image_path={image_path}, category={category}, price={price}, stock={stock}, status={status}, unit={unit}, manufacturer={manufacturer}, document={document}")
+    @Slot(int, str, str, str, str, int, float, int, str, str, str, str, result=str)
+    def updateItem(self, row, article, name, description, image_path,
+                   category_id, price, stock, status, unit, manufacturer, document):
+        """
+        Update existing item in database
+
+        Args:
+            row: Row index in filtered list
+            article: New article/SKU code
+            name: New item name
+            description: New description
+            image_path: New image path
+            category_id: New category ID (integer)
+            price: New price
+            stock: New stock quantity
+            status: Item status
+            unit: Unit of measurement
+            manufacturer: Manufacturer name
+            document: Document path
+
+        Returns:
+            Empty string on success, error message on failure
+        """
         try:
-            is_valid, error_message = validate_item(article, name, description, image_path, category, price, stock)
-            if not is_valid:
-                #print(f"DEBUG: Validation failed in updateItem: {error_message}")
+            # Validate row index
+            if row < 0 or row >= len(self.items):
+                error_message = f"Недопустимый индекс строки: {row}"
+                print(f"DEBUG: {error_message}")
                 self.errorOccurred.emit(error_message)
                 return error_message
+
+            # Validate input
+            is_valid, error_message = validate_item(
+                article, name, description, image_path,
+                category_id, price, stock
+            )
+            if not is_valid:
+                print(f"DEBUG: Validation failed in updateItem: {error_message}")
+                self.errorOccurred.emit(error_message)
+                return error_message
+
+            # Get old article for updating
             old_article = self.items[row][0]
-            self.db_manager.update_item(old_article, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document)
-            #print("DEBUG: Item updated via DatabaseManager. Resetting model...")
+
+            # Update in database
+            self.db_manager.update_item(
+                old_article, article, name, description, image_path,
+                category_id, price, stock, status, unit, manufacturer, document
+            )
+
+            print("DEBUG: Item updated successfully. Reloading data...")
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
-            #print("DEBUG: Model reset complete.")
+            print("DEBUG: Model reset complete.")
+
             return ""
+
         except Exception as e:
-            error_message = str(e)
-            #print(f"DEBUG: Error in updateItem: {error_message}")
+            error_message = f"Ошибка обновления товара: {str(e)}"
+            print(f"DEBUG: Error in updateItem: {error_message}")
             self.errorOccurred.emit(error_message)
             return error_message
 
     @Slot(int)
     def deleteItem(self, row):
-        print(f"DEBUG: Deleting item at row: {row}")
+        """
+        Delete item from database
+
+        Args:
+            row: Row index in filtered list
+        """
         try:
+            # Validate row index
+            if row < 0 or row >= len(self.items):
+                error_message = f"Недопустимый индекс строки: {row}"
+                print(f"DEBUG: {error_message}")
+                self.errorOccurred.emit(error_message)
+                return
+
             article = self.items[row][0]
-            print(f"DEBUG: Item to delete: article = {article}")
+            print(f"DEBUG: Deleting item: article = {article}")
+
             self.db_manager.delete_item(article)
-            print("DEBUG: Item deleted via DatabaseManager. Resetting model...")
+
+            print("DEBUG: Item deleted successfully. Reloading data...")
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
             print("DEBUG: Model reset complete.")
+
         except Exception as e:
-            error_message = str(e)
+            error_message = f"Ошибка удаления товара: {str(e)}"
             print(f"DEBUG: Error in deleteItem: {error_message}")
             self.errorOccurred.emit(error_message)
-            raise
+
+    @Slot(str)
+    def setFilterString(self, filter_string):
+        """
+        Set filter string for searching items
+
+        Args:
+            filter_string: String to filter by
+        """
+        if self._filter_string != filter_string:
+            self._filter_string = filter_string
+            print(f"DEBUG: Filter string set to: '{filter_string}'")
+            self.beginResetModel()
+            self._applyFilter()
+            self.endResetModel()
+
+    @Slot(str)
+    def setFilterField(self, field):
+        """
+        Set field to filter by
+
+        Args:
+            field: Field name (article, name, description, category, price, stock)
+        """
+        if self._filter_field != field:
+            self._filter_field = field
+            print(f"DEBUG: Filter field set to: '{field}'")
+            self.beginResetModel()
+            self._applyFilter()
+            self.endResetModel()
+
+    @Slot()
+    def clearFilter(self):
+        """Clear all filters"""
+        self._filter_string = ""
+        self._filter_field = "name"
+        print("DEBUG: Filters cleared")
+        self.beginResetModel()
+        self._applyFilter()
+        self.endResetModel()
+
+    @Slot(int, result='QVariantMap')
+    def get(self, row):
+        """
+        Get item data at specific row
+
+        Args:
+            row: Row index
+
+        Returns:
+            Dictionary with item data or empty dict if invalid index
+        """
+        if row < 0 or row >= len(self.items):
+            return {}
+
+        item = self.items[row]
+        return {
+            "index": row,
+            "article": item[0],
+            "name": item[1],
+            "description": item[2],
+            "image_path": item[3],
+            "category": item[4],
+            "price": item[5],
+            "stock": item[6],
+            "created_date": item[7],
+            "status": item[8] if len(item) > 8 else "в наличии",
+            "unit": item[9] if len(item) > 9 else "шт.",
+            "manufacturer": item[10] if len(item) > 10 else "",
+            "document": item[11] if len(item) > 11 else ""
+        }
