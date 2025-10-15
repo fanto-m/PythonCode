@@ -1,6 +1,4 @@
-# filter_proxy_model.py (with sorting added)
-from PySide6.QtCore import QSortFilterProxyModel, Slot, QSettings, Property, Qt  # Add Qt for sorting
-
+from PySide6.QtCore import QSortFilterProxyModel, Slot, QSettings, Property, Qt
 from items_model import ItemsModel
 
 class FilterProxyModel(QSortFilterProxyModel):
@@ -10,7 +8,7 @@ class FilterProxyModel(QSortFilterProxyModel):
         self._filter_string = ""
         self._settings = QSettings("ООО ОЗТМ", "Склад-0.1")
         self._loadSettings()
-        self.setDynamicSortFilter(True)  # Enable dynamic sorting
+        self.setDynamicSortFilter(True)
         print(f"DEBUG: FilterProxyModel initialized with filterField: {self._filter_field}")
 
     def get_filter_string(self):
@@ -61,23 +59,21 @@ class FilterProxyModel(QSortFilterProxyModel):
         role = role_map.get(role_name, ItemsModel.NameRole)
         order = Qt.AscendingOrder if order.lower() == "ascending" else Qt.DescendingOrder
         self.setSortRole(role)
-        self.sort(0, order)  # Always column 0, as roles handle data
+        self.sort(0, order)
         print(f"DEBUG: Sorting set on role {role_name}, order: {order}")
-        # Debug: Log visible rows after sorting
         for row in range(self.rowCount()):
             index = self.index(row, 0)
             source_index = self.mapToSource(index)
             value = self.sourceModel().data(source_index, role) if source_index.isValid() else None
             print(f"DEBUG: Row {row} (source row {source_index.row() if source_index.isValid() else -1}): {value}")
+
     def filterAcceptsRow(self, sourceRow, sourceParent):
         if not self.sourceModel():
             return False
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.isValid():
             return False
-        #print(f"DEBUG: filterAcceptsRow called for row: {sourceRow}, filterField: {self._filter_field}, filterString: {self._filter_string}")
         if not self._filter_string:
-            #print(f"DEBUG: Empty filter string, accepting row {sourceRow}")
             return True
         role_map = {
             "article": ItemsModel.ArticleRole,
@@ -95,19 +91,29 @@ class FilterProxyModel(QSortFilterProxyModel):
         print(f"DEBUG: Filter result for row {sourceRow}: {result}")
         return result
 
-    @Slot(str, str, str, str, str, float, int, str)
-    def addItem(self, article, name, description, image_path, category, price, stock,document=""):
-        print("DEBUG: FilterProxyModel.addItem called, redirecting to sourceModel")
+    @Slot(str, str, str, str, int, float, int, str, str, str, str)
+    def addItem(self, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer,
+                document):
+        print(f"DEBUG: FilterProxyModel.addItem called with category_id={category_id}")
+        print(
+            f"addItem called with: article={article}, name={name}, description={description}, image_path={image_path}, category_id={category_id}, price={price}, stock={stock}, status={status}, unit={unit}, manufacturer={manufacturer}, document={document}")
         try:
-            price = float(price) if price is not None and str(price).strip() else 0.0
-            stock = int(stock) if stock is not None and str(stock).strip() else 0
-            self.sourceModel().addItem(article, name, description, image_path, category, price, stock, document)
-            print("DEBUG: FilterProxyModel.addItem completed")
-        except Exception as e:
-            print(f"DEBUG: Error in FilterProxyModel.addItem: {str(e)}")
+            # Безопасное преобразование типов
+            price = float(price) if price else 0.0
+            stock = int(stock) if stock else 0
 
-    @Slot(int, str, str, str, str, str, float, int, str, str, str, str)
-    def updateItem(self, proxy_row, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document):
+            result = self.sourceModel().addItem(
+                article, name, description, image_path, category_id,
+                price, stock, status, unit, manufacturer, document
+            )
+            print(f"DEBUG: FilterProxyModel.addItem completed with result: {result}")
+            return result
+        except Exception as e:
+            print(f"DEBUG: Error in addItem: Ошибка добавления товара: {str(e)}")
+            return f"Ошибка добавления товара: {str(e)}"
+
+    @Slot(int, str, str, str, str, int, float, int, str, str, str, str)
+    def updateItem(self, proxy_row, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document):
         print(f"DEBUG: FilterProxyModel.updateItem called with proxy_row: {proxy_row}, redirecting to sourceModel")
         try:
             proxy_index = self.index(proxy_row, 0)
@@ -121,7 +127,10 @@ class FilterProxyModel(QSortFilterProxyModel):
 
             price = float(price) if price is not None and str(price).strip() else 0.0
             stock = int(stock) if stock is not None and str(stock).strip() else 0
-            self.sourceModel().updateItem(source_row, article, name, description, image_path, category, price, stock, status, unit, manufacturer, document)
+            self.sourceModel().updateItem(
+                source_row, article, name, description, image_path,
+                category_id, price, stock, status, unit, manufacturer, document
+            )
             print("DEBUG: FilterProxyModel.updateItem completed")
         except Exception as e:
             print(f"DEBUG: Error in FilterProxyModel.updateItem: {str(e)}")

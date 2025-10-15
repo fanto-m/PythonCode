@@ -308,19 +308,28 @@ class DatabaseManager:
             # print(f"DEBUG: Error loading data: {str(e)}")
             return []
 
-    def add_item(self, article, name, description, image_path, category_id, price, stock, status='в наличии', unit='шт.', manufacturer=None, document=None):
-        """Добавляет новую запись в таблицу items."""
+    def add_item(self, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document):
         try:
             with sqlite3.connect(self.db_path) as conn:
-                c = conn.cursor()
-                c.execute(
-                    "INSERT INTO items (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document)
-                )
-            #print("DEBUG: Item added successfully to database")
-        except Exception as e:
-            #print(f"DEBUG: Error adding item: {str(e)}")
-            raise
+                cursor = conn.cursor()
+                print(f"DEBUG: Executing INSERT for article={article}, category_id={category_id}, name={name}, description={description}, "
+                      f"image_path={image_path}, price={price}, stock={stock}, status={status}, unit={unit}, "
+                      f"manufacturer={manufacturer}, document={document}")
+                cursor.execute('''
+                    INSERT INTO items (
+                        article, name, description, image_path, category_id, 
+                        price, stock, status, unit, manufacturer, document
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    article, name, description, image_path, category_id,
+                    price, stock, status or 'в наличии', unit or 'шт.',
+                    manufacturer or '', document or ''
+                ))
+                conn.commit()
+                print("DEBUG: Item inserted successfully. Commit done.")
+        except sqlite3.Error as e:
+            print(f"DEBUG: Database error in add_item: {str(e)}")
+            raise Exception(f"Database error: {str(e)}")
 
     def update_item(self, old_article, article, name, description, image_path, category_id, price, stock, status='в наличии', unit='шт.', manufacturer=None, document=None):
         """Обновляет запись в таблице items по старому артикулу."""

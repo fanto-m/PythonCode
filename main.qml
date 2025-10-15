@@ -405,7 +405,10 @@ ApplicationWindow {
                                 categoryId,
                                 itemData.price,
                                 itemData.stock,
-                                itemData.document
+                                itemData.status,      // Добавляем status
+                                itemData.unit,        // Добавляем unit
+                                itemData.manufacturer, // Добавляем manufacturer
+                                itemData.document     // document уже был
                             )
                             if (errorMessage) {
                                 errorDialog.message = errorMessage

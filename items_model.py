@@ -112,46 +112,35 @@ class ItemsModel(QAbstractListModel):
             self.DocumentCodeRole: b"document"
         }
 
-    @Slot(str, str, str, str, int, float, int, str, result=str)
-    def addItem(self, article, name, description, image_path, category_id, price, stock, document):
-        """
-        Add new item to database
-
-        Args:
-            article: Article/SKU code
-            name: Item name
-            description: Item description
-            image_path: Path to item image
-            category_id: Category ID (integer)
-            price: Item price
-            stock: Stock quantity
-            document: Document path
-
-        Returns:
-            Empty string on success, error message on failure
-        """
+    @Slot(str, str, str, str, int, float, int, str, str, str, str, result=str)
+    def addItem(self, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer,
+                document):
         try:
+            print(f"DEBUG: addItem called with: article={article}, name={name}, description={description}, "
+                  f"image_path={image_path}, category_id={category_id}, price={price}, stock={stock}, "
+                  f"status={status}, unit={unit}, manufacturer={manufacturer}, document={document}")
+
             # Validate input
             is_valid, error_message = validate_item(
                 article, name, description, image_path,
                 category_id, price, stock
             )
+            print(f"DEBUG: Validation result: is_valid={is_valid}, error_message={error_message}")
             if not is_valid:
-                print(f"DEBUG: Validation failed in addItem: {error_message}")
                 self.errorOccurred.emit(error_message)
                 return error_message
 
-            # Add to database
+            # Add to database - БЕЗ добавления папок!
             self.db_manager.add_item(
                 article, name, description, image_path,
-                category_id, price, stock, document
+                category_id, price, stock, status, unit, manufacturer, document
             )
 
             print("DEBUG: Item added successfully. Reloading data...")
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
-            print("DEBUG: Model reset complete.")
+            print(f"DEBUG: Model reset complete. Total items after load: {len(self.items)}")
 
             return ""
 

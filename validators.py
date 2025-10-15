@@ -51,14 +51,14 @@ def validate_image_path(image_path):
     return True, ""
 
 def validate_category(category):
-    """Проверяет категорию на длину.
+    """Проверяет категорию на валидность.
     Args:
-        category (str): Категория изделия.
+        category (int): ID категории изделия.
     Returns:
         tuple: (is_valid: bool, error_message: str)
     """
-    if category and len(category) > 50:
-        return False, "Категория не может быть длиннее 50 символов"
+    if not isinstance(category, int) or category <= 0:
+        return False, "Категория должна быть положительным числом"
     return True, ""
 
 def validate_price(price):

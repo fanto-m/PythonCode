@@ -836,7 +836,11 @@ Rectangle {
                             "image_path": imageField.text,
                             "category": categoryComboBox.currentText || "",
                             "price": parseFloat(priceField.text) || 0.0,
-                            "stock": parseInt(stockField.text) || 0
+                            "stock": parseInt(stockField.text) || 0,
+                            "status": statusComboBox.currentText || "в наличии",
+                            "unit": unitComboBox.currentText || "шт.",
+                            "manufacturer": manufacturerField.text.trim() || "",
+                            "document": documentField.text || ""
                         }
                         addItemClicked(newData)
                     }
