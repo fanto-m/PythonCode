@@ -45,7 +45,98 @@ Rectangle {
     // Validation state
     property bool hasValidationErrors: false
 
+    // Добавьте эти свойства в Rectangle (root) после сигналов:
+    property Component productCardDialogComponent: null
+    property var currentProductDialog: null
+
+
+
     // Public functions
+   // Добавьте эти функции перед "// Public functions":
+    function openProductCardDialog() {
+        console.log("openProductCardDialog called")
+
+        if (!productCardDialogComponent) {
+            console.log("Creating component from ProductCardDialog.qml")
+            productCardDialogComponent = Qt.createComponent("ProductCardDialog.qml")
+        }
+
+        console.log("Component status: " + productCardDialogComponent.status)
+
+        if (productCardDialogComponent.status === Component.Ready) {
+            console.log("Component ready, creating object...")
+
+            var rootWindow = root
+            while (rootWindow.parent) {
+                rootWindow = rootWindow.parent
+            }
+
+            currentProductDialog = productCardDialogComponent.createObject(rootWindow)
+
+            if (!currentProductDialog) {
+                console.error("Failed to create dialog object!")
+                return
+            }
+
+            console.log("Dialog object created, connecting signals...")
+
+            currentProductDialog.addItemClicked.connect(function(itemData) {
+                console.log("addItemClicked signal received")
+                root.addItemClicked(itemData)
+                currentProductDialog.close()
+            })
+
+            currentProductDialog.saveItemClicked.connect(function(itemIndex, itemData) {
+                console.log("saveItemClicked signal received")
+                root.saveItemClicked(itemIndex, itemData)
+                currentProductDialog.close()
+            })
+
+            console.log("Opening dialog...")
+            currentProductDialog.open()
+        } else if (productCardDialogComponent.status === Component.Error) {
+            console.error("Error loading ProductCardDialog: " + productCardDialogComponent.errorString())
+        } else if (productCardDialogComponent.status === Component.Loading) {
+            console.log("Component is loading, retrying...")
+        }
+    }
+
+    function openProductCardDialogForEdit(itemData) {
+        console.log("openProductCardDialogForEdit called with itemId:", itemData.index)
+
+        if (!productCardDialogComponent) {
+            productCardDialogComponent = Qt.createComponent("ProductCardDialog.qml")
+        }
+
+        if (productCardDialogComponent.status === Component.Ready) {
+            var rootWindow = root
+            while (rootWindow.parent) {
+                rootWindow = rootWindow.parent
+            }
+
+            currentProductDialog = productCardDialogComponent.createObject(rootWindow)
+
+            currentProductDialog.addItemClicked.connect(function(itemData) {
+                root.addItemClicked(itemData)
+                currentProductDialog.close()
+            })
+
+            currentProductDialog.saveItemClicked.connect(function(itemIndex, itemData) {
+                root.saveItemClicked(itemIndex, itemData)
+                currentProductDialog.close()
+            })
+
+            // Заполняем диалог данными товара
+            currentProductDialog.populateFields(itemData)
+            currentProductDialog.open()
+        } else if (productCardDialogComponent.status === Component.Error) {
+            console.error("Error loading ProductCardDialog: " + productCardDialogComponent.errorString())
+        }
+    }
+
+
+
+
     function populateFields(data) {
         currentItemId = data.index
         currentArticle = data.article
@@ -70,7 +161,7 @@ Rectangle {
         clearErrors()
     }
 
-    function clearFields() {
+    /*function clearFields() {
         currentItemId = -1
         currentArticle = ""
         articleField.text = ""
@@ -91,8 +182,8 @@ Rectangle {
         stockField.hasError = false
         hasValidationErrors = false
     }
-
-    function validateFields() {
+*/
+    /*function validateFields() {
         clearErrors()
         var isValid = true
 
@@ -113,7 +204,7 @@ Rectangle {
 
         hasValidationErrors = !isValid
         return isValid
-    }
+    }*/
 
     // Main content wrapper
     ScrollView {
@@ -132,61 +223,76 @@ Rectangle {
             // Top spacer
             Item { Layout.preferredHeight: root.contentTopPadding }
 
-            // Mode indicator - FIXED LAYOUT
-            Rectangle {
+            // Добавьте эту кнопку в ColumnLayout после "// Top spacer":
+            Button {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 65
-                visible: isEditMode
-                color: "#e3f2fd"
-                border.color: primaryColor
-                radius: 4
+                Layout.preferredHeight: 50
+                text: "Добавить товар"
+                font.pointSize: baseFontSize + 1
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 4
+                background: Rectangle {
+                    color: parent.hovered ? "#FFD700" : "#FFC700"
+                    radius: 4
+                    border.color: "#FFA000"
+                    border.width: 2
+                }
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 3
+                contentItem: Text {
+                    text: parent.text
+                    font: parent.font
+                    color: "#333333"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
 
-                        Text {
-                            text: "✏️"
-                            font.pointSize: baseFontSize + 2
-                        }
+                onClicked: root.openProductCardDialog()
+            }
 
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Режим редактирования"
-                            font.pointSize: baseFontSize
-                            font.bold: true
-                            color: "#1565c0"
-                        }
+            // Добавьте эту кнопку в ColumnLayout после тестовой кнопки:
+
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                text: "✏️ Редактировать товар"
+                font.pointSize: baseFontSize + 1
+                enabled: currentItemId !== -1  // Активна только при выборе товара
+
+                background: Rectangle {
+                    color: parent.enabled ? (parent.hovered ? "#FFA500" : "#FFB84D") : "#CCCCCC"
+                    radius: 4
+                    border.color: parent.enabled ? "#FF8C00" : "#999999"
+                    border.width: 2
+                }
+
+                contentItem: Text {
+                    text: parent.text
+                    font: parent.font
+                    color: parent.enabled ? "#333333" : "#666666"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    // Собираем данные текущего товара
+                    var currentData = {
+                        "index": currentItemId,
+                        "article": articleField.text,
+                        "name": nameField.text,
+                        "description": descriptionField.text,
+                        "image_path": imageField.text,
+                        "category": categoryComboBox.currentText || "",
+                        "price": parseFloat(priceField.text) || 0.0,
+                        "stock": parseInt(stockField.text) || 0,
+                        "status": statusComboBox.currentText,
+                        "unit": unitComboBox.currentText,
+                        "manufacturer": manufacturerField.text,
+                        "document": documentField.text
                     }
-
-                    Button {
-                        text: "Очистить"
-                        Layout.alignment: Qt.AlignRight
-                        Layout.preferredWidth: 100
-                        flat: true
-                        font.pointSize: baseFontSize - 1
-                        onClicked: clearFields()
-
-                        background: Rectangle {
-                            color: parent.down ? "#bbdefb" : (parent.hovered ? "#d1e7fd" : "transparent")
-                            radius: 3
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            font: parent.font
-                            color: "#1565c0"
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
+                    root.openProductCardDialogForEdit(currentData)
                 }
             }
+
+
 
             // Category section
             GroupBox {
@@ -269,7 +375,7 @@ Rectangle {
             }
 
             // Article field with generator
-            GroupBox {
+            /*GroupBox {
                 Layout.fillWidth: true
                 title: "Артикул *"
                 font.pointSize: baseFontSize
@@ -334,7 +440,7 @@ Rectangle {
                         color: errorColor
                     }
                 }
-            }
+            }*/
 
             // Name field
             GroupBox {
@@ -366,7 +472,7 @@ Rectangle {
             }
 
             // Description field
-            GroupBox {
+            /*GroupBox {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 160
                 title: "Описание"
@@ -399,7 +505,7 @@ Rectangle {
                         }
                     }
                 }
-            }
+            }*/
 
             // Image field
             GroupBox {
