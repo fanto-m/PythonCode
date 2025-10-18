@@ -355,21 +355,34 @@ class SpecificationsModel(QObject):
         try:
             items = self.db.load_specification_items(spec_id)
             result = []
+
+            # ✅ ОТЛАДКА: Проверяем структуру данных
+            if items and len(items) > 0:
+                print(f"DEBUG: First item has {len(items[0])} fields")
+                print(f"DEBUG: First item: {items[0]}")
+
             for item in items:
-                # item: (id, spec_id, article, quantity, notes, name, unit, price, stock)
-                result.append({
-                    'article': item[2],
-                    'name': item[5],
-                    'quantity': item[3],
-                    'unit': item[6],
-                    'price': item[7],
-                    'total': item[3] * item[7],
-                    'image_path': item[8] or '',#добавлено
-                    'category': item[9]
-                })
+                # ✅ Безопасный доступ к полям с проверкой длины
+                item_dict = {
+                    'article': item[2] if len(item) > 2 else '',
+                    'name': item[5] if len(item) > 5 else '',
+                    'quantity': float(item[3]) if len(item) > 3 else 1.0,
+                    'unit': item[6] if len(item) > 6 else 'шт.',
+                    'price': float(item[7]) if len(item) > 7 else 0.0,
+                    'total': (float(item[3]) * float(item[7])) if len(item) > 7 else 0.0,
+                    'image_path': item[8] if len(item) > 8 else '',
+                    'category': item[9] if len(item) > 9 else '',
+                    'status': item[10] if len(item) > 10 else ''
+                }
+                result.append(item_dict)
+
+            print(f"DEBUG: Loaded {len(result)} items for spec {spec_id}")
             return result
+
         except Exception as e:
             print(f"DEBUG: Error loading spec items: {str(e)}")
+            import traceback
+            traceback.print_exc()  # ✅ Полный traceback для отладки
             return []
 
     @Slot(int)

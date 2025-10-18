@@ -6,8 +6,8 @@ import QtQuick.Dialogs
 
 Dialog {
     id: productDialog
-    width: 850
-    height: 550
+    width: 600
+    height:550
     title: isEditMode ? "Редактирование товара" : "Добавление нового товара"
     modal: true
     x: (parent.width - width) / 2
@@ -96,7 +96,9 @@ Dialog {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 20
+        anchors.bottomMargin: 80
         spacing: 12
+
 
 
 
@@ -104,6 +106,7 @@ Dialog {
         GridLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.preferredWidth: 800
             columns: 2
             columnSpacing: baseSpacing
             rowSpacing: baseSpacing
@@ -113,7 +116,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 0
                 Layout.column: 0
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -143,7 +146,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 0
                 Layout.column: 1
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -220,7 +223,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 1
                 Layout.column: 0
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -290,7 +293,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 1
                 Layout.column: 1
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -315,7 +318,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 2
                 Layout.column: 0
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -344,7 +347,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 2
                 Layout.column: 1
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -375,7 +378,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 3
                 Layout.column: 0
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -404,7 +407,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 3
                 Layout.column: 1
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -436,7 +439,7 @@ Dialog {
                 Layout.row: 4
                 Layout.column: 0
                 Layout.rowSpan: 2
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 Layout.fillHeight: true
                 spacing: 4
 
@@ -458,6 +461,8 @@ Dialog {
                         wrapMode: TextEdit.Wrap
                         font.pointSize: baseFontSize
                         selectByMouse: true
+                        implicitWidth: 340
+                        implicitHeight: 100
 
                         background: Rectangle {
                             color: "white"
@@ -473,7 +478,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 4
                 Layout.column: 1
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -521,7 +526,7 @@ Dialog {
             ColumnLayout {
                 Layout.row: 5
                 Layout.column: 1
-                Layout.fillWidth: true
+                Layout.preferredWidth: 370
                 spacing: 4
 
                 Text {
@@ -564,91 +569,102 @@ Dialog {
                     }
                 }
             }
-        }
-    }
 
-    // Footer
-    footer: RowLayout {
-        spacing: 12
-        anchors.margins: 20
-
-        Item { Layout.fillWidth: true }
-
-        Button {
-            text: "Отмена"
-            Layout.preferredWidth: 140
-            font.pointSize: baseFontSize
-            onClicked: productDialog.reject()
-
-            background: Rectangle {
-                color: parent.down ? "#e0e0e0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
-                border.color: borderColor
-                border.width: 1
-                radius: 4
+            // Пустая строка для отступа
+            Item {
+                Layout.row: 6
+                Layout.column: 0
+                Layout.columnSpan: 2
+                Layout.preferredHeight: 20
             }
 
-            contentItem: Text {
-                text: parent.text
-                font: parent.font
-                color: "#333"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-        }
+            // Кнопки
+            RowLayout {
+                Layout.row: 7
+                Layout.column: 0
+                Layout.columnSpan: 2
+                Layout.fillWidth: true
+                spacing: 12
 
-        Button {
-            text: isEditMode ? "💾 Сохранить" : "➕ Добавить"
-            Layout.preferredWidth: 140
-            highlighted: true
-            font.pointSize: baseFontSize
-            font.bold: true
+                Item { Layout.fillWidth: true }
 
-            background: Rectangle {
-                color: {
-                    if (!parent.enabled) return "#ccc"
-                    if (parent.down) return Qt.darker(isEditMode ? primaryColor : successColor, 1.3)
-                    if (parent.hovered) return Qt.lighter(isEditMode ? primaryColor : successColor, 1.1)
-                    return isEditMode ? primaryColor : successColor
-                }
-                radius: 4
-            }
+                Button {
+                    text: "Отмена"
+                    Layout.preferredWidth: 140
+                    font.pointSize: baseFontSize
+                    onClicked: productDialog.reject()
 
-            contentItem: Text {
-                text: parent.text
-                font: parent.font
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
+                    background: Rectangle {
+                        color: parent.down ? "#e0e0e0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
+                        border.color: borderColor
+                        border.width: 1
+                        radius: 4
+                    }
 
-            onClicked: {
-                if (!validateFields()) return
-
-                let inputPrice = parseFloat(priceField.text) || 0.0
-                let finalPrice = (vatIncluded.checked && configManager)
-                    ? configManager.calculatePriceWithoutVAT(inputPrice)
-                    : inputPrice
-
-                var itemData = {
-                    "article": articleField.text.trim(),
-                    "name": nameField.text.trim(),
-                    "description": descriptionField.text.trim(),
-                    "image_path": imageField.text,
-                    "category": categoryComboBox.currentText || "",
-                    "price": finalPrice,
-                    "stock": stockField.value,
-                    "status": statusComboBox.currentText || "в наличии",
-                    "unit": unitComboBox.currentText || "шт.",
-                    "manufacturer": manufacturerField.text.trim() || "",
-                    "document": documentField.text || ""
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: "#333"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
-                if (isEditMode) {
-                    saveItemClicked(currentItemId, itemData)
-                } else {
-                    addItemClicked(itemData)
+                Button {
+                    text: isEditMode ? "💾 Сохранить" : "➕ Добавить"
+                    Layout.preferredWidth: 140
+                    highlighted: true
+                    font.pointSize: baseFontSize
+                    font.bold: true
+
+                    background: Rectangle {
+                        color: {
+                            if (!parent.enabled) return "#ccc"
+                            if (parent.down) return Qt.darker(isEditMode ? primaryColor : successColor, 1.3)
+                            if (parent.hovered) return Qt.lighter(isEditMode ? primaryColor : successColor, 1.1)
+                            return isEditMode ? primaryColor : successColor
+                        }
+                        radius: 4
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    onClicked: {
+                        if (!validateFields()) return
+
+                        let inputPrice = parseFloat(priceField.text) || 0.0
+                        let finalPrice = (vatIncluded.checked && configManager)
+                            ? configManager.calculatePriceWithoutVAT(inputPrice)
+                            : inputPrice
+
+                        var itemData = {
+                            "article": articleField.text.trim(),
+                            "name": nameField.text.trim(),
+                            "description": descriptionField.text.trim(),
+                            "image_path": imageField.text,
+                            "category": categoryComboBox.currentText || "",
+                            "price": finalPrice,
+                            "stock": stockField.value,
+                            "status": statusComboBox.currentText || "в наличии",
+                            "unit": unitComboBox.currentText || "шт.",
+                            "manufacturer": manufacturerField.text.trim() || "",
+                            "document": documentField.text || ""
+                        }
+
+                        if (isEditMode) {
+                            saveItemClicked(currentItemId, itemData)
+                        } else {
+                            addItemClicked(itemData)
+                        }
+                        productDialog.accept()
+                    }
                 }
-                productDialog.accept()
             }
         }
     }

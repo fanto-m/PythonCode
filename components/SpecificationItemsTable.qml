@@ -19,7 +19,7 @@ Rectangle {
     // Properties
     property alias model: tableView.model
     property int rowCount: tableView.rows
-
+    property bool readOnly: false  // ✅ ДОБАВЛЕНО
     // Use provided theme or internal fallback - this ensures theme is ALWAYS defined
     //property var Theme: (theme && theme.background !== undefined) ? theme : internalTheme
 
@@ -551,6 +551,7 @@ Rectangle {
             width: 40
             height: 30
             anchors.verticalCenter: parent.verticalCenter
+            visible: !root.readOnly  // ✅ ДОБАВЛЕНО - скрываем в read-only режиме
 
             property int rowIndex: parent.rowIndex
 
@@ -566,7 +567,7 @@ Rectangle {
             contentItem: Text {
                 text: "🗑️"
                 font.pointSize: 14
-                font.family: "Segoe UI Emoji"  // ✅ Шрифт с поддержкой эмодзи
+                font.family: "Segoe UI Emoji"
                 color: parent.parent.hovered ? Theme.textWhite : Theme.textSecondary
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter

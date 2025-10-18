@@ -1,7 +1,8 @@
-// ViewSpecificationsMode.qml
+// ViewSpecificationsMode.qml - Полностью переписан
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "./" as Local
 
 Rectangle {
     id: root
@@ -31,12 +32,10 @@ Rectangle {
         for (var i = 0; i < allSpecifications.length; i++) {
             var spec = allSpecifications[i]
 
-            // Apply search filter
             var matchesSearch = searchText === "" ||
                                spec.name.toLowerCase().indexOf(searchText) >= 0 ||
                                (spec.description && spec.description.toLowerCase().indexOf(searchText) >= 0)
 
-            // Apply status filter
             var matchesStatus = statusFilter === "Все" || spec.status === statusFilter
 
             if (matchesSearch && matchesStatus) {
@@ -146,10 +145,7 @@ Rectangle {
                     Layout.fillWidth: true
                     placeholderText: "Введите название спецификации..."
                     font.pointSize: 10
-
-                    onTextChanged: {
-                        filterSpecifications()
-                    }
+                    onTextChanged: filterSpecifications()
 
                     background: Rectangle {
                         color: "white"
@@ -165,10 +161,7 @@ Rectangle {
                     Layout.preferredWidth: 150
                     font.pointSize: 10
                     currentIndex: 0
-
-                    onCurrentIndexChanged: {
-                        filterSpecifications()
-                    }
+                    onCurrentIndexChanged: filterSpecifications()
                 }
 
                 Text {
@@ -192,7 +185,6 @@ Rectangle {
                 anchors.fill: parent
                 spacing: 10
                 anchors.margins: 15
-
                 model: specificationsListModel
 
                 delegate: Rectangle {
@@ -214,19 +206,7 @@ Rectangle {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            detailsDialog.openFor(
-                                model.id,
-                                model.name,
-                                model.description,
-                                model.status,
-                                model.labor_cost,
-                                model.overhead_percentage,
-                                model.final_price,
-                                model.created_date,
-                                model.modified_date
-                            )
-                        }
+                        onClicked: detailsDialog.openFor(model.id, model.name, model.description, model.status, model.labor_cost, model.overhead_percentage, model.final_price, model.created_date, model.modified_date)
                     }
 
                     RowLayout {
@@ -234,12 +214,10 @@ Rectangle {
                         anchors.margins: 15
                         spacing: 15
 
-                        // Left side - Main info
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 8
 
-                            // Title
                             Text {
                                 text: model.name
                                 font.pointSize: 14
@@ -249,7 +227,6 @@ Rectangle {
                                 Layout.fillWidth: true
                             }
 
-                            // Description
                             Text {
                                 text: model.description || "Нет описания"
                                 font.pointSize: 9
@@ -261,7 +238,6 @@ Rectangle {
                                 Layout.fillWidth: true
                             }
 
-                            // Status badge
                             Rectangle {
                                 Layout.preferredWidth: statusText.width + 20
                                 Layout.preferredHeight: 25
@@ -285,7 +261,6 @@ Rectangle {
                                 }
                             }
 
-                            // Dates
                             RowLayout {
                                 spacing: 15
 
@@ -302,7 +277,6 @@ Rectangle {
                             }
                         }
 
-                        // Right side - Price and actions
                         ColumnLayout {
                             Layout.preferredWidth: 180
                             spacing: 10
@@ -344,15 +318,9 @@ Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 35
                                     font.pointSize: 12
-
                                     ToolTip.visible: hovered
                                     ToolTip.text: "Редактировать"
-
-                                    onClicked: {
-                                        console.log("Edit specification:", model.id)
-                                        // TODO: Load spec for editing
-                                        editSpecificationDialog.openFor(model.id)
-                                    }
+                                    onClicked: editSpecificationDialog.openFor(model.id)
 
                                     background: Rectangle {
                                         color: parent.down ? "#0056b3" : (parent.hovered ? "#0069d9" : "#007bff")
@@ -365,13 +333,9 @@ Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 35
                                     font.pointSize: 12
-
                                     ToolTip.visible: hovered
                                     ToolTip.text: "Экспорт Excel"
-
-                                    onClicked: {
-                                        specificationsModel.exportToExcel(model.id)
-                                    }
+                                    onClicked: specificationsModel.exportToExcel(model.id)
 
                                     background: Rectangle {
                                         color: parent.down ? "#117a8b" : (parent.hovered ? "#138496" : "#17a2b8")
@@ -380,17 +344,13 @@ Rectangle {
                                 }
 
                                 Button {
-                                    text: "📑"
+                                    text: "📕"
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 35
                                     font.pointSize: 12
-
                                     ToolTip.visible: hovered
                                     ToolTip.text: "Экспорт PDF"
-
-                                    onClicked: {
-                                        specificationsModel.exportToPDF(model.id)
-                                    }
+                                    onClicked: specificationsModel.exportToPDF(model.id)
 
                                     background: Rectangle {
                                         color: parent.down ? "#c82333" : (parent.hovered ? "#e02535" : "#dc3545")
@@ -401,17 +361,12 @@ Rectangle {
                                 Button {
                                     text: "🗑️"
                                     font.pointSize: 12
-                                    font.family: "Segoe UI Emoji"  // ✅ Шрифт с поддержкой эмодзи
+                                    font.family: "Segoe UI Emoji"
                                     Layout.preferredWidth: 35
                                     Layout.preferredHeight: 35
-
-
                                     ToolTip.visible: hovered
                                     ToolTip.text: "Удалить"
-
-                                    onClicked: {
-                                        deleteConfirmDialog.openFor(model.id, model.name)
-                                    }
+                                    onClicked: deleteConfirmDialog.openFor(model.id, model.name)
 
                                     background: Rectangle {
                                         color: parent.down ? "#a71d2a" : (parent.hovered ? "#c82333" : "#dc3545")
@@ -436,16 +391,14 @@ Rectangle {
     }
 
     // ========================================
-    // DIALOGS
+    // DETAILS DIALOG - ПЕРЕПИСАН ПОЛНОСТЬЮ
     // ========================================
-
-    // Details dialog
     Dialog {
         id: detailsDialog
         title: "Детали спецификации"
         modal: true
-        width: 700
-        height: 500
+        width: 1400  // ✅ Увеличена ширина
+        height: 900  // ✅ Увеличена высота
         anchors.centerIn: parent
 
         property int specId: -1
@@ -469,32 +422,37 @@ Rectangle {
             createdDate = created
             modifiedDate = modified
 
-            // Load items
-            itemsListModel.clear()
+            console.log("=== Opening spec details for ID:", id, "===")
+
+            specificationItemsModel.clear()
             var items = specificationsModel.loadSpecificationItems(id)
-            var materialsTotal = 0
-            for (var i = 0; i < items.length; i++) {
-                var item = items[i]
-                materialsTotal += item.total
-                itemsListModel.append(item)
+            console.log("Loaded items from DB:", items.length)
+
+            if (items.length > 0) {
+                console.log("First item:", JSON.stringify(items[0]))
             }
-            materialsCostText.text = materialsTotal.toFixed(2)
+
+            specificationItemsModel.loadItems(items)
+            console.log("Model rowCount after load:", specificationItemsModel.rowCount())
 
             open()
         }
-
-        ListModel {
-            id: itemsListModel
+        // ✅ ДОБАВИТЬ: Очистка при закрытии
+        onClosed: {
+            console.log("Details dialog closed - clearing model")
+            specificationItemsModel.clear()
         }
 
+        // ✅ КРИТИЧНО: contentItem БЕЗ ScrollView на верхнем уровне
         contentItem: ScrollView {
             clip: true
+            contentWidth: availableWidth
 
             ColumnLayout {
                 width: parent.width
                 spacing: 15
 
-                // Header info
+                // Header info - компактный блок
                 GroupBox {
                     Layout.fillWidth: true
                     title: "Информация"
@@ -508,35 +466,25 @@ Rectangle {
 
                     GridLayout {
                         anchors.fill: parent
-                        columns: 2
-                        columnSpacing: 10
-                        rowSpacing: 8
+                        columns: 4
+                        columnSpacing: 15
+                        rowSpacing: 6
 
-                        Text { text: "Название:"; font.bold: true }
-                        Text { text: detailsDialog.specName }
+                        Text { text: "Название:"; font.bold: true; font.pointSize: 9 }
+                        Text { text: detailsDialog.specName; Layout.columnSpan: 3; font.pointSize: 9 }
 
-                        Text { text: "Описание:"; font.bold: true }
-                        Text {
-                            text: detailsDialog.specDescription || "Нет описания"
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
+                        Text { text: "Статус:"; font.bold: true; font.pointSize: 9 }
+                        Text { text: detailsDialog.specStatus; font.pointSize: 9 }
 
-                        Text { text: "Статус:"; font.bold: true }
-                        Text { text: detailsDialog.specStatus }
-
-                        Text { text: "Создана:"; font.bold: true }
-                        Text { text: detailsDialog.createdDate }
-
-                        Text { text: "Изменена:"; font.bold: true }
-                        Text { text: detailsDialog.modifiedDate }
+                        Text { text: "Создана:"; font.bold: true; font.pointSize: 9 }
+                        Text { text: detailsDialog.createdDate; font.pointSize: 9 }
                     }
                 }
 
-                // Materials table
+                // Материалы
                 GroupBox {
                     Layout.fillWidth: true
-                    title: "Материалы"
+                    title: "Материалы и комплектующие (" + (specificationItemsModel ? specificationItemsModel.rowCount() : 0) + " поз.)"
 
                     background: Rectangle {
                         color: "white"
@@ -547,58 +495,36 @@ Rectangle {
 
                     ColumnLayout {
                         anchors.fill: parent
-                        spacing: 5
+                        spacing: 10
 
-                        // Table header
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 30
-                            color: "#9b59b6"
+                            color: "#e3f2fd"
                             radius: 4
+                            visible: itemsTable.rowCount > 0
 
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 5
-                                spacing: 0
-
-                                Text { text: "Артикул"; font.bold: true; color: "white"; Layout.preferredWidth: 80 }
-                                Text { text: "Название"; font.bold: true; color: "white"; Layout.fillWidth: true }
-                                Text { text: "Кол-во"; font.bold: true; color: "white"; Layout.preferredWidth: 60 }
-                                Text { text: "Ед."; font.bold: true; color: "white"; Layout.preferredWidth: 40 }
-                                Text { text: "Цена"; font.bold: true; color: "white"; Layout.preferredWidth: 70; horizontalAlignment: Text.AlignRight }
-                                Text { text: "Сумма"; font.bold: true; color: "white"; Layout.preferredWidth: 80; horizontalAlignment: Text.AlignRight }
+                            Text {
+                                anchors.centerIn: parent
+                                text: "📦 Позиций: " + itemsTable.rowCount + " | Стоимость материалов: " + (specificationItemsModel ? specificationItemsModel.getTotalMaterialsCost().toFixed(2) : "0.00") + " ₽"
+                                font.pointSize: 10
+                                font.bold: true
+                                color: "#2196F3"
                             }
                         }
 
-                        // Table rows
-                        Repeater {
-                            model: itemsListModel
-
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 30
-                                color: index % 2 ? "#f9f9f9" : "white"
-                                border.color: "#e0e0e0"
-                                border.width: 1
-
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.margins: 5
-                                    spacing: 0
-
-                                    Text { text: model.article; font.pointSize: 9; Layout.preferredWidth: 80; elide: Text.ElideRight }
-                                    Text { text: model.name; font.pointSize: 9; Layout.fillWidth: true; elide: Text.ElideRight }
-                                    Text { text: model.quantity.toFixed(2); font.pointSize: 9; Layout.preferredWidth: 60 }
-                                    Text { text: model.unit; font.pointSize: 9; Layout.preferredWidth: 40 }
-                                    Text { text: model.price.toFixed(2); font.pointSize: 9; Layout.preferredWidth: 70; horizontalAlignment: Text.AlignRight }
-                                    Text { text: model.total.toFixed(2) + " ₽"; font.pointSize: 9; font.bold: true; color: "#28a745"; Layout.preferredWidth: 80; horizontalAlignment: Text.AlignRight }
-                                }
-                            }
+                        Local.SpecificationItemsTable {
+                            id: itemsTable
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 500
+                            model: specificationItemsModel
+                            enabled: false
+                            readOnly: true  // ✅ ДОБАВЛЕНО - скрываем кнопку удаления
                         }
                     }
                 }
 
-                // Cost breakdown
+                // Калькуляция
                 GroupBox {
                     Layout.fillWidth: true
                     title: "Калькуляция"
@@ -613,34 +539,36 @@ Rectangle {
                     GridLayout {
                         anchors.fill: parent
                         columns: 2
-                        columnSpacing: 10
-                        rowSpacing: 8
+                        columnSpacing: 15
+                        rowSpacing: 6
 
-                        Text { text: "Материалы:"; font.pointSize: 10 }
+                        property real materialsCost: specificationItemsModel ? specificationItemsModel.getTotalMaterialsCost() : 0
+                        property real overheadCost: materialsCost * (detailsDialog.overheadPercentage / 100)
+
+                        Text { text: "Материалы:"; font.pointSize: 9 }
                         Text {
-                            id: materialsCostText
-                            text: "0.00 ₽"
-                            font.pointSize: 10
+                            text: parent.materialsCost.toFixed(2) + " ₽"
+                            font.pointSize: 9
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
                             color: "#007bff"
                         }
 
-                        Text { text: "Работа:"; font.pointSize: 10 }
+                        Text { text: "Работа:"; font.pointSize: 9 }
                         Text {
                             text: detailsDialog.laborCost.toFixed(2) + " ₽"
-                            font.pointSize: 10
+                            font.pointSize: 9
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
                             color: "#007bff"
                         }
 
-                        Text { text: "Накладные (" + detailsDialog.overheadPercentage + "%):"; font.pointSize: 10 }
+                        Text { text: "Накладные (" + detailsDialog.overheadPercentage + "%):"; font.pointSize: 9 }
                         Text {
-                            text: (parseFloat(materialsCostText.text) * (detailsDialog.overheadPercentage / 100)).toFixed(2) + " ₽"
-                            font.pointSize: 10
+                            text: parent.overheadCost.toFixed(2) + " ₽"
+                            font.pointSize: 9
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
@@ -650,14 +578,14 @@ Rectangle {
                         Rectangle {
                             Layout.columnSpan: 2
                             Layout.fillWidth: true
-                            height: 2
+                            height: 1
                             color: "#28a745"
                         }
 
-                        Text { text: "ИТОГО:"; font.pointSize: 12; font.bold: true; color: "#28a745" }
+                        Text { text: "ИТОГО:"; font.pointSize: 11; font.bold: true; color: "#28a745" }
                         Text {
                             text: detailsDialog.finalPrice.toFixed(2) + " ₽"
-                            font.pointSize: 14
+                            font.pointSize: 12
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                             Layout.fillWidth: true
@@ -672,11 +600,24 @@ Rectangle {
             Button {
                 text: "Закрыть"
                 onClicked: detailsDialog.close()
+
+                background: Rectangle {
+                    color: parent.down ? "#5a6268" : (parent.hovered ? "#6c757d" : "#6c757d")
+                    radius: 4
+                }
+
+                contentItem: Text {
+                    text: parent.text
+                    color: "white"
+                    font: parent.font
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
             }
         }
     }
 
-    // Edit specification dialog (placeholder)
+    // Edit dialog (placeholder)
     Dialog {
         id: editSpecificationDialog
         title: "Редактирование спецификации"

@@ -488,9 +488,12 @@ class DatabaseManager:
                                  i.name,
                                  i.unit,
                                  i.price,
-                                 i.image_path
+                                 i.image_path,
+                                 c.name as category,
+                                 i.status
                           FROM specification_items si
                                    JOIN items i ON si.article = i.article
+                                   LEFT JOIN categories c ON i.category_id = c.id
                           WHERE si.specification_id = ?
                           ORDER BY si.id
                           """, (spec_id,))

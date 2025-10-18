@@ -369,7 +369,9 @@ ApplicationWindow {
                         model: itemsModel
 
                         onItemSelected: (itemData) => {
-                            controlPanel.populateFields(itemData)
+                            controlPanel.currentItemId = itemData.index
+                            controlPanel.currentArticle = itemData.article
+                            controlPanel.currentItemData = itemData  // ← ДОБАВЬТЕ ЭТУ СТРОКУ
                             mainWindow.selectedImagePath = itemData.image_path
                             mainWindow.selectedDocumentPath = itemData.document
                         }
