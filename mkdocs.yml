@@ -1,0 +1,56 @@
+site_name: PythonCod Documentation
+site_description: Auto-generated code guide for the PythonCod project
+site_author: fanto-m
+repo_url: https://github.com/fanto-m/PythonCod
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.expand
+    - navigation.sections
+    - navigation.instant
+    - content.code.copy
+    - toc.integrate
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light blue
+    - scheme: slate
+      primary: deep orange
+      accent: amber
+
+nav:
+  - Home: index.md
+  - Modules:
+      - main: main.md
+      - Категории: categories_model.md
+      - Конфигурация: config_manager.md
+      - База данных: database.md
+      - Прокси фильтр: filter_proxy_model.md
+      - Модель поставщиков: item_suppliers_model.md
+      - Модель элементов: items_model.md
+      - Таблица спецификаций: specification_items_table_model.md
+      - Модели спецификаций: specification_models.md
+      - Адаптер списка поставщиков: supplier_list_adapter.md
+      - Модель поставщиков: suppliers_model.md
+      - Таблица поставщиков: suppliers_table_model.md
+      - Валидаторы: validators.md
+      # Добавь сюда остальные файлы из docs/
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - tables
+  - fenced_code
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - footnotes
+  - attr_list
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python: {}
