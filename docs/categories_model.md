@@ -1,41 +1,140 @@
-# File: `categories_model.py`
+# Модуль `categories_model.py`
 
-### Imports
-PySide6.QtCore, database
+Модель данных для управления категориями товаров в Qt/QML-приложении.
 
-## Class `CategoriesModel`
-### Method `__init__(self, parent = None)`
-_No docstring._
+---
 
-### Method `roleNames(self)`
-_No docstring._
+## Импорты
 
-### Method `rowCount(self, parent = QModelIndex())`
-_No docstring._
+- `PySide6.QtCore`: предоставляет базовые классы Qt (`QAbstractListModel`, `QModelIndex`, `Signal`, `Slot` и др.).
+- `database.DatabaseManager`: менеджер взаимодействия с базой данных.
 
-### Method `data(self, index, role = Qt.DisplayRole)`
-_No docstring._
+---
 
-### Method `loadCategories(self)`
-_No docstring._
+## Класс `CategoriesModel`
 
-### Method `addCategory(self, name, sku_prefix, sku_digits)`
-_No docstring._
+Наследуется от `QAbstractListModel`. Предназначен для интеграции списка категорий с QML-интерфейсом.
 
-### Method `updateCategory(self, category_id, new_name, sku_prefix, sku_digits)`
-_No docstring._
+### Атрибуты ролей
 
-### Method `deleteCategory(self, category_id)`
-_No docstring._
+| Роль           | Значение (Qt.UserRole + N) | Описание                     |
+|----------------|----------------------------|------------------------------|
+| `IdRole`       | `Qt.UserRole + 1`          | Идентификатор категории      |
+| `NameRole`     | `Qt.UserRole + 2`          | Название категории           |
+| `PrefixRole`   | `Qt.UserRole + 3`          | Префикс SKU                  |
+| `DigitsRole`   | `Qt.UserRole + 4`          | Количество цифр в SKU        |
 
-### Method `get(self, idx)`
-Возвращает объект {id, name, sku_prefix, sku_digits} для QML
+### Сигналы
 
-### Method `indexOfName(self, name)`
-Ищет индекс категории по её названию, возвращает -1 если не найдено.
+- **`errorOccurred(str)`** — испускается при возникновении ошибки в методах изменения данных (добавление, обновление, удаление).
 
-### Method `getCategoryIdByName(self, name)`
-Возвращает id категории по имени, или -1 если не найдена.
+---
 
-### Method `generateSkuForCategory(self, category_id)`
-Генерирует следующий SKU для категории
+## Методы
+
+### `__init__(self, parent=None)`
+
+Инициализирует модель категорий.  
+Подключается к менеджеру базы данных и загружает список категорий.
+
+**Параметры:**  
+- `parent (QObject, optional)` — родительский объект Qt. По умолчанию `None`.
+
+---
+
+### `roleNames(self)`
+
+Возвращает сопоставление ролей и их строковых имён для QML.  
+Используется QML для доступа к данным модели по именам (например, `model.name`).
+
+**Возвращает:**  
+- `dict`: словарь вида `{роль: b"имя"}`.
+
+---
+
+### `rowCount(self, parent=QModelIndex())`
+
+Возвращает количество категорий в модели.
+
+**Параметры:**  
+- `parent (QModelIndex, optional)` — родительский индекс (игнорируется, так как модель плоская). По умолчанию пустой `QModelIndex`.
+
+**Возвращает:**  
+- `int`: количество строк (категорий) в модели.
+
+---
+
+### `data(self, index, role=Qt.DisplayRole)`
+
+Возвращает данные для указанного индекса и роли.
+
+**Параметры:**  
+- `index (QModelIndex)` — индекс запрашиваемого элемента.  
+- `role (int, optional)` — роль данных. По умолчанию `Qt.DisplayRole`.
+
+**Возвращает:**  
+- Значение (`int` или `str`) в зависимости от роли, либо `None`, если индекс недопустим или роль не поддерживается.
+
+---
+
+### `loadCategories(self)`
+
+Загружает категории из базы данных и обновляет модель.  
+Автоматически вызывает `beginResetModel()` и `endResetModel()` для корректного обновления представления.
+
+---
+
+### `addCategory(self, name, sku_prefix, sku_digits)`
+
+Добавляет новую категорию в базу данных и перезагружает модель.
+
+**Параметры:**  
+- `name (str)` — название новой категории.  
+- `sku_prefix (str)` — префикс SKU (например, `"ELEC"`).  
+- `sku_digits (int)` — количество цифр в генерируемом SKU (например, `4` → `"0001"`).
+
+> **Примечание:** При ошибке испускается сигнал `errorOccurred` с текстом исключения.
+
+---
+
+### `updateCategory(self, category_id, new_name, sku_prefix, sku_digits)`
+
+Обновляет существующую категорию в базе данных.
+
+**Параметры:**  
+- `category_id (int)` — идентификатор обновляемой категории.  
+- `new_name (str)` — новое название категории.  
+- `sku_prefix (str)` — новый префикс SKU.  
+- `sku_digits (int)` — новое количество цифр в SKU.
+
+> **Примечание:** При ошибке испускается сигнал `errorOccurred`.
+
+---
+
+### `deleteCategory(self, category_id)`
+
+Удаляет категорию из базы данных по её идентификатору.
+
+**Параметры:**  
+- `category_id (int)` — идентификатор удаляемой категории.
+
+> **Примечание:** При ошибке испускается сигнал `errorOccurred`.
+
+---
+
+### `get(self, idx)`
+
+Возвращает объект категории по индексу для использования в QML.
+
+**Параметры:**  
+- `idx (int)` — индекс категории в модели.
+
+**Возвращает:**  
+- `dict` с ключами:
+  ```python
+  {
+    'id': int,
+    'name': str,
+    'sku_prefix': str,
+    'sku_digits': int
+  }

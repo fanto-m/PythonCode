@@ -1,10 +1,14 @@
-# items_model.py - Fixed version with all issues resolved
 from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex, Slot, Signal, Property
 from database import DatabaseManager
 from validators import validate_item
 
 
 class ItemsModel(QAbstractListModel):
+    """Модель для работы с данными товаров в интерфейсе Qt, основанная на QAbstractListModel.
+
+    Поддерживает загрузку, фильтрацию, добавление, обновление и удаление товаров из базы данных.
+    """
+
     ArticleRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2
     DescriptionRole = Qt.UserRole + 3
@@ -36,6 +40,11 @@ class ItemsModel(QAbstractListModel):
     }
 
     def __init__(self, db_path="items.db"):
+        """Инициализирует экземпляр ItemsModel.
+
+        Args:
+            db_path (str): Путь к файлу базы данных SQLite. По умолчанию 'items.db'.
+        """
         super().__init__()
         self.db_manager = DatabaseManager(db_path)
         self.items = []
@@ -46,14 +55,20 @@ class ItemsModel(QAbstractListModel):
         print("DEBUG: Model initialized and data loaded.")
 
     def loadData(self):
-        """Load all data from database"""
+        """Загружает все данные товаров из базы данных.
+
+        Использует DatabaseManager для получения данных и применяет текущий фильтр.
+        """
         print("DEBUG: Loading data via DatabaseManager")
         self._all_items = self.db_manager.load_data()
         self._applyFilter()
         print(f"DEBUG: Data loaded. Total items: {len(self._all_items)}, Filtered: {len(self.items)}")
 
     def _applyFilter(self):
-        """Apply current filter to items"""
+        """Применяет текущий фильтр к списку товаров.
+
+        Фильтрует товары на основе строки фильтра и выбранного поля (например, article, name).
+        """
         if not self._filter_string:
             self.items = self._all_items.copy()
             return
@@ -78,9 +93,26 @@ class ItemsModel(QAbstractListModel):
         ]
 
     def rowCount(self, parent=QModelIndex()):
+        """Возвращает количество строк в модели.
+
+        Args:
+            parent (QModelIndex): Родительский индекс модели. По умолчанию пустой QModelIndex.
+
+        Returns:
+            int: Количество товаров в отфильтрованном списке.
+        """
         return len(self.items)
 
     def data(self, index, role=Qt.DisplayRole):
+        """Получает данные для указанного индекса и роли.
+
+        Args:
+            index (QModelIndex): Индекс элемента в модели.
+            role (int): Роль данных (например, ArticleRole, NameRole). По умолчанию Qt.DisplayRole.
+
+        Returns:
+            Значение для указанной роли или None, если индекс или роль недопустимы.
+        """
         if not index.isValid() or index.row() >= len(self.items):
             return None
 
@@ -97,6 +129,11 @@ class ItemsModel(QAbstractListModel):
         return value
 
     def roleNames(self):
+        """Возвращает словарь ролей данных для использования в QML.
+
+        Returns:
+            dict: Словарь, сопоставляющий роли данных с их именами в байтовом формате.
+        """
         return {
             self.ArticleRole: b"article",
             self.NameRole: b"name",
@@ -115,6 +152,27 @@ class ItemsModel(QAbstractListModel):
     @Slot(str, str, str, str, int, float, int, str, str, str, str, result=str)
     def addItem(self, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer,
                 document):
+        """Добавляет новый товар в базу данных.
+
+        Args:
+            article (str): Артикул товара.
+            name (str): Название товара.
+            description (str): Описание товара.
+            image_path (str): Путь к изображению товара.
+            category_id (int): ID категории.
+            price (float): Цена товара.
+            stock (int): Количество на складе.
+            status (str): Статус товара.
+            unit (str): Единица измерения.
+            manufacturer (str): Производитель.
+            document (str): Связанный документ.
+
+        Returns:
+            str: Пустая строка при успехе, сообщение об ошибке при неудаче.
+
+        Raises:
+            Exception: Если произошла ошибка при добавлении товара.
+        """
         try:
             print(f"DEBUG: addItem called with: article={article}, name={name}, description={description}, "
                   f"image_path={image_path}, category_id={category_id}, price={price}, stock={stock}, "
@@ -151,27 +209,28 @@ class ItemsModel(QAbstractListModel):
             return error_message
 
     @Slot(int, str, str, str, str, int, float, int, str, str, str, str, result=str)
-    def updateItem(self, row, article, name, description, image_path,
-                   category_id, price, stock, status, unit, manufacturer, document):
-        """
-        Update existing item in database
+    def updateItem(self, row, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document):
+        """Обновляет существующий товар в базе данных.
 
         Args:
-            row: Row index in filtered list
-            article: New article/SKU code
-            name: New item name
-            description: New description
-            image_path: New image path
-            category_id: New category ID (integer)
-            price: New price
-            stock: New stock quantity
-            status: Item status
-            unit: Unit of measurement
-            manufacturer: Manufacturer name
-            document: Document path
+            row (int): Индекс строки в отфильтрованном списке.
+            article (str): Новый артикул товара.
+            name (str): Новое название товара.
+            description (str): Новое описание товара.
+            image_path (str): Новый путь к изображению.
+            category_id (int): Новый ID категории.
+            price (float): Новая цена.
+            stock (int): Новое количество на складе.
+            status (str): Новый статус.
+            unit (str): Новая единица измерения.
+            manufacturer (str): Новый производитель.
+            document (str): Новый документ.
 
         Returns:
-            Empty string on success, error message on failure
+            str: Пустая строка при успехе, сообщение об ошибке при неудаче.
+
+        Raises:
+            Exception: Если произошла ошибка при обновлении товара.
         """
         try:
             # Validate row index
@@ -216,11 +275,13 @@ class ItemsModel(QAbstractListModel):
 
     @Slot(int)
     def deleteItem(self, row):
-        """
-        Delete item from database
+        """Удаляет товар из базы данных по индексу строки.
 
         Args:
-            row: Row index in filtered list
+            row (int): Индекс строки в отфильтрованном списке.
+
+        Raises:
+            Exception: Если произошла ошибка при удалении товара.
         """
         try:
             # Validate row index
@@ -248,11 +309,10 @@ class ItemsModel(QAbstractListModel):
 
     @Slot(str)
     def setFilterString(self, filter_string):
-        """
-        Set filter string for searching items
+        """Устанавливает строку для фильтрации товаров.
 
         Args:
-            filter_string: String to filter by
+            filter_string (str): Строка для фильтрации.
         """
         if self._filter_string != filter_string:
             self._filter_string = filter_string
@@ -263,11 +323,10 @@ class ItemsModel(QAbstractListModel):
 
     @Slot(str)
     def setFilterField(self, field):
-        """
-        Set field to filter by
+        """Устанавливает поле для фильтрации товаров.
 
         Args:
-            field: Field name (article, name, description, category, price, stock)
+            field (str): Поле для фильтрации (article, name, description, category, price, stock).
         """
         if self._filter_field != field:
             self._filter_field = field
@@ -278,7 +337,8 @@ class ItemsModel(QAbstractListModel):
 
     @Slot()
     def clearFilter(self):
-        """Clear all filters"""
+        """Сбрасывает все фильтры, возвращая модель к полному списку товаров.
+        """
         self._filter_string = ""
         self._filter_field = "name"
         print("DEBUG: Filters cleared")
@@ -288,14 +348,15 @@ class ItemsModel(QAbstractListModel):
 
     @Slot(int, result='QVariantMap')
     def get(self, row):
-        """
-        Get item data at specific row
+        """Получает данные товара по индексу строки.
 
         Args:
-            row: Row index
+            row (int): Индекс строки в отфильтрованном списке.
 
         Returns:
-            Dictionary with item data or empty dict if invalid index
+            dict: Словарь с данными товара (index, article, name, description, image_path,
+            category, price, stock, created_date, status, unit, manufacturer, document)
+            или пустой словарь, если индекс недопустим.
         """
         if row < 0 or row >= len(self.items):
             return {}
