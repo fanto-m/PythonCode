@@ -3,7 +3,6 @@ from PySide6.QtCore import QAbstractTableModel, Qt, Slot, Signal
 
 from database import DatabaseManager
 
-
 class SuppliersTableModel(QAbstractTableModel):
     IdRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2

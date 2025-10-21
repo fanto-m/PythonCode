@@ -1,53 +1,142 @@
 # File: `config_manager.py`
 
-### Imports
+### Импорты  
 PySide6.QtCore, json, os
 
-## Class `ConfigManager`
-Manages application configuration settings.
-Stores settings in a JSON file and provides Qt property bindings for QML.
+## Класс `ConfigManager`
+Управляет настройками приложения.  
+Сохраняет параметры в JSON-файл и предоставляет привязки свойств Qt для QML.
 
-### Method `__init__(self, config_path = 'config.json', parent = None)`
-_No docstring._
+### Метод `__init__(self, config_path='config.json', parent=None)`
+Инициализирует менеджер конфигурации.  
+Загружает настройки из указанного JSON-файла или создаёт новый с значениями по умолчанию, если файл не существует.
 
-### Method `_load_default_config(self)`
-Return default configuration values.
+**Args:**  
+- `config_path (str, optional)`: Путь к файлу конфигурации. По умолчанию `"config.json"`.  
+- `parent (QObject, optional)`: Родительский объект Qt. По умолчанию `None`.
 
-### Method `_load_config(self)`
-Load configuration from file, or create with defaults if not exists.
+---
 
-### Method `_save_config(self)`
-Save current configuration to file.
+### Метод `_load_default_config(self)`
+Возвращает словарь с настройками по умолчанию.
 
-### Method `_get_vat_included(self)`
-_No docstring._
+**Returns:**  
+- `dict`: Конфигурация по умолчанию с ключами:  
+  `"vat_included"` (bool),  
+  `"vat_rate"` (float),  
+  `"default_currency"` (str),  
+  `"decimal_places"` (int),  
+  `"theme"` (str).
 
-### Method `_set_vat_included(self, value)`
-_No docstring._
+---
 
-### Method `_get_vat_rate(self)`
-_No docstring._
+### Метод `_load_config(self)`
+Загружает конфигурацию из JSON-файла.  
+Если файл существует — читает его и объединяет с настройками по умолчанию (для поддержки новых параметров при обновлении приложения).  
+Если файл отсутствует — создаёт его со значениями по умолчанию.
 
-### Method `_set_vat_rate(self, value)`
-_No docstring._
+---
 
-### Method `_get_default_currency(self)`
-_No docstring._
+### Метод `_save_config(self)`
+Сохраняет текущую конфигурацию в JSON-файл в удобочитаемом формате (с отступами и поддержкой UTF-8).
 
-### Method `_set_default_currency(self, value)`
-_No docstring._
+---
 
-### Method `getSetting(self, key)`
-Get a configuration setting by key.
+### Метод `_get_vat_included(self)`
+Возвращает флаг включения НДС в отображаемые цены.
 
-### Method `setSetting(self, key, value)`
-Set a configuration setting by key.
+**Returns:**  
+- `bool`: `True`, если НДС включён, иначе `False`.
 
-### Method `calculatePriceWithoutVAT(self, price_with_vat)`
-Calculate price without VAT from price with VAT.
+---
 
-### Method `calculatePriceWithVAT(self, price_without_vat)`
-Calculate price with VAT from price without VAT.
+### Метод `_set_vat_included(self, value)`
+Устанавливает флаг включения НДС, сохраняет конфигурацию и испускает сигнал `vatIncludedChanged`.
 
-### Method `resetToDefaults(self)`
-Reset all settings to default values.
+**Args:**  
+- `value (bool)`: Новое значение флага.
+
+---
+
+### Метод `_get_vat_rate(self)`
+Возвращает текущую ставку НДС в процентах.
+
+**Returns:**  
+- `float`: Ставка НДС (например, `20.0` для 20%).
+
+---
+
+### Метод `_set_vat_rate(self, value)`
+Устанавливает ставку НДС, сохраняет конфигурацию и испускает сигнал `vatRateChanged`.
+
+**Args:**  
+- `value (float)`: Новая ставка НДС в процентах.
+
+---
+
+### Метод `_get_default_currency(self)`
+Возвращает код валюты по умолчанию.
+
+**Returns:**  
+- `str`: Код валюты (например, `"RUB"`, `"USD"`, `"EUR"`).
+
+---
+
+### Метод `_set_default_currency(self, value)`
+Устанавливает валюту по умолчанию, сохраняет конфигурацию и испускает сигнал `defaultCurrencyChanged`.
+
+**Args:**  
+- `value (str)`: Новый код валюты.
+
+---
+
+### Метод `getSetting(self, key)`
+Возвращает значение настройки по ключу.
+
+**Args:**  
+- `key (str)`: Имя параметра конфигурации.
+
+**Returns:**  
+- `Any`: Значение параметра или `None`, если ключ не найден.
+
+---
+
+### Метод `setSetting(self, key, value)`
+Устанавливает значение настройки по ключу и сохраняет его в файл.
+
+**Args:**  
+- `key (str)`: Имя параметра конфигурации.  
+- `value (Any)`: Новое значение параметра.
+
+---
+
+### Метод `calculatePriceWithoutVAT(self, price_with_vat)`
+Рассчитывает цену без НДС по цене с НДС.
+
+**Формула:**  
+`price_without_vat = price_with_vat / (1 + vat_rate / 100)`
+
+**Args:**  
+- `price_with_vat (float)`: Цена с НДС.
+
+**Returns:**  
+- `float`: Цена без НДС, округлённая до 2 знаков.
+
+---
+
+### Метод `calculatePriceWithVAT(self, price_without_vat)`
+Рассчитывает цену с НДС по цене без НДС.
+
+**Формула:**  
+`price_with_vat = price_without_vat * (1 + vat_rate / 100)`
+
+**Args:**  
+- `price_without_vat (float)`: Цена без НДС.
+
+**Returns:**  
+- `float`: Цена с НДС, округлённая до 2 знаков.
+
+---
+
+### Метод `resetToDefaults(self)`
+Сбрасывает все настройки к значениям по умолчанию, сохраняет файл и испускает все соответствующие сигналы для обновления интерфейса.

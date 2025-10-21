@@ -1,53 +1,173 @@
-# File: `suppliers_table_model.py`
+# Модуль `suppliers_table_model.py`
 
-### Imports
-PySide6.QtCore, database
+Модель таблицы поставщиков для интеграции с QML в Qt-приложении.
 
-## Class `SuppliersTableModel`
-### Method `__init__(self, parent = None)`
-_No docstring._
+---
 
-### Method `load(self)`
-Load all suppliers for management mode
+## Обзор
 
-### Method `loadForArticle(self, article)`
-Load suppliers with pre-checked ones for binding mode
+Класс `SuppliersTableModel` наследуется от `QAbstractTableModel` и предоставляет двунаправленный интерфейс для отображения и редактирования списка поставщиков.  
+Особенности:
 
-### Method `roleNames(self)`
-_No docstring._
+- Поддержка **чекбоксов** в первом столбце для выбора поставщиков.
+- Два режима работы:
+  - **Режим управления** — просмотр и редактирование всех поставщиков.
+  - **Режим привязки** — выбор поставщиков для конкретного товара (артикула) с предзагрузкой уже связанных.
+- Полная интеграция с `DatabaseManager` для CRUD-операций.
 
-### Method `columnCount(self, parent = None)`
-_No docstring._
+---
 
-### Method `rowCount(self, parent = None)`
-_No docstring._
+## Импорты
 
-### Method `headerData(self, section, orientation, role = Qt.DisplayRole)`
-_No docstring._
+- `PySide6.QtCore`: `QAbstractTableModel`, `Qt`, `Slot`, `Signal`
+- `database.DatabaseManager`: доступ к данным поставщиков
 
-### Method `data(self, index, role = Qt.DisplayRole)`
-_No docstring._
+---
 
-### Method `setData(self, index, value, role = Qt.EditRole)`
-_No docstring._
+## Класс `SuppliersTableModel`
 
-### Method `flags(self, index)`
-_No docstring._
+### Атрибуты ролей
 
-### Method `getSelectedSupplierIds(self)`
-_No docstring._
+| Роль            | Значение                | Описание               |
+|-----------------|-------------------------|------------------------|
+| `IdRole`        | `Qt.UserRole + 1`       | Идентификатор          |
+| `NameRole`      | `Qt.UserRole + 2`       | Имя/ФИО контакта       |
+| `CompanyRole`   | `Qt.UserRole + 3`       | Название компании      |
+| `EmailRole`     | `Qt.UserRole + 4`       | Email                  |
+| `PhoneRole`     | `Qt.UserRole + 5`       | Телефон                |
+| `WebsiteRole`   | `Qt.UserRole + 6`       | Веб-сайт               |
 
-### Method `bindSuppliersToItem(self, article, supplier_ids)`
-_No docstring._
+### Сигналы
 
-### Method `getSupplierRow(self, row)`
-_No docstring._
+- **`errorOccurred(str)`** — испускается при ошибке в методах добавления, обновления, удаления или привязки поставщиков.
 
-### Method `addSupplier(self, name, company, email, phone, website)`
-Add a new supplier
+---
 
-### Method `updateSupplier(self, supplier_id, name, company, email, phone, website)`
-Update an existing supplier
+## Методы
 
-### Method `deleteSupplier(self, supplier_id)`
-Delete a supplier
+### `__init__(self, parent=None)`
+
+Инициализирует модель и загружает список поставщиков в режиме управления.
+
+**Параметры:**  
+- `parent (QObject, optional)` — родительский объект Qt.
+
+---
+
+### `load(self)`
+
+Загружает всех поставщиков в **режиме управления**.  
+Сбрасывает все чекбоксы.
+
+---
+
+### `loadForArticle(self, article)`
+
+Загружает всех поставщиков в **режиме привязки** к товару.  
+Автоматически отмечает чекбоксы для поставщиков, уже связанных с указанным артикулом.
+
+**Параметры:**  
+- `article (str)` — артикул товара.
+
+---
+
+### `roleNames(self) → dict`
+
+Возвращает сопоставление ролей и их имён для QML.
+
+**Возвращает:**  
+- Словарь вида `{роль: b"имя"}`, включая `checkState` для чекбоксов.
+
+---
+
+### `columnCount(self, parent=None) → int`
+
+Возвращает фиксированное количество столбцов — **7** (чекбокс + 6 полей).
+
+---
+
+### `rowCount(self, parent=None) → int`
+
+Возвращает количество поставщиков в текущей модели.
+
+---
+
+### `headerData(self, section, orientation, role=Qt.DisplayRole) → str | None`
+
+Возвращает заголовки столбцов:
+
+| Столбец | Заголовок |
+|--------|-----------|
+| 0      | (пусто — чекбокс) |
+| 1      | ID        |
+| 2      | ФИО       |
+| 3      | Компания  |
+| 4      | Email     |
+| 5      | Телефон   |
+| 6      | Сайт      |
+
+---
+
+### `data(self, index, role=Qt.DisplayRole) → Any`
+
+Возвращает данные ячейки в зависимости от роли.  
+Для `Qt.CheckStateRole` возвращает `Qt.Checked.value` или `Qt.Unchecked.value`.
+
+---
+
+### `setData(self, index, value, role=Qt.EditRole) → bool`
+
+Обрабатывает изменение состояния чекбокса.  
+Обновляет внутреннее множество `_checked` и уведомляет представление через `dataChanged`.
+
+**Возвращает:**  
+- `True`, если роль — `Qt.CheckStateRole` и индекс валиден, иначе `False`.
+
+---
+
+### `flags(self, index) → Qt.ItemFlags`
+
+Настраивает поведение ячеек:
+- Столбец 0 (чекбокс): `ItemIsEnabled | ItemIsUserCheckable`
+- Остальные: `ItemIsEnabled | ItemIsSelectable`
+
+---
+
+### `getSelectedSupplierIds(self) → list[int]`
+
+Возвращает список ID всех отмеченных поставщиков.
+
+**Используется в QML** для получения текущего выбора.
+
+---
+
+### `bindSuppliersToItem(self, article, supplier_ids)`
+
+Сохраняет привязку выбранных поставщиков к товару.
+
+**Параметры:**  
+- `article (str)` — артикул товара.  
+- `supplier_ids (list[int])` — список ID поставщиков.
+
+> После сохранения сбрасывает все чекбоксы и обновляет отображение.  
+> При ошибке испускается сигнал `errorOccurred`.
+
+---
+
+### `getSupplierRow(self, row) → dict`
+
+Возвращает данные поставщика по индексу строки в формате, удобном для QML.
+
+**Параметры:**  
+- `row (int)` — индекс строки.
+
+**Возвращает:**  
+```python
+{
+  "id": int,
+  "name": str,
+  "company": str,
+  "email": str,
+  "phone": str,
+  "website": str
+}
