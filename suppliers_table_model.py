@@ -1,9 +1,16 @@
-# suppliers_table_model.py
 from PySide6.QtCore import QAbstractTableModel, Qt, Slot, Signal
-
 from database import DatabaseManager
 
 class SuppliersTableModel(QAbstractTableModel):
+    """Табличная модель данных для управления списком поставщиков в Qt/QML-приложении.
+
+    Наследуется от QAbstractTableModel. Предоставляет данные о поставщиках для табличного представления
+    в QML, включая идентификатор, имя, компанию, email, телефон и веб-сайт. Поддерживает выбор
+    поставщиков с помощью флажков, загрузку данных, добавление, обновление, удаление и привязку
+    поставщиков к товарам через DatabaseManager. Испускает сигнал errorOccurred при ошибках.
+    """
+
+    # Роли для QML
     IdRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2
     CompanyRole = Qt.UserRole + 3
@@ -11,50 +18,63 @@ class SuppliersTableModel(QAbstractTableModel):
     PhoneRole = Qt.UserRole + 5
     WebsiteRole = Qt.UserRole + 6
 
+    # Сигнал для ошибок
     errorOccurred = Signal(str)
 
     def __init__(self, parent=None):
+        """Инициализация табличной модели поставщиков.
+
+        Args:
+            parent (QObject, optional): Родительский объект Qt. По умолчанию None.
+        """
         super().__init__(parent)
-        self._db = DatabaseManager()
-        self._suppliers = []
-        self._checked = set()  # set of int IDs
+        self._db = DatabaseManager()  # Менеджер базы данных
+        self._suppliers = []         # Список данных поставщиков: [(id, name, company, email, phone, website), ...]
+        self._checked = set()        # Множество ID выбранных поставщиков
         self.load()
 
     # ------------------- Loading -------------------
 
     @Slot()
     def load(self):
-        """Load all suppliers for management mode"""
+        """Загружает всех поставщиков из базы данных для режима управления.
+
+        Сбрасывает модель, загружает данные поставщиков через DatabaseManager,
+        преобразует идентификаторы в целые числа и очищает множество выбранных поставщиков.
+        """
         self.beginResetModel()
         raw_suppliers = self._db.load_suppliers()
-        # Ensure IDs are integers
         self._suppliers = [(int(s[0]),) + s[1:] for s in raw_suppliers]
         self._checked.clear()
         self.endResetModel()
 
     @Slot(str)
     def loadForArticle(self, article):
-        """Load suppliers with pre-checked ones for binding mode"""
-        self.beginResetModel()
+        """Загружает поставщиков с предварительно отмеченными для режима привязки к товару.
 
-        # Load all suppliers
+        Args:
+            article (str): Артикул товара.
+
+        Сбрасывает модель, загружает всех поставщиков и отмечает тех, которые уже привязаны к указанному артикулу.
+        """
+        self.beginResetModel()
         raw_suppliers = self._db.load_suppliers()
         self._suppliers = [(int(s[0]),) + s[1:] for s in raw_suppliers]
-
-        # Load checked IDs for this article
         checked_ids = self._db.get_suppliers_for_item(article) or []
-
-        # Handle different return formats
         if checked_ids and isinstance(checked_ids[0], (tuple, list)):
             self._checked = {int(sid[0]) for sid in checked_ids}
         else:
             self._checked = {int(sid) for sid in checked_ids}
-
         self.endResetModel()
 
     # ------------------- Qt Model API -------------------
 
     def roleNames(self):
+        """Возвращает сопоставление ролей и их строковых имен для QML.
+
+        Returns:
+            dict: Словарь вида {роль: b"имя"}, включая CheckStateRole для флажков.
+        """
         return {
             self.IdRole: b"id",
             self.NameRole: b"name",
@@ -66,18 +86,53 @@ class SuppliersTableModel(QAbstractTableModel):
         }
 
     def columnCount(self, parent=None):
+        """Возвращает количество столбцов в таблице.
+
+        Args:
+            parent (QModelIndex, optional): Родительский индекс (не используется). По умолчанию None.
+
+        Returns:
+            int: Количество столбцов (7: флажок, ID, ФИО, компания, email, телефон, сайт).
+        """
         return 7
 
     def rowCount(self, parent=None):
+        """Возвращает количество строк в модели (число поставщиков).
+
+        Args:
+            parent (QModelIndex, optional): Родительский индекс (не используется). По умолчанию None.
+
+        Returns:
+            int: Количество поставщиков в списке.
+        """
         return len(self._suppliers)
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
+        """Возвращает заголовки столбцов для табличного представления.
+
+        Args:
+            section (int): Индекс столбца.
+            orientation (Qt.Orientation): Ориентация (горизонтальная или вертикальная).
+            role (int): Роль данных. По умолчанию Qt.DisplayRole.
+
+        Returns:
+            str: Заголовок столбца или None, если роль или индекс недействительны.
+        """
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             headers = ["", "ID", "ФИО", "Компания", "Email", "Телефон", "Сайт"]
             return headers[section] if 0 <= section < len(headers) else ""
         return None
 
     def data(self, index, role=Qt.DisplayRole):
+        """Получение данных для указанного индекса и роли.
+
+        Args:
+            index (QModelIndex): Индекс строки и столбца в модели.
+            role (int): Роль данных (например, IdRole, NameRole, CheckStateRole). По умолчанию Qt.DisplayRole.
+
+        Returns:
+            Значение, соответствующее роли, или None, если индекс недействителен.
+        """
         if not index.isValid() or index.row() >= len(self._suppliers):
             return None
 
@@ -98,21 +153,26 @@ class SuppliersTableModel(QAbstractTableModel):
             return website
         if role == Qt.CheckStateRole:
             is_checked = int(sid) in self._checked
-            # Return integer value, not enum object
-            result = Qt.Checked.value if is_checked else Qt.Unchecked.value
-            #print(
-            #    f"DEBUG data(): row={index.row()}, col={index.column()}, sid={sid}, checked={is_checked}, returning={result}")
-            return result
-
+            return Qt.Checked.value if is_checked else Qt.Unchecked.value
         return None
 
     def setData(self, index, value, role=Qt.EditRole):
+        """Устанавливает данные для указанного индекса и роли.
+
+        Args:
+            index (QModelIndex): Индекс строки и столбца в модели.
+            value: Значение для установки (ожидается integer для CheckStateRole).
+            role (int): Роль данных. По умолчанию Qt.EditRole.
+
+        Returns:
+            bool: True, если данные успешно установлены, иначе False.
+
+        Поддерживает только изменение состояния флажка (CheckStateRole).
+        """
         if not index.isValid() or role != Qt.CheckStateRole:
             return False
 
         supplier_id = int(self._suppliers[index.row()][0])
-
-        # value comes as integer from QML
         is_checked = (value == Qt.Checked.value)
 
         if is_checked:
@@ -123,11 +183,18 @@ class SuppliersTableModel(QAbstractTableModel):
         print(
             f"DEBUG setData(): row={index.row()}, supplier_id={supplier_id}, value={value}, is_checked={is_checked}, _checked={self._checked}")
 
-        # Emit dataChanged for this cell
         self.dataChanged.emit(index, index, [Qt.CheckStateRole])
         return True
 
     def flags(self, index):
+        """Возвращает флаги для указанного индекса.
+
+        Args:
+            index (QModelIndex): Индекс строки и столбца в модели.
+
+        Returns:
+            Qt.ItemFlags: Флаги, определяющие поведение элемента (выбираемый, включаемый, с флажком для первого столбца).
+        """
         if not index.isValid():
             return Qt.NoItemFlags
         if index.column() == 0:
@@ -138,16 +205,28 @@ class SuppliersTableModel(QAbstractTableModel):
 
     @Slot(result="QVariantList")
     def getSelectedSupplierIds(self):
+        """Возвращает список идентификаторов выбранных поставщиков.
+
+        Returns:
+            list: Список ID поставщиков, отмеченных флажками.
+        """
         return list(self._checked)
 
     @Slot(str, "QVariantList")
     def bindSuppliersToItem(self, article, supplier_ids):
+        """Привязывает список поставщиков к товару.
+
+        Args:
+            article (str): Артикул товара.
+            supplier_ids (list): Список идентификаторов поставщиков.
+
+        Вызывает метод DatabaseManager для привязки и обновляет состояние флажков.
+        При ошибке испускает сигнал errorOccurred.
+        """
         try:
             supplier_ids = [int(sid) for sid in supplier_ids]
             self._db.set_suppliers_for_item(article, supplier_ids)
             self._checked.clear()
-
-            # Update all checkboxes
             if self.rowCount() > 0:
                 top_left = self.index(0, 0)
                 bottom_right = self.index(self.rowCount() - 1, 0)
@@ -157,6 +236,15 @@ class SuppliersTableModel(QAbstractTableModel):
 
     @Slot(int, result="QVariant")
     def getSupplierRow(self, row):
+        """Возвращает данные поставщика по указанной строке.
+
+        Args:
+            row (int): Индекс строки в модели.
+
+        Returns:
+            dict: Словарь с данными поставщика (id, name, company, email, phone, website)
+                  или словарь с id=-1, если строка недействительна.
+        """
         if 0 <= row < len(self._suppliers):
             sid, name, company, email, phone, website = self._suppliers[row]
             return {
@@ -171,27 +259,57 @@ class SuppliersTableModel(QAbstractTableModel):
 
     @Slot(str, str, str, str, str)
     def addSupplier(self, name, company, email, phone, website):
-        """Add a new supplier"""
+        """Добавляет нового поставщика в базу данных.
+
+        Args:
+            name (str): Имя поставщика.
+            company (str): Название компании.
+            email (str): Электронная почта.
+            phone (str): Телефон.
+            website (str): Веб-сайт.
+
+        Вызывает метод DatabaseManager и перезагружает таблицу.
+        При ошибке испускает сигнал errorOccurred.
+        """
         try:
             self._db.add_supplier(name, company, email, phone, website)
-            self.load()  # Reload the table
+            self.load()
         except Exception as e:
             self.errorOccurred.emit(f"Ошибка добавления поставщика: {str(e)}")
 
     @Slot(int, str, str, str, str, str)
     def updateSupplier(self, supplier_id, name, company, email, phone, website):
-        """Update an existing supplier"""
+        """Обновляет данные существующего поставщика.
+
+        Args:
+            supplier_id (int): Идентификатор поставщика.
+            name (str): Имя поставщика.
+            company (str): Название компании.
+            email (str): Электронная почта.
+            phone (str): Телефон.
+            website (str): Веб-сайт.
+
+        Вызывает метод DatabaseManager и перезагружает таблицу.
+        При ошибке испускает сигнал errorOccurred.
+        """
         try:
             self._db.update_supplier(supplier_id, name, company, email, phone, website)
-            self.load()  # Reload the table
+            self.load()
         except Exception as e:
             self.errorOccurred.emit(f"Ошибка обновления поставщика: {str(e)}")
 
     @Slot(int)
     def deleteSupplier(self, supplier_id):
-        """Delete a supplier"""
+        """Удаляет поставщика из базы данных.
+
+        Args:
+            supplier_id (int): Идентификатор поставщика.
+
+        Вызывает метод DatabaseManager и перезагружает таблицу.
+        При ошибке испускает сигнал errorOccurred.
+        """
         try:
             self._db.delete_supplier(supplier_id)
-            self.load()  # Reload the table
+            self.load()
         except Exception as e:
             self.errorOccurred.emit(f"Ошибка удаления поставщика: {str(e)}")
