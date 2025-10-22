@@ -1,41 +1,206 @@
-# File: `filter_proxy_model.py`
+# FilterProxyModel
 
-### Imports
-PySide6.QtCore, items_model
+Прокси-модель для фильтрации и сортировки данных из `ItemsModel` в Qt/QML-приложении.
 
-## Class `FilterProxyModel`
-### Method `__init__(self, parent = None)`
-_No docstring._
+---
 
-### Method `get_filter_string(self)`
-_No docstring._
+## Импорты
 
-### Method `get_filter_field(self)`
-_No docstring._
+- `PySide6.QtCore`: предоставляет базовые классы Qt (`QSortFilterProxyModel`, `Slot`, `QSettings`, `Property`, `Qt`).
+- `items_model.ItemsModel`: исходная модель данных для товаров.
 
-### Method `_loadSettings(self)`
-_No docstring._
+---
 
-### Method `_saveSettings(self)`
-_No docstring._
+## Класс `FilterProxyModel`
 
-### Method `setFilterString(self, filterString)`
-_No docstring._
+Наследуется от `QSortFilterProxyModel`. Используется для фильтрации и сортировки данных из `ItemsModel`, а также для сохранения настроек фильтрации через `QSettings`. Предоставляет методы для добавления, обновления и удаления элементов, перенаправляя их в исходную модель.
 
-### Method `setFilterField(self, field)`
-_No docstring._
+### Атрибуты ролей
 
-### Method `setSort(self, role_name, order = 'ascending')`
-_No docstring._
+| Роль           | Значение (Qt.UserRole + N) | Описание                     |
+|----------------|----------------------------|------------------------------|
+| `ArticleRole`  | Зависит от `ItemsModel`    | Артикул товара               |
+| `NameRole`     | Зависит от `ItemsModel`    | Название товара              |
+| `DescriptionRole` | Зависит от `ItemsModel` | Описание товара              |
+| `CategoryRole` | Зависит от `ItemsModel`    | Категория товара             |
+| `PriceRole`    | Зависит от `ItemsModel`    | Цена товара                  |
+| `StockRole`    | Зависит от `ItemsModel`    | Количество на складе         |
 
-### Method `filterAcceptsRow(self, sourceRow, sourceParent)`
-_No docstring._
+### Свойства
 
-### Method `addItem(self, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document)`
-_No docstring._
+- **`filterString (str)`**: строка фильтрации (чтение через `get_filter_string`).
+- **`filterField (str)`**: поле для фильтрации (чтение через `get_filter_field`).
 
-### Method `updateItem(self, proxy_row, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document)`
-_No docstring._
+---
 
-### Method `deleteItem(self, proxy_row)`
-_No docstring._
+## Методы
+
+### `__init__(self, parent=None)`
+
+Инициализирует прокси-модель.  
+Устанавливает начальные значения поля и строки фильтрации, загружает настройки через `QSettings` и включает динамическую сортировку.
+
+**Параметры:**  
+- `parent (QObject, optional)` — родительский объект Qt. По умолчанию `None`.
+
+---
+
+### `get_filter_string(self)`
+
+Возвращает текущую строку фильтрации.
+
+**Возвращает:**  
+- `str`: текущая строка фильтра в нижнем регистре.
+
+---
+
+### `get_filter_field(self)`
+
+Возвращает текущее поле фильтрации.
+
+**Возвращает:**  
+- `str`: текущее поле фильтрации (например, "name", "article").
+
+---
+
+### `_loadSettings(self)`
+
+Загружает настройки фильтрации из `QSettings`.  
+Если настройки отсутствуют, используются значения по умолчанию (`filterField="name"`, `filterString=""`).
+
+---
+
+### `_saveSettings(self)`
+
+Сохраняет текущие настройки фильтрации (поле и строка) в `QSettings`.
+
+---
+
+### `setFilterString(self, filterString)`
+
+Устанавливает новую строку фильтрации.
+
+**Параметры:**  
+- `filterString (str)`: строка для фильтрации данных.
+
+**Действия:**  
+- Приводит строку к нижнему регистру.
+- Вызывает `invalidateFilter` для обновления фильтра.
+- Сохраняет настройки через `_saveSettings`.
+
+---
+
+### `setFilterField(self, field)`
+
+Устанавливает новое поле для фильтрации.
+
+**Параметры:**  
+- `field (str)`: поле для фильтрации (например, "name", "article").
+
+**Действия:**  
+- Обновляет поле фильтрации.
+- Вызывает `invalidateFilter` для обновления фильтра.
+- Сохраняет настройки через `_saveSettings`.
+
+---
+
+### `setSort(self, role_name, order="ascending")`
+
+Устанавливает сортировку данных по указанной роли и порядку.
+
+**Параметры:**  
+- `role_name (str)`: имя роли для сортировки (например, "name", "price").
+- `order (str, optional)`: порядок сортировки ("ascending" или "descending"). По умолчанию "ascending".
+
+**Действия:**  
+- Сопоставляет `role_name` с ролями `ItemsModel`.
+- Устанавливает порядок сортировки (`Qt.AscendingOrder` или `Qt.DescendingOrder`).
+- Выполняет сортировку через `sort`.
+- Выводит отладочную информацию о сортированных строках.
+
+---
+
+### `filterAcceptsRow(self, sourceRow, sourceParent)`
+
+Проверяет, проходит ли строка фильтр.
+
+**Параметры:**  
+- `sourceRow (int)`: индекс строки в исходной модели.
+- `sourceParent`: родительский индекс в исходной модели.
+
+**Возвращает:**  
+- `bool`: `True`, если строка проходит фильтр, иначе `False`.
+
+**Логика:**  
+- Проверяет валидность исходной модели и индекса строки.
+- Если строка фильтра пуста, принимает все строки.
+- Сравнивает значение в указанном поле с строкой фильтра (в нижнем регистре).
+
+---
+
+### `addItem(self, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document)`
+
+Добавляет новый элемент в исходную модель.
+
+**Параметры:**  
+- `article (str)`: артикул товара.
+- `name (str)`: название товара.
+- `description (str)`: описание товара.
+- `image_path (str)`: путь к изображению.
+- `category_id (int)`: идентификатор категории.
+- `price (float)`: цена товара.
+- `stock (int)`: количество на складе.
+- `status (str)`: статус товара.
+- `unit (str)`: единица измерения.
+- `manufacturer (str)`: производитель.
+- `document (str)`: связанный документ.
+
+**Возвращает:**  
+- Результат выполнения метода `addItem` исходной модели или сообщение об ошибке.
+
+**Действия:**  
+- Выполняет безопасное преобразование типов для `price` и `stock`.
+- Перенаправляет вызов в `ItemsModel.addItem`.
+- Выводит отладочную информацию.
+
+---
+
+### `updateItem(self, proxy_row, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document)`
+
+Обновляет существующий элемент в исходной модели.
+
+**Параметры:**  
+- `proxy_row (int)`: индекс строки в прокси-модели.
+- `article (str)`: артикул товара.
+- `name (str)`: название товара.
+- `description (str)`: описание товара.
+- `image_path (str)`: путь к изображению.
+- `category_id (int)`: идентификатор категории.
+- `price (float)`: цена товара.
+- `stock (int)`: количество на складе.
+- `status (str)`: статус товара.
+- `unit (str)`: единица измерения.
+- `manufacturer (str)`: производитель.
+- `document (str)`: связанный документ.
+
+**Действия:**  
+- Преобразует индекс прокси-модели в индекс исходной модели.
+- Проверяет валидность индексов.
+- Выполняет безопасное преобразование типов для `price` и `stock`.
+- Перенаправляет вызов в `ItemsModel.updateItem`.
+- Выводит отладочную информацию.
+
+---
+
+### `deleteItem(self, proxy_row)`
+
+Удаляет элемент из исходной модели.
+
+**Параметры:**  
+- `proxy_row (int)`: индекс строки в прокси-модели.
+
+**Действия:**  
+- Преобразует индекс прокси-модели в индекс исходной модели.
+- Проверяет валидность индексов.
+- Перенаправляет вызов в `ItemsModel.deleteItem`.
+- Выводит отладочную информацию.

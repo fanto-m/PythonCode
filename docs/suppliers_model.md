@@ -1,41 +1,190 @@
-# File: `suppliers_model.py`
+# suppliers_model.py
 
-### Imports
-PySide6.QtCore, database
+Модель данных для управления списком поставщиков в Qt/QML-приложении.
 
-## Class `SuppliersModel`
-### Method `__init__(self, parent = None)`
-_No docstring._
+---
 
-### Method `roleNames(self)`
-_No docstring._
+## Импорты
 
-### Method `rowCount(self, parent = None)`
-_No docstring._
+- `PySide6.QtCore`: Предоставляет базовые классы Qt (`QAbstractListModel`, `Qt`, `Slot`, `Signal`).
+- `database.DatabaseManager`: Менеджер для взаимодействия с базой данных.
 
-### Method `data(self, index, role = Qt.DisplayRole)`
-_No docstring._
+---
 
-### Method `loadSuppliers(self)`
-Загружает всех поставщиков из БД.
+## Класс `SuppliersModel`
 
-### Method `addSupplier(self, name, company, email, phone, website)`
-Добавляет нового поставщика.
+Наследуется от `QAbstractListModel`. Используется для предоставления данных о поставщиках в QML-интерфейсе, включая идентификатор, имя, компанию, email, телефон и веб-сайт. Поддерживает операции загрузки, добавления, обновления, удаления и привязки поставщиков к товарам через `DatabaseManager`. Испускает сигнал `errorOccurred` при возникновении ошибок.
 
-### Method `updateSupplier(self, supplier_id, name, company, email, phone, website)`
-Обновляет данные поставщика.
+### Атрибуты ролей
 
-### Method `deleteSupplier(self, supplier_id)`
-Удаляет поставщика.
+| Роль           | Значение (Qt.UserRole + N) | Описание                     |
+|----------------|----------------------------|------------------------------|
+| `IdRole`       | `Qt.UserRole + 1`          | Идентификатор поставщика     |
+| `NameRole`     | `Qt.UserRole + 2`          | Имя поставщика               |
+| `CompanyRole`  | `Qt.UserRole + 3`          | Название компании            |
+| `EmailRole`    | `Qt.UserRole + 4`          | Электронная почта            |
+| `PhoneRole`    | `Qt.UserRole + 5`          | Телефон                      |
+| `WebsiteRole`  | `Qt.UserRole + 6`          | Веб-сайт                     |
 
-### Method `get(self, idx)`
-Возвращает объект поставщика по индексу.
+### Сигналы
 
-### Method `getSupplierIdByName(self, name)`
-Возвращает ID поставщика по имени (name).
+- **`errorOccurred(str)`**: Испускается при возникновении ошибок в методах изменения данных (добавление, обновление, удаление, привязка).
 
-### Method `getSupplierIdByCompany(self, company)`
-Возвращает ID поставщика по названию компании.
+---
 
-### Method `bindSuppliersToItem(self, article, supplier_ids)`
-Привязать поставщиков к товару.
+## Методы
+
+### `__init__(self, parent=None)`
+
+Инициализирует модель поставщиков.
+
+**Параметры:**  
+- `parent (QObject, optional)`: Родительский объект Qt. По умолчанию `None`.
+
+**Действия:**  
+- Создает экземпляр `DatabaseManager` для работы с базой данных.  
+- Инициализирует пустой список поставщиков.  
+- Вызывает `loadSuppliers` для загрузки данных.
+
+---
+
+### `roleNames(self)`
+
+Возвращает сопоставление ролей и их строковых имен для QML.  
+Используется QML для доступа к данным модели по именам (например, `model.name`).
+
+**Возвращает:**  
+- `dict`: Словарь вида `{роль: b"имя"}`.
+
+---
+
+### `rowCount(self, parent=None)`
+
+Возвращает количество строк в модели (число поставщиков).
+
+**Параметры:**  
+- `parent (QModelIndex, optional)`: Родительский индекс (не используется). По умолчанию `None`.
+
+**Возвращает:**  
+- `int`: Количество поставщиков в списке.
+
+---
+
+### `data(self, index, role=Qt.DisplayRole)`
+
+Получает данные для указанного индекса и роли.
+
+**Параметры:**  
+- `index (QModelIndex)`: Индекс строки в модели.
+- `role (int)`: Роль данных (например, `IdRole`, `NameRole`). По умолчанию `Qt.DisplayRole`.
+
+**Возвращает:**  
+- Значение, соответствующее роли, или `None`, если индекс или роль недействительны.
+
+---
+
+### `loadSuppliers(self)`
+
+Загружает всех поставщиков из базы данных.  
+Сбрасывает модель, получает данные поставщиков через `DatabaseManager` и обновляет внутренний список.
+
+---
+
+### `addSupplier(self, name, company, email, phone, website)`
+
+Добавляет нового поставщика в базу данных.
+
+**Параметры:**  
+- `name (str)`: Имя поставщика.
+- `company (str)`: Название компании.
+- `email (str)`: Электронная почта.
+- `phone (str)`: Телефон.
+- `website (str)`: Веб-сайт.
+
+**Действия:**  
+- Вызывает метод `add_supplier` в `DatabaseManager`.  
+- Перезагружает список поставщиков через `loadSuppliers`.  
+- При ошибке испускает сигнал `errorOccurred`.
+
+---
+
+### `updateSupplier(self, supplier_id, name, company, email, phone, website)`
+
+Обновляет данные существующего поставщика.
+
+**Параметры:**  
+- `supplier_id (int)`: Идентификатор поставщика.
+- `name (str)`: Имя поставщика.
+- `company (str)`: Название компании.
+- `email (str)`: Электронная почта.
+- `phone (str)`: Телефон.
+- `website (str)`: Веб-сайт.
+
+**Действия:**  
+- Вызывает метод `update_supplier` в `DatabaseManager`.  
+- Перезагружает список поставщиков через `loadSuppliers`.  
+- При ошибке испускает сигнал `errorOccurred`.
+
+---
+
+### `deleteSupplier(self, supplier_id)`
+
+Удаляет поставщика из базы данных.
+
+**Параметры:**  
+- `supplier_id (int)`: Идентификатор поставщика.
+
+**Действия:**  
+- Вызывает метод `delete_supplier` в `DatabaseManager`.  
+- Перезагружает список поставщиков через `loadSuppliers`.  
+- При ошибке испускает сигнал `errorOccurred`.
+
+---
+
+### `get(self, idx)`
+
+Возвращает данные поставщика по указанному индексу.
+
+**Параметры:**  
+- `idx (int)`: Индекс строки в модели.
+
+**Возвращает:**  
+- `dict`: Словарь с данными поставщика (`id`, `name`, `company`, `email`, `phone`, `website`) или словарь с пустыми значениями, если индекс недействителен.
+
+---
+
+### `getSupplierIdByName(self, name)`
+
+Возвращает идентификатор поставщика по его имени.
+
+**Параметры:**  
+- `name (str)`: Имя поставщика.
+
+**Возвращает:**  
+- `int`: Идентификатор поставщика или `-1`, если поставщик не найден.
+
+---
+
+### `getSupplierIdByCompany(self, company)`
+
+Возвращает идентификатор поставщика по названию компании.
+
+**Параметры:**  
+- `company (str)`: Название компании.
+
+**Возвращает:**  
+- `int`: Идентификатор поставщика или `-1`, если поставщик не найден.
+
+---
+
+### `bindSuppliersToItem(self, article, supplier_ids)`
+
+Привязывает список поставщиков к товару.
+
+**Параметры:**  
+- `article (str)`: Артикул товара.
+- `supplier_ids (list)`: Список идентификаторов поставщиков.
+
+**Действия:**  
+- Вызывает метод `set_suppliers_for_item` в `DatabaseManager`.  
+- При ошибке испускает сигнал `errorOccurred`.
