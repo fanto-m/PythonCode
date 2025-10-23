@@ -1,0 +1,1080 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Auto-generated code guide for the PythonCod project">
+      
+      
+        <meta name="author" content="fanto-m">
+      
+      
+      
+        <link rel="prev" href="../config_manager/">
+      
+      
+        <link rel="next" href="../filter_proxy_model/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+    
+    
+      
+        <title>База данных - PythonCod Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#module-databasepy" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PythonCod Documentation" class="md-header__button md-logo" aria-label="PythonCod Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PythonCod Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              База данных
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="light-blue"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fanto-m/PythonCod" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PythonCod Documentation" class="md-nav__button md-logo" aria-label="PythonCod Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PythonCod Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fanto-m/PythonCod" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Modules
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Modules
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../main/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    main
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../categories_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Категории
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config_manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Конфигурация
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    База данных
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    База данных
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#imports" class="md-nav__link">
+    <span class="md-ellipsis">
+      📦 Imports
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧩 Classes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧩 Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#class-databasemanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      class DatabaseManager
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      📝 Notes
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filter_proxy_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Прокси фильтр
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../item_suppliers_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Модель поставщиков
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../items_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Модель элементов
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../specification_items_table_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Таблица спецификаций
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../specification_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Модели спецификаций
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../supplier_list_adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Адаптер списка поставщиков
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../suppliers_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Модель поставщиков
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../suppliers_table_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Таблица поставщиков
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Валидаторы
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="module-databasepy">Module: database.py<a class="headerlink" href="#module-databasepy" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>Path: <code>PythonCod-master/database.py</code></p>
+</blockquote>
+<h2 id="imports">📦 Imports<a class="headerlink" href="#imports" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code><span class="n">sqlite3</span>
+<span class="n">os</span>
+<span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span>
+</code></pre></div>
+
+<h2 id="classes">🧩 Classes<a class="headerlink" href="#classes" title="Permanent link">&para;</a></h2>
+<h3 id="class-databasemanager">class DatabaseManager<a class="headerlink" href="#class-databasemanager" title="Permanent link">&para;</a></h3>
+<p>Класс для управления базой данных SQLite для хранения информации о товарах, категориях, поставщиках и спецификациях.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_path</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Инициализирует экземпляр DatabaseManager.</p>
+<p>Args:
+    db_path (str): Путь к файлу базы данных SQLite. По умолчанию 'items.db'.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_init_database</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Инициализирует базу данных, создавая необходимые таблицы.</p>
+<p>Создает таблицы items, suppliers, item_suppliers и categories с соответствующей структурой.
+Обрабатывает ошибки при создании таблиц и выводит отладочные сообщения.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_categories</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Загружает все категории из базы данных.</p>
+<p>Returns:
+    list: Список кортежей с данными категорий (id, name, sku_prefix, sku_digits).
+    Пустой список в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_category</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sku_prefix</span><span class="p">,</span> <span class="n">sku_digits</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Добавляет новую категорию в базу данных.</p>
+<p>Args:
+    name (str): Название категории.
+    sku_prefix (str): Префикс для артикулов товаров в категории. По умолчанию 'ITEM'.
+    sku_digits (int): Количество цифр в артикуле. По умолчанию 4.</p>
+<p>Raises:
+    Exception: Если произошла ошибка при добавлении категории.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_next_sku</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Генерирует следующий артикул для указанной категории.</p>
+<p>Args:
+    category_id (int): ID категории, для которой генерируется артикул.</p>
+<p>Returns:
+    str: Новый артикул в формате {prefix}-{number}, или None в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_category</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category_id</span><span class="p">,</span> <span class="n">new_name</span><span class="p">,</span> <span class="n">sku_prefix</span><span class="p">,</span> <span class="n">sku_digits</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Обновляет информацию о категории.</p>
+<p>Args:
+    category_id (int): ID категории для обновления.
+    new_name (str): Новое название категории.
+    sku_prefix (str): Новый префикс артикула.
+    sku_digits (int): Новое количество цифр в артикуле.</p>
+<p>Raises:
+    Exception: Если произошла ошибка при обновлении категории.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_category</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Удаляет категорию из базы данных по ID.</p>
+<p>Args:
+    category_id (int): ID категории для удаления.</p>
+<p>Raises:
+    Exception: Если произошла ошибка при удалении категории.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_suppliers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Загружает всех поставщиков из базы данных.</p>
+<p>Returns:
+    list: Список кортежей с данными поставщиков (id, name, company, email, phone, website).
+    Пустой список в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_supplier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">company</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">phone</span><span class="p">,</span> <span class="n">website</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Добавляет нового поставщика в базу данных.</p>
+<p>Args:
+    name (str): Имя контактного лица поставщика.
+    company (str): Название компании.
+    email (str, optional): Электронная почта поставщика.
+    phone (str, optional): Телефон поставщика.
+    website (str, optional): Веб-сайт поставщика.</p>
+<p>Returns:
+    list: Пустой список в случае ошибки (для обратной совместимости).</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_supplier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">supplier_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">company</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">phone</span><span class="p">,</span> <span class="n">website</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Обновляет информацию о поставщике.</p>
+<p>Args:
+    supplier_id (int): ID поставщика для обновления.
+    name (str): Новое имя контактного лица.
+    company (str): Новое название компании.
+    email (str, optional): Новая электронная почта.
+    phone (str, optional): Новый телефон.
+    website (str, optional): Новый веб-сайт.</p>
+<p>Raises:
+    Exception: Если произошла ошибка при обновлении поставщика.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_supplier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">supplier_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Удаляет поставщика из базы данных по ID.</p>
+<p>Args:
+    supplier_id (int): ID поставщика для удаления.</p>
+<p>Raises:
+    Exception: Если произошла ошибка при удалении поставщика.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_suppliers_for_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">article</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Получает список поставщиков для указанного товара.</p>
+<p>Args:
+    article (str): Артикул товара.</p>
+<p>Returns:
+    list: Список кортежей с данными поставщиков (id, name, company, email, phone, website).
+    Пустой список, если артикул некорректен или произошла ошибка.</p>
+<p>Raises:
+    FileNotFoundError: Если файл базы данных не существует.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_suppliers_for_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">article</span><span class="p">,</span> <span class="n">supplier_ids</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Устанавливает список поставщиков для товара, заменяя существующие связи.</p>
+<p>Args:
+    article (str): Артикул товара.
+    supplier_ids (list): Список ID поставщиков. Может быть пустым.</p>
+<p>Returns:
+    bool: True, если операция успешна, False в случае ошибки или некорректных данных.</p>
+<p>Raises:
+    FileNotFoundError: Если файл базы данных не существует.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Загружает все записи из таблицы items с информацией о категориях.</p>
+<p>Returns:
+    list: Список кортежей с данными товаров (article, name, description, image_path,
+    category_name, price, stock, created_date, status, unit, manufacturer, document).
+    Пустой список в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">article</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">category_id</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">stock</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">unit</span><span class="p">,</span> <span class="n">manufacturer</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Добавляет новый товар в таблицу items.</p>
+<p>Args:
+    article (str): Артикул товара.
+    name (str): Название товара.
+    description (str): Описание товара.
+    image_path (str): Путь к изображению товара.
+    category_id (int): ID категории.
+    price (float): Цена товара.
+    stock (int): Количество на складе.
+    status (str): Статус товара (например, 'в наличии').
+    unit (str): Единица измерения (например, 'шт.').
+    manufacturer (str): Производитель.
+    document (str): Связанный документ.</p>
+<p>Raises:
+    Exception: Если произошла ошибка при добавлении товара.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_article</span><span class="p">,</span> <span class="n">article</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">category_id</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">stock</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">unit</span><span class="p">,</span> <span class="n">manufacturer</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Обновляет запись о товаре в таблице items.</p>
+<p>Args:
+    old_article (str): Текущий артикул товара.
+    article (str): Новый артикул товара.
+    name (str): Новое название товара.
+    description (str): Новое описание товара.
+    image_path (str): Новый путь к изображению.
+    category_id (int): Новый ID категории.
+    price (float): Новая цена.
+    stock (int): Новое количество на складе.
+    status (str): Новый статус (по умолчанию 'в наличии').
+    unit (str): Новая единица измерения (по умолчанию 'шт.').
+    manufacturer (str, optional): Новый производитель.
+    document (str, optional): Новый документ.</p>
+<p>Raises:
+    Exception: Если произошла ошибка при обновлении товара.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">article</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Удаляет товар из таблицы items по артикулу.</p>
+<p>Args:
+    article (str): Артикул товара для удаления.</p>
+<p>Raises:
+    Exception: Если произошла ошибка при удалении товара.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_specifications</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Загружает все спецификации из базы данных.</p>
+<p>Returns:
+    list: Список кортежей с данными спецификаций (id, name, description, created_date,
+    modified_date, status, labor_cost, overhead_percentage, final_price).
+    Пустой список в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_specification</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Получает спецификацию по её ID.</p>
+<p>Args:
+    spec_id (int): ID спецификации.</p>
+<p>Returns:
+    tuple: Кортеж с данными спецификации (id, name, description, created_date,
+    modified_date, status, labor_cost, overhead_percentage, final_price).
+    None в случае ошибки или если спецификация не найдена.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_specification</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">labor_cost</span><span class="p">,</span> <span class="n">overhead_percentage</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Создаёт новую спецификацию в базе данных.</p>
+<p>Args:
+    name (str): Название спецификации.
+    description (str): Описание спецификации.
+    status (str): Статус спецификации (по умолчанию 'черновик').
+    labor_cost (float): Стоимость работы (по умолчанию 0.0).
+    overhead_percentage (float): Процент накладных расходов (по умолчанию 0.0).</p>
+<p>Returns:
+    int: ID новой спецификации или None в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_specification</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">labor_cost</span><span class="p">,</span> <span class="n">overhead_percentage</span><span class="p">,</span> <span class="n">final_price</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Обновляет существующую спецификацию.</p>
+<p>Args:
+    spec_id (int): ID спецификации для обновления.
+    name (str): Новое название.
+    description (str): Новое описание.
+    status (str): Новый статус.
+    labor_cost (float): Новая стоимость работы.
+    overhead_percentage (float): Новый процент накладных.
+    final_price (float): Итоговая цена (по умолчанию 0.0).</p>
+<p>Returns:
+    bool: True, если обновление успешно, False в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_specification</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Удаляет спецификацию и связанные с ней позиции.</p>
+<p>Args:
+    spec_id (int): ID спецификации для удаления.</p>
+<p>Returns:
+    bool: True, если удаление успешно, False в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_specification_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Загружает все позиции спецификации с данными о товарах.</p>
+<p>Args:
+    spec_id (int): ID спецификации.</p>
+<p>Returns:
+    list: Список кортежей с данными позиций (id, specification_id, article, quantity, notes,
+    name, unit, price, image_path, category, status).
+    Пустой список в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_specification_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_id</span><span class="p">,</span> <span class="n">article</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">notes</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Добавляет новую позицию в спецификацию.</p>
+<p>Args:
+    spec_id (int): ID спецификации.
+    article (str): Артикул товара.
+    quantity (int): Количество товара.
+    notes (str, optional): Примечания к позиции.</p>
+<p>Returns:
+    int: ID новой позиции или None в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_specification_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item_id</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">notes</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Обновляет позицию в спецификации.</p>
+<p>Args:
+    item_id (int): ID позиции для обновления.
+    quantity (int): Новое количество.
+    notes (str, optional): Новые примечания.</p>
+<p>Returns:
+    bool: True, если обновление успешно, False в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_specification_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Удаляет позицию из спецификации.</p>
+<p>Args:
+    item_id (int): ID позиции для удаления.</p>
+<p>Returns:
+    bool: True, если удаление успешно, False в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_specification_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Удаляет все позиции указанной спецификации.</p>
+<p>Args:
+    spec_id (int): ID спецификации.</p>
+<p>Returns:
+    bool: True, если удаление успешно, False в случае ошибки.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_specification_with_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">labor_cost</span><span class="p">,</span> <span class="n">overhead_percentage</span><span class="p">,</span> <span class="n">items</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Сохраняет спецификацию и её позиции транзакционно.</p>
+<p>Args:
+    spec_id (int): ID спецификации (None для новой).
+    name (str): Название спецификации.
+    description (str): Описание спецификации.
+    status (str): Статус спецификации.
+    labor_cost (float): Стоимость работы.
+    overhead_percentage (float): Процент накладных расходов.
+    items (list): Список словарей с данными позиций [{article, quantity, notes}, ...].</p>
+<p>Returns:
+    int: ID спецификации или None в случае ошибки.</p>
+<h2 id="notes">📝 Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
+<p>This module was auto-documented.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.expand", "navigation.sections", "navigation.instant", "content.code.copy", "toc.integrate"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>
