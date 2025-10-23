@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+
+permissions:
+  contents: write  # 👈 Разрешает пуш в gh-pages
 
 jobs:
   build:
@@ -30,3 +34,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
+          publish_branch: gh-pages  # 👈 создаёт и обновляет ветку gh-pages
