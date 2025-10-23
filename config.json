@@ -1,7 +1,0 @@
-{
-    "vat_included": true,
-    "vat_rate": 20.0,
-    "default_currency": "RUB",
-    "decimal_places": 2,
-    "theme": "light"
-}

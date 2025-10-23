@@ -1,56 +1,55 @@
-site_name: PythonCod Documentation
-site_description: Auto-generated code guide for the PythonCod project
-site_author: fanto-m
-repo_url: https://github.com/fanto-m/PythonCod
+site_name: PythonCode Docs
+site_description: Автоматическая документация проекта PythonCode
+site_author: voronovich
+repo_url: https://github.com/<ТВОЙ_НИК>/<ТВОЙ_РЕПОЗИТОРИЙ>
+repo_name: GitHub
 
 theme:
   name: material
-  language: en
+  language: ru
   features:
-    - navigation.expand
-    - navigation.sections
     - navigation.instant
+    - navigation.tracking
+    - navigation.top
     - content.code.copy
-    - toc.integrate
+    - content.action.edit
+    - content.action.view
   palette:
     - scheme: default
-      primary: blue
-      accent: light blue
+      primary: indigo
+      accent: pink
     - scheme: slate
-      primary: deep orange
-      accent: amber
-
-nav:
-  - Home: index.md
-  - Modules:
-      - main: main.md
-      - Категории: categories_model.md
-      - Конфигурация: config_manager.md
-      - База данных: database.md
-      - Прокси фильтр: filter_proxy_model.md
-      - Модель поставщиков: item_suppliers_model.md
-      - Модель элементов: items_model.md
-      - Таблица спецификаций: specification_items_table_model.md
-      - Модели спецификаций: specification_models.md
-      - Адаптер списка поставщиков: supplier_list_adapter.md
-      - Модель поставщиков: suppliers_model.md
-      - Таблица поставщиков: suppliers_table_model.md
-      - Валидаторы: validators.md
-      # Добавь сюда остальные файлы из docs/
-
-markdown_extensions:
-  - toc:
-      permalink: true
-  - tables
-  - fenced_code
-  - admonition
-  - codehilite:
-      guess_lang: false
-  - footnotes
-  - attr_list
+      toggle:
+        icon: material/weather-night
+        name: Тёмная тема
+      primary: indigo
+      accent: pink
 
 plugins:
   - search
   - mkdocstrings:
       handlers:
-        python: {}
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+
+
+nav:
+  - Главная: index.md
+  - Руководство:
+      - Конфигурация: config_manager.md
+      - Валидаторы: validators.md
+      - База данных: database.md
+  - Модели:
+      - Категории: categories_model.md
+      - Элементы: items_model.md
+      - Поставщики: suppliers_model.md
+      - Спецификации: specification_models.md
+      - Таблицы спецификаций: specification_items_table_model.md
+      - Прокси фильтр: filter_proxy_model.md
+  - Адаптеры:
+      - Supplier List Adapter: supplier_list_adapter.md
+  - API:
+      - Обзор: api/index.md
+  - Генерация документации: generate_docs.md
