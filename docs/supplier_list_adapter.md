@@ -1,17 +1,39 @@
-# File: `supplier_list_adapter.py`
+# Module: supplier_list_adapter.py
 
-### Imports
-PySide6.QtCore
+> Path: `PythonCod-master/supplier_list_adapter.py`
 
-## Class `SupplierListAdapter`
-### Method `__init__(self, table_model, parent = None)`
-_No docstring._
+## 📦 Imports
+```python
+PySide6.QtCore.QAbstractListModel
+PySide6.QtCore.Qt
+PySide6.QtCore.QModelIndex
+```
 
-### Method `rowCount(self, parent = QModelIndex())`
-_No docstring._
+## 🧩 Classes
 
-### Method `data(self, index, role = Qt.DisplayRole)`
-_No docstring._
+### class SupplierListAdapter
 
-### Method `roleNames(self)`
-_No docstring._
+No class description provided.
+
+```python
+def __init__(self, table_model, parent)
+```
+No description.
+
+```python
+def rowCount(self, parent)
+```
+No description.
+
+```python
+def data(self, index, role)
+```
+No description.
+
+```python
+def roleNames(self)
+```
+No description.
+
+## 📝 Notes
+This module was auto-documented.

@@ -1,73 +1,129 @@
-# File: `specification_items_table_model.py`
+# Module: specification_items_table_model.py
 
-### Imports
-PySide6.QtCore
+> Path: `PythonCod-master/specification_items_table_model.py`
 
-## Class `SpecificationItemsTableModel`
+## 📦 Imports
+```python
+PySide6.QtCore.QAbstractTableModel
+PySide6.QtCore.Qt
+PySide6.QtCore.QModelIndex
+PySide6.QtCore.Slot
+PySide6.QtCore.Signal
+```
+
+## 🧩 Classes
+
+### class SpecificationItemsTableModel
+
 Table model for specification items with columns:
 Image | Article | Name | Category | Quantity | Unit | Price | Total | Delete
 
-### Method `__init__(self)`
-_No docstring._
+```python
+def __init__(self)
+```
+No description.
 
-### Method `rowCount(self, parent = QModelIndex())`
+```python
+def rowCount(self, parent)
+```
 Return number of rows
 
-### Method `columnCount(self, parent = QModelIndex())`
+```python
+def columnCount(self, parent)
+```
 Return number of columns
 
-### Method `data(self, index, role = Qt.DisplayRole)`
+```python
+def data(self, index, role)
+```
 Return data for given index and role
 
-### Method `setData(self, index, value, role = Qt.EditRole)`
+```python
+def setData(self, index, value, role)
+```
 Set data for given index
 
-### Method `flags(self, index)`
+```python
+def flags(self, index)
+```
 Return item flags
 
-### Method `headerData(self, section, orientation, role = Qt.DisplayRole)`
+```python
+def headerData(self, section, orientation, role)
+```
 Return header data
 
-### Method `roleNames(self)`
+```python
+def roleNames(self)
+```
 Define role names for QML access
 
-### Method `addItem(self, article, name, quantity, unit, price, image_path = '', category = '', status = '')`
+```python
+def addItem(self, article, name, quantity, unit, price, image_path, category, status)
+```
 Add new item to specification.
 If article already exists, increase quantity and update the item.
 Returns True if item was added, False if quantity was updated.
 
-### Method `removeItem(self, row)`
+```python
+def removeItem(self, row)
+```
 Remove item at specified row
 
-### Method `updateQuantity(self, row, new_quantity)`
+```python
+def updateQuantity(self, row, new_quantity)
+```
 Update quantity for item at specified row
 
-### Method `getTotalMaterialsCost(self)`
+```python
+def getTotalMaterialsCost(self)
+```
 Calculate total cost of all materials
 
-### Method `clear(self)`
+```python
+def clear(self)
+```
 Clear all items
 
-### Method `getAllItems(self)`
+```python
+def getAllItems(self)
+```
 Get all items as list of dictionaries
 
-### Method `getItems(self)`
+```python
+def getItems(self)
+```
 Alias for getAllItems - for compatibility
 
-### Method `count(self)`
+```python
+def count(self)
+```
 Get number of items
 
-### Method `itemCount(self)`
+```python
+def itemCount(self)
+```
 Alias for count - for compatibility
 
-### Method `debugPrintItems(self)`
+```python
+def debugPrintItems(self)
+```
 Debug method to print all items
 
-### Method `loadItems(self, items)`
+```python
+def loadItems(self, items)
+```
 Load items from list of dictionaries
 
-### Method `getItem(self, row)`
+```python
+def getItem(self, row)
+```
 Get item data at specified row
 
-### Method `_emitTotalCostChanged(self)`
+```python
+def _emitTotalCostChanged(self)
+```
 Emit signal when total cost changes
+
+## 📝 Notes
+This module was auto-documented.
