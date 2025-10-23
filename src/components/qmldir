@@ -1,0 +1,9 @@
+# qmldir
+# Комментарии начинаются с #
+
+# Регистрация singleton
+singleton Theme 1.0 Theme_CSM.qml
+
+# Опционально: можно зарегистрировать другие компоненты
+# SpecificationItemsTable 1.0 SpecificationItemsTable.qml
+# NotificationDialog 1.0 NotificationDialog.qml
