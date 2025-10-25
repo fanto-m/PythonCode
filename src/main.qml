@@ -18,7 +18,7 @@ ApplicationWindow {
 
     property string currentMode: "main" // "main", "edit", "view", "create_spec", "view_spec"
     property int defaultWidth: 1000
-    property int defaultHeight: 800
+    property int defaultHeight: 700
 
     // Shared properties
     property string selectedImagePath: ""
