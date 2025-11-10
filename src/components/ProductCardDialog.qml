@@ -1,4 +1,4 @@
-// ProductCardDialog.qml - Диалог карточки товара с Grid Layout
+// ProductCardDialog.qml - Упрощённая версия без автосохранения
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -6,8 +6,8 @@ import QtQuick.Dialogs
 
 Dialog {
     id: productDialog
-    width: 600
-    height:550
+    width: 900
+    height: 750
     title: isEditMode ? "Редактирование товара" : "Добавление нового товара"
     modal: true
     x: (parent.width - width) / 2
@@ -55,12 +55,17 @@ Dialog {
     signal saveItemClicked(int itemIndex, var itemData)
 
     // Properties
-    property alias imageField: imageField
-    property alias documentField: documentField
     property int currentItemId: -1
     property string currentArticle: ""
     property bool isEditMode: currentItemId !== -1
     property bool hasValidationErrors: false
+
+    // Храним полные относительные пути к файлам
+    property string currentImagePath: ""
+    property string currentDocumentPath: ""
+
+    // Ссылка на модель документов
+    property var itemDocumentsModel: null
 
     // Theme
     readonly property color primaryColor: "#2196F3"
@@ -71,24 +76,13 @@ Dialog {
     readonly property int baseSpacing: 16
     readonly property int baseFontSize: 10
 
-    // File dialogs
-    FileDialog {
+    // Диалоги выбора файлов
+    ImageFileDialog {
         id: imageDialog
-        title: "Выберите изображение"
-        fileMode: FileDialog.OpenFile
-        nameFilters: ["Image files (*.jpg *.png *.gif)"]
-        onAccepted: {
-            imageField.text = selectedFile.toString().split("/").pop()
-        }
-    }
-
-    FileDialog {
-        id: documentDialog
-        title: "Выберите документ"
-        fileMode: FileDialog.OpenFile
-        nameFilters: ["All files (*.*)"]
-        onAccepted: {
-            documentField.text = selectedFile.toString().split("/").pop()
+        onImageSelected: function(relativePath, subdirectory) {
+            currentImagePath = relativePath
+            imageField.text = fileManager ? fileManager.get_file_name(relativePath) : relativePath
+            console.log("Image selected:", relativePath, "subdir:", subdirectory)
         }
     }
 
@@ -99,571 +93,538 @@ Dialog {
         anchors.bottomMargin: 80
         spacing: 12
 
-
-
-
-        // Grid Layout
-        GridLayout {
+        // ScrollView для прокрутки содержимого
+        ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.preferredWidth: 800
-            columns: 2
-            columnSpacing: baseSpacing
-            rowSpacing: baseSpacing
+            clip: true
 
-            // --- РЯД 0 ---
-            // Категория
             ColumnLayout {
-                Layout.row: 0
-                Layout.column: 0
-                Layout.preferredWidth: 370
-                spacing: 4
+                width: parent.width
+                spacing: 12
 
-                Text {
-                    text: "Категория"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                ComboBox {
-                    id: categoryComboBox
+                // Grid Layout для полей формы
+                GridLayout {
                     Layout.fillWidth: true
-                    model: categoryModel
-                    textRole: "name"
-                    font.pointSize: baseFontSize
+                    Layout.preferredWidth: 800
+                    columns: 2
+                    columnSpacing: baseSpacing
+                    rowSpacing: baseSpacing
 
-                    background: Rectangle {
-                        color: "white"
-                        border.color: categoryComboBox.activeFocus ? focusBorderColor : borderColor
-                        border.width: categoryComboBox.activeFocus ? 2 : 1
-                        radius: 4
-                    }
-                }
-            }
+                    // --- РЯД 0: Категория и Цена ---
+                    ColumnLayout {
+                        Layout.row: 0
+                        Layout.column: 0
+                        Layout.preferredWidth: 300
+                        spacing: 4
 
-            // Цена
-            ColumnLayout {
-                Layout.row: 0
-                Layout.column: 1
-                Layout.preferredWidth: 370
-                spacing: 4
+                        Text {
+                            text: "Категория"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
+                        }
 
-                Text {
-                    text: "Цена"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 3
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-
-                        TextField {
-                            id: priceField
+                        ComboBox {
+                            id: categoryComboBox
                             Layout.fillWidth: true
-                            placeholderText: "0.00"
-                            text: "0.00"
+                            model: categoryModel
+                            textRole: "name"
                             font.pointSize: baseFontSize
-                            inputMethodHints: Qt.ImhFormattedNumbersOnly
-                            property bool hasError: false
 
                             background: Rectangle {
                                 color: "white"
-                                border.color: {
-                                    if (priceField.hasError) return errorColor
-                                    if (priceField.activeFocus) return focusBorderColor
-                                    return borderColor
-                                }
-                                border.width: priceField.activeFocus ? 2 : 1
+                                border.color: categoryComboBox.activeFocus ? focusBorderColor : borderColor
+                                border.width: categoryComboBox.activeFocus ? 2 : 1
                                 radius: 4
                             }
+                        }
+                    }
 
-                            onTextChanged: if (hasError && text.trim() !== "") hasError = false
+                    ColumnLayout {
+                        Layout.row: 0
+                        Layout.column: 1
+                        Layout.preferredWidth: 300
+                        spacing: 4
+
+                        Text {
+                            text: "Цена"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
                         }
 
-                        CheckBox {
-                            id: vatIncluded
-                            text: "НДС"
-                            font.pointSize: baseFontSize - 2
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
 
-                            Component.onCompleted: {
-                                if (configManager) checked = configManager.vatIncluded
+                            TextField {
+                                id: priceField
+                                Layout.fillWidth: true
+                                placeholderText: "0.00"
+                                text: "0.00"
+                                font.pointSize: baseFontSize
+                                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                property bool hasError: false
+
+                                background: Rectangle {
+                                    color: "white"
+                                    border.color: {
+                                        if (priceField.hasError) return errorColor
+                                        if (priceField.activeFocus) return focusBorderColor
+                                        return borderColor
+                                    }
+                                    border.width: priceField.activeFocus ? 2 : 1
+                                    radius: 4
+                                }
+
+                                onTextChanged: if (hasError && text.trim() !== "") hasError = false
                             }
 
-                            onCheckedChanged: {
-                                if (configManager) configManager.vatIncluded = checked
-                            }
+                            CheckBox {
+                                id: vatIncluded
+                                text: "НДС"
+                                font.pointSize: baseFontSize - 2
 
-                            Connections {
-                                target: configManager
-                                function onVatIncludedChanged() {
-                                    vatIncluded.checked = configManager.vatIncluded
+                                Component.onCompleted: {
+                                    if (configManager) checked = configManager.vatIncluded
+                                }
+
+                                onCheckedChanged: {
+                                    if (configManager) configManager.vatIncluded = checked
+                                }
+
+                                Connections {
+                                    target: configManager
+                                    function onVatIncludedChanged() {
+                                        vatIncluded.checked = configManager.vatIncluded
+                                    }
                                 }
                             }
                         }
                     }
 
-                    Text {
-                        visible: priceField.hasError
-                        text: "⚠️ Неверная цена"
-                        font.pointSize: baseFontSize - 2
-                        color: errorColor
-                    }
-                }
-            }
+                    // --- РЯД 1: Артикул и Наименование ---
+                    ColumnLayout {
+                        Layout.row: 1
+                        Layout.column: 0
+                        Layout.preferredWidth: 300
+                        spacing: 4
 
-            // --- РЯД 1 ---
-            // Артикул
-            ColumnLayout {
-                Layout.row: 1
-                Layout.column: 0
-                Layout.preferredWidth: 370
-                spacing: 4
+                        Text {
+                            text: "Артикул"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
+                        }
 
-                Text {
-                    text: "Артикул"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
+                            TextField {
+                                id: articleField
+                                Layout.fillWidth: true
+                                placeholderText: "Введите артикул"
+                                font.pointSize: baseFontSize
+                                property bool hasError: false
 
-                    TextField {
-                        id: articleField
-                        Layout.fillWidth: true
-                        placeholderText: "Введите артикул"
-                        font.pointSize: baseFontSize
-                        property bool hasError: false
+                                background: Rectangle {
+                                    color: "white"
+                                    border.color: {
+                                        if (articleField.hasError) return errorColor
+                                        if (articleField.activeFocus) return focusBorderColor
+                                        return borderColor
+                                    }
+                                    border.width: articleField.activeFocus ? 2 : 1
+                                    radius: 4
+                                }
 
-                        background: Rectangle {
-                            color: "white"
-                            border.color: {
-                                if (articleField.hasError) return errorColor
-                                if (articleField.activeFocus) return focusBorderColor
-                                return borderColor
+                                onTextChanged: if (hasError && text.trim() !== "") hasError = false
                             }
-                            border.width: articleField.activeFocus ? 2 : 1
-                            radius: 4
+
+                            // Кнопка автогенерации
+                            Button {
+                                text: "..."
+                                font.pointSize: baseFontSize + 1
+                                Layout.preferredWidth: 40
+                                enabled: categoryComboBox.currentIndex >= 0
+
+                                ToolTip.visible: hovered
+                                ToolTip.text: "Сгенерировать артикул"
+                                ToolTip.delay: 500
+
+                                onClicked: {
+                                    var categoryId = categoryModel.get(categoryComboBox.currentIndex).id
+                                    var generatedSku = categoryModel.generateSkuForCategory(categoryId)
+                                    if (generatedSku) {
+                                        articleField.text = generatedSku
+                                    }
+                                }
+
+                                background: Rectangle {
+                                    color: parent.down ? "#e0e0e0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
+                                    border.color: borderColor
+                                    border.width: 1
+                                    radius: 4
+                                }
+
+                                contentItem: Text {
+                                    text: parent.text
+                                    font: parent.font
+                                    color: parent.enabled ? "#333" : "#999"
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
                         }
 
-                        onTextChanged: if (hasError && text.trim() !== "") hasError = false
-                    }
-
-                    Button {
-                        text: "..."
-                        font.pointSize: baseFontSize + 1
-                        Layout.preferredWidth: 40
-                        enabled: categoryComboBox.currentIndex >= 0
-                        ToolTip.visible: hovered
-                        ToolTip.text: "Сгенерировать"
-
-                        onClicked: {
-                            var categoryId = categoryModel.get(categoryComboBox.currentIndex).id
-                            var generatedSku = categoryModel.generateSkuForCategory(categoryId)
-                            if (generatedSku) articleField.text = generatedSku
-                        }
-
-                        background: Rectangle {
-                            color: parent.down ? "#e0e0e0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
-                            border.color: borderColor
-                            border.width: 1
-                            radius: 4
-                        }
-                    }
-                }
-
-                Text {
-                    visible: articleField.hasError
-                    text: "⚠️ Артикул обязателен"
-                    font.pointSize: baseFontSize - 2
-                    color: errorColor
-                }
-            }
-
-            // Остаток
-            ColumnLayout {
-                Layout.row: 1
-                Layout.column: 1
-                Layout.preferredWidth: 370
-                spacing: 4
-
-                Text {
-                    text: "Остаток"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                SpinBox {
-                    id: stockField
-                    Layout.fillWidth: true
-                    from: 0
-                    to: 999999
-                    value: 0
-                    font.pointSize: baseFontSize
-                }
-            }
-
-            // --- РЯД 2 ---
-            // Название товара
-            ColumnLayout {
-                Layout.row: 2
-                Layout.column: 0
-                Layout.preferredWidth: 370
-                spacing: 4
-
-                Text {
-                    text: "Название товара *"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                TextField {
-                    id: nameField
-                    Layout.fillWidth: true
-                    placeholderText: "Введите название товара"
-                    font.pointSize: baseFontSize
-
-                    background: Rectangle {
-                        color: "white"
-                        border.color: nameField.activeFocus ? focusBorderColor : borderColor
-                        border.width: nameField.activeFocus ? 2 : 1
-                        radius: 4
-                    }
-                }
-            }
-
-            // Ед. изм.
-            ColumnLayout {
-                Layout.row: 2
-                Layout.column: 1
-                Layout.preferredWidth: 370
-                spacing: 4
-
-                Text {
-                    text: "Ед. изм."
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                ComboBox {
-                    id: unitComboBox
-                    Layout.fillWidth: true
-                    model: ["шт.", "м.", "кг.", "л.", "уп."]
-                    currentIndex: 0
-                    font.pointSize: baseFontSize
-
-                    background: Rectangle {
-                        color: "white"
-                        border.color: unitComboBox.activeFocus ? focusBorderColor : borderColor
-                        border.width: unitComboBox.activeFocus ? 2 : 1
-                        radius: 4
-                    }
-                }
-            }
-
-            // --- РЯД 3 ---
-            // Производитель
-            ColumnLayout {
-                Layout.row: 3
-                Layout.column: 0
-                Layout.preferredWidth: 370
-                spacing: 4
-
-                Text {
-                    text: "Производитель"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                TextField {
-                    id: manufacturerField
-                    Layout.fillWidth: true
-                    placeholderText: "Введите производителя"
-                    font.pointSize: baseFontSize
-
-                    background: Rectangle {
-                        color: "white"
-                        border.color: manufacturerField.activeFocus ? focusBorderColor : borderColor
-                        border.width: manufacturerField.activeFocus ? 2 : 1
-                        radius: 4
-                    }
-                }
-            }
-
-            // Статус
-            ColumnLayout {
-                Layout.row: 3
-                Layout.column: 1
-                Layout.preferredWidth: 370
-                spacing: 4
-
-                Text {
-                    text: "Статус"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                ComboBox {
-                    id: statusComboBox
-                    Layout.fillWidth: true
-                    model: ["в наличии", "под заказ", "архив"]
-                    currentIndex: 0
-                    font.pointSize: baseFontSize
-
-                    background: Rectangle {
-                        color: "white"
-                        border.color: statusComboBox.activeFocus ? focusBorderColor : borderColor
-                        border.width: statusComboBox.activeFocus ? 2 : 1
-                        radius: 4
-                    }
-                }
-            }
-
-            // --- РЯД 4 и 5 ---
-            // Описание (растягивается на несколько рядов)
-            ColumnLayout {
-                Layout.row: 4
-                Layout.column: 0
-                Layout.rowSpan: 2
-                Layout.preferredWidth: 370
-                Layout.fillHeight: true
-                spacing: 4
-
-                Text {
-                    text: "Описание"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                ScrollView {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-
-                    TextArea {
-                        id: descriptionField
-                        placeholderText: "Введите описание товара..."
-                        wrapMode: TextEdit.Wrap
-                        font.pointSize: baseFontSize
-                        selectByMouse: true
-                        implicitWidth: 340
-                        implicitHeight: 100
-
-                        background: Rectangle {
-                            color: "white"
-                            border.color: descriptionField.activeFocus ? focusBorderColor : borderColor
-                            border.width: descriptionField.activeFocus ? 2 : 1
-                            radius: 4
-                        }
-                    }
-                }
-            }
-
-            // Изображение
-            ColumnLayout {
-                Layout.row: 4
-                Layout.column: 1
-                Layout.preferredWidth: 370
-                spacing: 4
-
-                Text {
-                    text: "Изображение"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-
-                    Button {
-                        text: "Обзор..."
-                        font.pointSize: baseFontSize - 1
-                        onClicked: imageDialog.open()
-
-                        background: Rectangle {
-                            color: parent.hovered ? "#f0f0f0" : "#f5f5f5"
-                            border.color: borderColor
-                            border.width: 1
-                            radius: 4
+                        Text {
+                            visible: articleField.hasError
+                            text: "⚠️ Артикул обязателен"
+                            font.pointSize: baseFontSize - 2
+                            color: errorColor
                         }
                     }
 
-                    TextField {
-                        id: imageField
+                    ColumnLayout {
+                        Layout.row: 1
+                        Layout.column: 1
+                        Layout.preferredWidth: 300
+                        spacing: 4
+
+                        Text {
+                            text: "Наименование"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
+                        }
+
+                        TextField {
+                            id: nameField
+                            Layout.fillWidth: true
+                            placeholderText: "Введите наименование"
+                            font.pointSize: baseFontSize
+
+                            background: Rectangle {
+                                color: "white"
+                                border.color: nameField.activeFocus ? focusBorderColor : borderColor
+                                border.width: nameField.activeFocus ? 2 : 1
+                                radius: 4
+                            }
+                        }
+                    }
+
+                    // --- РЯД 2: Описание (на всю ширину) ---
+                    ColumnLayout {
+                        Layout.row: 2
+                        Layout.column: 0
+                        Layout.columnSpan: 2
                         Layout.fillWidth: true
-                        placeholderText: "Файл не выбран."
-                        readOnly: true
-                        font.pointSize: baseFontSize
+                        spacing: 4
 
-                        background: Rectangle {
-                            color: "#f5f5f5"
-                            border.color: borderColor
-                            border.width: 1
-                            radius: 4
+                        Text {
+                            text: "Описание"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
                         }
-                    }
-                }
-            }
 
-            // Документ
-            ColumnLayout {
-                Layout.row: 5
-                Layout.column: 1
-                Layout.preferredWidth: 370
-                spacing: 4
+                        ScrollView {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 80
 
-                Text {
-                    text: "Документ"
-                    font.pointSize: baseFontSize - 1
-                    font.bold: true
-                    color: "#333"
-                }
+                            TextArea {
+                                id: descriptionField
+                                placeholderText: "Введите описание товара"
+                                font.pointSize: baseFontSize
+                                wrapMode: TextArea.Wrap
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-
-                    Button {
-                        text: "Обзор..."
-                        font.pointSize: baseFontSize - 1
-                        onClicked: documentDialog.open()
-
-                        background: Rectangle {
-                            color: parent.hovered ? "#f0f0f0" : "#f5f5f5"
-                            border.color: borderColor
-                            border.width: 1
-                            radius: 4
+                                background: Rectangle {
+                                    color: "white"
+                                    border.color: descriptionField.activeFocus ? focusBorderColor : borderColor
+                                    border.width: descriptionField.activeFocus ? 2 : 1
+                                    radius: 4
+                                }
+                            }
                         }
                     }
 
-                    TextField {
-                        id: documentField
+                    // --- РЯД 3: Количество и Статус ---
+                    ColumnLayout {
+                        Layout.row: 3
+                        Layout.column: 0
+                        Layout.preferredWidth: 300
+                        spacing: 4
+
+                        Text {
+                            text: "Количество"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
+                        }
+
+                        SpinBox {
+                            id: stockField
+                            Layout.fillWidth: true
+                            from: 0
+                            to: 999999
+                            value: 0
+                            editable: true
+                            font.pointSize: baseFontSize
+
+                            background: Rectangle {
+                                color: "white"
+                                border.color: stockField.activeFocus ? focusBorderColor : borderColor
+                                border.width: stockField.activeFocus ? 2 : 1
+                                radius: 4
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.row: 3
+                        Layout.column: 1
+                        Layout.preferredWidth: 300
+                        spacing: 4
+
+                        Text {
+                            text: "Статус"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
+                        }
+
+                        ComboBox {
+                            id: statusComboBox
+                            Layout.fillWidth: true
+                            model: ["в наличии", "под заказ", "нет в наличии", "снят с производства"]
+                            font.pointSize: baseFontSize
+
+                            background: Rectangle {
+                                color: "white"
+                                border.color: statusComboBox.activeFocus ? focusBorderColor : borderColor
+                                border.width: statusComboBox.activeFocus ? 2 : 1
+                                radius: 4
+                            }
+                        }
+                    }
+
+                    // --- РЯД 4: Единица измерения и Производитель ---
+                    ColumnLayout {
+                        Layout.row: 4
+                        Layout.column: 0
+                        Layout.preferredWidth: 300
+                        spacing: 4
+
+                        Text {
+                            text: "Единица измерения"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
+                        }
+
+                        ComboBox {
+                            id: unitComboBox
+                            Layout.fillWidth: true
+                            model: ["шт.", "кг", "л", "м", "м²", "м³", "упак.", "компл."]
+                            editable: true
+                            font.pointSize: baseFontSize
+
+                            background: Rectangle {
+                                color: "white"
+                                border.color: unitComboBox.activeFocus ? focusBorderColor : borderColor
+                                border.width: unitComboBox.activeFocus ? 2 : 1
+                                radius: 4
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.row: 4
+                        Layout.column: 1
+                        Layout.preferredWidth: 300
+                        spacing: 4
+
+                        Text {
+                            text: "Производитель"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
+                        }
+
+                        TextField {
+                            id: manufacturerField
+                            Layout.fillWidth: true
+                            placeholderText: "Название производителя"
+                            font.pointSize: baseFontSize
+
+                            background: Rectangle {
+                                color: "white"
+                                border.color: manufacturerField.activeFocus ? focusBorderColor : borderColor
+                                border.width: manufacturerField.activeFocus ? 2 : 1
+                                radius: 4
+                            }
+                        }
+                    }
+
+                    // --- РЯД 5: Изображение ---
+                    ColumnLayout {
+                        Layout.row: 5
+                        Layout.column: 0
+                        Layout.columnSpan: 2
                         Layout.fillWidth: true
-                        placeholderText: "Файл не выбран."
-                        readOnly: true
-                        font.pointSize: baseFontSize
+                        spacing: 4
 
-                        background: Rectangle {
-                            color: "#f5f5f5"
-                            border.color: borderColor
-                            border.width: 1
-                            radius: 4
+                        Text {
+                            text: "Изображение"
+                            font.pointSize: baseFontSize - 1
+                            font.bold: true
+                            color: "#333"
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Button {
+                                text: "📁 Выбрать"
+                                font.pointSize: baseFontSize
+                                onClicked: imageDialog.open()
+
+                                background: Rectangle {
+                                    color: parent.hovered ? "#f0f0f0" : "#f5f5f5"
+                                    border.color: borderColor
+                                    border.width: 1
+                                    radius: 4
+                                }
+                            }
+
+                            TextField {
+                                id: imageField
+                                Layout.fillWidth: true
+                                placeholderText: "Файл не выбран"
+                                readOnly: true
+                                font.pointSize: baseFontSize
+
+                                background: Rectangle {
+                                    color: "#f5f5f5"
+                                    border.color: borderColor
+                                    border.width: 1
+                                    radius: 4
+                                }
+                            }
                         }
                     }
                 }
-            }
 
-            // Пустая строка для отступа
-            Item {
-                Layout.row: 6
-                Layout.column: 0
-                Layout.columnSpan: 2
-                Layout.preferredHeight: 20
-            }
-
-            // Кнопки
-            RowLayout {
-                Layout.row: 7
-                Layout.column: 0
-                Layout.columnSpan: 2
-                Layout.fillWidth: true
-                spacing: 12
-
-                Item { Layout.fillWidth: true }
-
-                Button {
-                    text: "Отмена"
-                    Layout.preferredWidth: 140
-                    font.pointSize: baseFontSize
-                    onClicked: productDialog.reject()
-
-                    background: Rectangle {
-                        color: parent.down ? "#e0e0e0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
-                        border.color: borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        font: parent.font
-                        color: "#333"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                // Подсказка в режиме добавления
+                Text {
+                    visible: !isEditMode
+                    text: "💡 Документы можно добавить после сохранения товара"
+                    font.pointSize: 10
+                    font.italic: true
+                    color: "#666"
+                    Layout.fillWidth: true
+                    Layout.topMargin: 10
+                    horizontalAlignment: Text.AlignHCenter
                 }
 
-                Button {
-                    text: isEditMode ? "💾 Сохранить" : "➕ Добавить"
-                    Layout.preferredWidth: 140
-                    highlighted: true
-                    font.pointSize: baseFontSize
-                    font.bold: true
+                // Менеджер документов (только в режиме редактирования)
+                MultipleDocumentsManager {
+                    id: documentsManager
+                    Layout.fillWidth: true
+                    documentsModel: itemDocumentsModel
+                    currentArticle: productDialog.currentArticle
 
-                    background: Rectangle {
-                        color: {
-                            if (!parent.enabled) return "#ccc"
-                            if (parent.down) return Qt.darker(isEditMode ? primaryColor : successColor, 1.3)
-                            if (parent.hovered) return Qt.lighter(isEditMode ? primaryColor : successColor, 1.1)
-                            return isEditMode ? primaryColor : successColor
-                        }
-                        radius: 4
+                    visible: isEditMode
+                }
+            }
+        }
+
+        // Кнопки
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 12
+
+            Item { Layout.fillWidth: true }
+
+            Button {
+                text: "Отмена"
+                Layout.preferredWidth: 140
+                font.pointSize: baseFontSize
+
+                onClicked: productDialog.reject()
+
+                background: Rectangle {
+                    color: parent.down ? "#e0e0e0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
+                    border.color: borderColor
+                    border.width: 1
+                    radius: 4
+                }
+
+                contentItem: Text {
+                    text: parent.text
+                    font: parent.font
+                    color: "#333"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+
+            Button {
+                text: isEditMode ? "💾 Сохранить" : "➕ Добавить"
+                Layout.preferredWidth: 140
+                highlighted: true
+                font.pointSize: baseFontSize
+                font.bold: true
+
+                background: Rectangle {
+                    color: {
+                        if (!parent.enabled) return "#ccc"
+                        if (parent.down) return Qt.darker(isEditMode ? primaryColor : successColor, 1.3)
+                        if (parent.hovered) return Qt.lighter(isEditMode ? primaryColor : successColor, 1.1)
+                        return isEditMode ? primaryColor : successColor
+                    }
+                    radius: 4
+                }
+
+                contentItem: Text {
+                    text: parent.text
+                    font: parent.font
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    if (!validateFields()) return
+
+                    let inputPrice = parseFloat(priceField.text) || 0.0
+                    let finalPrice = (vatIncluded.checked && configManager)
+                        ? configManager.calculatePriceWithoutVAT(inputPrice)
+                        : inputPrice
+
+                    var itemData = {
+                        "article": articleField.text.trim(),
+                        "name": nameField.text.trim(),
+                        "description": descriptionField.text.trim(),
+                        "image_path": currentImagePath,
+                        "category": categoryComboBox.currentText || "",
+                        "price": finalPrice,
+                        "stock": stockField.value,
+                        "status": statusComboBox.currentText || "в наличии",
+                        "unit": unitComboBox.currentText || "шт.",
+                        "manufacturer": manufacturerField.text.trim() || "",
+                        "document": currentDocumentPath
                     }
 
-                    contentItem: Text {
-                        text: parent.text
-                        font: parent.font
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    if (isEditMode) {
+                        saveItemClicked(currentItemId, itemData)
+                    } else {
+                        addItemClicked(itemData)
                     }
-
-                    onClicked: {
-                        if (!validateFields()) return
-
-                        let inputPrice = parseFloat(priceField.text) || 0.0
-                        let finalPrice = (vatIncluded.checked && configManager)
-                            ? configManager.calculatePriceWithoutVAT(inputPrice)
-                            : inputPrice
-
-                        var itemData = {
-                            "article": articleField.text.trim(),
-                            "name": nameField.text.trim(),
-                            "description": descriptionField.text.trim(),
-                            "image_path": imageField.text,
-                            "category": categoryComboBox.currentText || "",
-                            "price": finalPrice,
-                            "stock": stockField.value,
-                            "status": statusComboBox.currentText || "в наличии",
-                            "unit": unitComboBox.currentText || "шт.",
-                            "manufacturer": manufacturerField.text.trim() || "",
-                            "document": documentField.text || ""
-                        }
-
-                        if (isEditMode) {
-                            saveItemClicked(currentItemId, itemData)
-                        } else {
-                            addItemClicked(itemData)
-                        }
-                        productDialog.accept()
-                    }
+                    productDialog.accept()
                 }
             }
         }
@@ -678,11 +639,20 @@ Dialog {
         articleField.text = data.article
         nameField.text = data.name
         descriptionField.text = data.description
-        imageField.text = data.image_path.split("/").pop()
+
+        currentImagePath = data.image_path || ""
+        imageField.text = fileManager ? fileManager.get_file_name(currentImagePath) : currentImagePath
+
+        currentDocumentPath = data.document || ""
+
+        // Загружаем документы товара
+        if (itemDocumentsModel && currentArticle) {
+            documentsManager.loadDocuments(currentArticle)
+        }
+
         priceField.text = String(data.price)
         stockField.value = data.stock
         manufacturerField.text = String(data.manufacturer || "")
-        documentField.text = data.document.split("/").pop()
 
         var statusIndex = statusComboBox.model.indexOf(data.status || "в наличии")
         statusComboBox.currentIndex = statusIndex >= 0 ? statusIndex : 0
@@ -704,12 +674,16 @@ Dialog {
         articleField.text = ""
         nameField.text = ""
         descriptionField.text = ""
+        currentImagePath = ""
         imageField.text = ""
+        currentDocumentPath = ""
         priceField.text = "0.00"
         stockField.value = 0
         statusComboBox.currentIndex = -1
         unitComboBox.currentIndex = -1
         categoryComboBox.currentIndex = -1
+
+        documentsManager.clearDocuments()
         clearErrors()
     }
 

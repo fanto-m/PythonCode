@@ -14,6 +14,8 @@ from suppliers_table_model import SuppliersTableModel
 from models.specification_models import SpecificationItemsModel, SpecificationsModel
 from specification_items_table_model import SpecificationItemsTableModel
 from config_manager import ConfigManager
+from file_manager import FileManager
+from item_documents_model import ItemDocumentsModel
 
 class Backend(QObject):
     """Класс для взаимодействия с бэкендом приложения.
@@ -83,6 +85,8 @@ if __name__ == "__main__":
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
 
+
+
     # Установка текущей директории приложения в контекст QML
     current_dir = QDir.currentPath()
     engine.rootContext().setContextProperty("applicationDirPath", current_dir)
@@ -93,6 +97,9 @@ if __name__ == "__main__":
 
     # Инициализация моделей данных
     itemsModel = ItemsModel()
+    # Создаем модель документов
+    item_documents_model = ItemDocumentsModel(db_manager)
+
     proxyModel = FilterProxyModel()
     proxyModel.setSourceModel(itemsModel)
     categoriesModel = CategoriesModel()
@@ -107,10 +114,14 @@ if __name__ == "__main__":
     # Инициализация менеджера конфигурации
     config_manager = ConfigManager("config.json")
     print("DEBUG: Config manager initialized")
-
+    # Создаем FileManager
+    file_manager = FileManager(config_manager)
     # Инициализация бэкенда и обработчика консоли
     backend = Backend(db_manager)
     consoleHandler = QMLConsoleHandler()
+
+    # Добавьте эту строку к существующим setContextProperty
+    engine.rootContext().setContextProperty("fileManager", file_manager)
 
     # Регистрация объектов в контексте QML
     engine.rootContext().setContextProperty("configManager", config_manager)
@@ -125,6 +136,8 @@ if __name__ == "__main__":
     engine.rootContext().setContextProperty("consoleHandler", consoleHandler)
     engine.rootContext().setContextProperty("specificationItemsModel", specification_items_table_model)
     engine.rootContext().setContextProperty("specificationsModel", specifications_model)
+    # Регистрируем в QML контексте
+    engine.rootContext().setContextProperty("itemDocumentsModel", item_documents_model)
     print("DEBUG: All models registered with QML context")
 
     # Регистрация типов для использования в QML

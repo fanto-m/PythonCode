@@ -154,9 +154,9 @@ class FilterProxyModel(QSortFilterProxyModel):
         role = role_map.get(self._filter_field, ItemsModel.NameRole)
         value = self.sourceModel().data(index, role)
         value_str = "" if value is None else str(value).lower()
-        print(f"DEBUG: Row {sourceRow}, field {self._filter_field}, value: {value_str}")
+        #print(f"DEBUG: Row {sourceRow}, field {self._filter_field}, value: {value_str}")
         result = self._filter_string in value_str
-        print(f"DEBUG: Filter result for row {sourceRow}: {result}")
+        #print(f"DEBUG: Filter result for row {sourceRow}: {result}")
         return result
 
     @Slot(str, str, str, str, int, float, int, str, str, str, str)
@@ -267,3 +267,24 @@ class FilterProxyModel(QSortFilterProxyModel):
             print("DEBUG: FilterProxyModel.deleteItem completed")
         except Exception as e:
             print(f"DEBUG: Error in FilterProxyModel.deleteItem: {str(e)}")
+
+    @Slot(str, result=bool)
+    def deleteItemByArticle(self, article):
+        """Удаляет товар по артикулу (proxy версия)"""
+        try:
+            print(f"=== FilterProxyModel.deleteItemByArticle called ===")
+            print(f"article: {article}")
+
+            source_model = self.sourceModel()
+            if source_model:
+                # Делегируем source model
+                return source_model.deleteItemByArticle(article)
+
+            print("ERROR: No source model")
+            return False
+
+        except Exception as e:
+            print(f"ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            return False

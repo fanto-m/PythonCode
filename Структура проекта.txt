@@ -1,0 +1,51 @@
+структура проекта
+PythonCode
+|
+|-src
+	|-componrnts
+		|-AddCategoryDialog.qml - диалог для создания новой категории
+		|-AddItemDialog.qml - Компонент для выбора товара из склада
+		|-AddSupplierDialog.qml - диалог добавления нового поставщика
+		|-ControlPanel.qml - панель для элементов управления добавление/редактирование 						товаров; добавление/редактирование/удаление категорий
+		|-CreateSpecificationMode.qml - диалог создания спецификаций
+		|-DeleteCategoryDialog.qml - диалог удаления категорий
+		|-DeleteConfirmationDialog.qml - диалог удаления товара
+		|-DeleteSupplierDialog.qml - диалог удаления поставщика
+		|-DocumentFileDialog.qml - диалог выбора документа для привязки
+		|-EditCategoryDialog.qml - диалог редактирования категории
+		|-EditSupplierDialog.qml - диалог редактирования поставщика
+		|-ErrorDialog.qml - диалог для ошибок
+		|-FilterPanel.qml - фильтр для товаров / сортировка
+		|-ImageFileDialog.qml - диалог выбора изображения для привязки
+		|-ItemList.qml - отображение товаров с полной информацией из базы
+		|-ItemSuppliersDialog.qml - диалог для отображения поставщиков, привязянных к 							конкретной карточке
+		|-MultipleDocumentsManager.qml - управление документами товара
+		|-NotificationDialog.qml - стандартный диалог для подтверждения/ предупреждения/ошибки
+		|-ProductCardDialog.qml - Диалог карточки товара с Grid Layout для редактирования или 						занесения нового товара
+		|-qmldir - Singlton для таблицы стилей
+		|-SettingsDialog.qml - диалог для настроек приложения пока не подключен
+		|-SpecificationItemsTable.qml - таблица используется для создания спецификаций
+		|-SuppliersManagerDialog.qml - диалог привязки поставщиков к артикулу
+		|-Theme_CSM.qml - файл всех цветов для приложения, пока применен к некоторым диалогам
+		|-ViewSpecificationsMode.qml - форма для создания/редактирования спецификаций 
+	|-files
+		|-images/
+		|-documents/
+	|
+	|-__init__.py
+	|-categories_model.py - Модель данных для управления категориями
+	|-config_manager.py - Сохраняет настройки в JSON-файл и предоставляет привязки к свойствам Qt 				для QML
+	|-config.json
+	|-database.py - Класс для управления базой данных SQLite
+	|-file_manager.py - Централизованный менеджер для работы с файлами работает с config.json
+	|-filter_proxy_model.py - Прокси-модель для фильтрации и сортировки данных из ItemsModel
+	|-item_suppliers_model.py - Модель данных для управления списком поставщиков, связанных с к					онкретным товаром
+	|-items.db - Основная база данных
+	|-items_model.py - Модель для работы с данными товаров в интерфейсе Qt
+	|-main.qml - Основной файл qml
+	|-specification_items_table_model.py - Модель таблицы для элементов спецификации со столбцами
+	|-supplier_list_adapter.py класс адаптирует данные из существующей модели таблицы для 							использования в представлениях списка
+	|-suppliers_model.py - Модель данных для управления списком поставщиков
+	|-suppliers_table_model.py - Табличная модель данных для управления списком поставщиков
+	|-validators.py - Проверяет артикул на пустоту и уникальность
+	|-main.py - точка входа приложения

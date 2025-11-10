@@ -377,3 +377,24 @@ class ItemsModel(QAbstractListModel):
             "manufacturer": item[10] if len(item) > 10 else "",
             "document": item[11] if len(item) > 11 else ""
         }
+
+    @Slot(str, result=bool)
+    def deleteItemByArticle(self, article):
+        """Удаляет товар по артикулу"""
+        try:
+            print(f"=== ItemsModel.deleteItemByArticle called ===")
+            print(f"article: {article}")
+
+            for i, item in enumerate(self.items):
+                if item.get('article') == article:
+                    print(f"Found item at index {i}")
+                    return self.deleteItem(i)
+
+            print(f"ERROR: Item not found: {article}")
+            return False
+
+        except Exception as e:
+            print(f"ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            return False

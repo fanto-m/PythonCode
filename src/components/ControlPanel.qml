@@ -38,7 +38,7 @@ Rectangle {
     // Properties
     property int currentItemId: -1
     property string currentArticle: ""
-    property var currentItemData: ({})  // ← ДОБАВЛЕНО: хранение полных данных товара
+    property var currentItemData: ({})
     property bool isEditMode: currentItemId !== -1
 
     // Product Card Dialog properties
@@ -64,7 +64,9 @@ Rectangle {
                 rootWindow = rootWindow.parent
             }
 
-            currentProductDialog = productCardDialogComponent.createObject(rootWindow)
+            currentProductDialog = productCardDialogComponent.createObject(rootWindow, {
+                "itemDocumentsModel": itemDocumentsModel
+            })
 
             if (!currentProductDialog) {
                 console.error("Failed to create dialog object!")
@@ -73,17 +75,29 @@ Rectangle {
 
             console.log("Dialog object created, connecting signals...")
 
+            // Обработчик добавления товара
             currentProductDialog.addItemClicked.connect(function(itemData) {
                 console.log("addItemClicked signal received")
                 root.addItemClicked(itemData)
                 currentProductDialog.close()
             })
 
+            // Обработчик сохранения товара
             currentProductDialog.saveItemClicked.connect(function(itemIndex, itemData) {
                 console.log("saveItemClicked signal received")
                 root.saveItemClicked(itemIndex, itemData)
                 currentProductDialog.close()
             })
+
+            // Очищаем модель документов для нового товара
+            console.log("Clearing documents model for new item")
+            if (itemDocumentsModel) {
+                itemDocumentsModel.clear()
+            }
+
+            // Очищаем поля диалога
+            console.log("Clearing dialog fields")
+            currentProductDialog.clearFields()
 
             console.log("Opening dialog...")
             currentProductDialog.open()
@@ -105,19 +119,27 @@ Rectangle {
                 rootWindow = rootWindow.parent
             }
 
-            currentProductDialog = productCardDialogComponent.createObject(rootWindow)
+            currentProductDialog = productCardDialogComponent.createObject(rootWindow, {
+                "itemDocumentsModel": itemDocumentsModel
+            })
 
+            // Обработчик добавления (не используется в режиме редактирования, но нужен)
             currentProductDialog.addItemClicked.connect(function(itemData) {
+                console.log("addItemClicked signal received")
                 root.addItemClicked(itemData)
                 currentProductDialog.close()
             })
 
+            // Обработчик сохранения изменений
             currentProductDialog.saveItemClicked.connect(function(itemIndex, itemData) {
+                console.log("saveItemClicked signal received")
                 root.saveItemClicked(itemIndex, itemData)
                 currentProductDialog.close()
             })
 
+            // Заполняем поля данными товара
             currentProductDialog.populateFields(itemData)
+
             currentProductDialog.open()
         } else if (productCardDialogComponent.status === Component.Error) {
             console.error("Error loading ProductCardDialog: " + productCardDialogComponent.errorString())
@@ -127,7 +149,7 @@ Rectangle {
     function clearFields() {
         currentItemId = -1
         currentArticle = ""
-        currentItemData = {}  // ← ДОБАВЛЕНО: очистка данных
+        currentItemData = {}
     }
 
     // Main content wrapper
@@ -172,7 +194,7 @@ Rectangle {
                 onClicked: root.openProductCardDialog()
             }
 
-            // Кнопка "Редактировать товар" - ИСПРАВЛЕНО
+            // Кнопка "Редактировать товар"
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
@@ -196,7 +218,6 @@ Rectangle {
                 }
 
                 onClicked: {
-                    // ИСПРАВЛЕНО: используем сохранённые данные из currentItemData
                     if (currentItemId !== -1 && Object.keys(currentItemData).length > 0) {
                         console.log("DEBUG: Opening edit dialog with full data")
                         console.log("DEBUG: Item data:", JSON.stringify(currentItemData))

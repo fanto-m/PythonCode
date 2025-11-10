@@ -1,4 +1,4 @@
-// AddItemDialog.qml - Компонент для выбора товара из склада
+// AddItemDialog.qml - Компонент для выбора товара из склада (ОБНОВЛЕННАЯ ВЕРСИЯ)
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -14,7 +14,7 @@ Dialog {
     // Сигнал, который вызывается при выборе товара
     signal itemSelected(string article, string name, real quantity, string unit, real price, string imagePath, string category, string status)
 
-    // Функция для открытия диалога (опциональная, можно использовать просто open())
+    // Функция для открытия диалога
     function openDialog() {
         searchField.text = ""
         open()
@@ -102,17 +102,24 @@ Dialog {
                         Image {
                             anchors.fill: parent
                             anchors.margins: 2
-                            source: model.image_path ? "../images/" + model.image_path : ""
+                            // Используем полный относительный путь от src
+                            source: model.image_path ? "../" + model.image_path : ""
                             fillMode: Image.PreserveAspectFit
                             smooth: true
                             visible: model.image_path && model.image_path !== ""
+
+                            onStatusChanged: {
+                                if (status === Image.Error) {
+                                    console.warn("Failed to load image:", model.image_path)
+                                }
+                            }
                         }
 
                         Text {
                             anchors.centerIn: parent
                             text: "📦"
                             font.pointSize: 24
-                            visible: !model.image_path || model.image_path === ""
+                            visible: !model.image_path || model.image_path === "" || parent.children[0].status === Image.Error
                             color: "#999"
                         }
                     }
@@ -171,7 +178,7 @@ Dialog {
         Button {
             text: "Закрыть"
             onClicked: {
-                root.close()
+                addItemDialog.close()
                 searchField.text = ""
             }
 

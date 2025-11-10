@@ -1,4 +1,4 @@
-//ItemList.qml
+//ItemList.qml - ВЕРСИЯ с ComboBox для документов и кнопкой "Открыть"
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -9,7 +9,7 @@ ColumnLayout {
     spacing: 5
 
     property alias model: listView.model
-    property bool readOnly: false  // NEW: Controls whether editing features are visible
+    property bool readOnly: false
 
     signal itemSelected(var itemData)
     signal deleteRequested(int index, string name, string article)
@@ -42,6 +42,9 @@ ColumnLayout {
 
             Behavior on border.color { ColorAnimation { duration: 150 } }
             Behavior on border.width { NumberAnimation { duration: 150 } }
+
+            // НОВОЕ: Модель документов для этого товара
+            property var itemDocumentsModelInstance: null
 
             MouseArea {
                 id: mouseArea
@@ -94,19 +97,36 @@ ColumnLayout {
                     border.width: 1
 
                     Image {
+                        id: itemImage
                         anchors.fill: parent
                         anchors.margins: 2
-                        source: model.image_path ? "../images/" + model.image_path : ""
+                        source: model.image_path ? "../" + model.image_path : ""
                         fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        cache: true
 
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Нет\nфото"
-                            visible: parent.status !== Image.Ready
-                            font.pointSize: 9
-                            color: "#999"
-                            horizontalAlignment: Text.AlignHCenter
+                        onStatusChanged: {
+                            if (status === Image.Error) {
+                                console.warn("Failed to load image:", model.image_path)
+                            }
                         }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Нет\nфото"
+                        visible: !model.image_path || itemImage.status === Image.Error
+                        font.pointSize: 9
+                        color: "#999"
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    BusyIndicator {
+                        anchors.centerIn: parent
+                        running: itemImage.status === Image.Loading
+                        visible: running
+                        width: 30
+                        height: 30
                     }
                 }
 
@@ -168,12 +188,22 @@ ColumnLayout {
                         color: "#777"
                         visible: model.manufacturer !== undefined && model.manufacturer !== null && model.manufacturer !== ""
                     }
+
+                    // НОВОЕ: Показываем количество документов
                     Text {
-                        text: model.document ? "Ссылка на документ: " + model.document : ""
+                        text: {
+                            if (!itemDocumentsModel) return ""
+                            var count = itemDocumentsModel.count()
+                            if (count === 0) return ""
+                            if (count === 1) return "📄 Документ: 1"
+                            return "📄 Документов: " + count
+                        }
                         font.pointSize: 9
-                        color: "#777"
-                        visible: model.document!== undefined && model.document !== null && model.document !== ""
+                        color: "#007bff"
+                        font.bold: itemDocumentsModel && itemDocumentsModel.count() > 0
+                        visible: itemDocumentsModel && itemDocumentsModel.count() > 0
                     }
+
                     Text {
                         text: "Добавлено: " + (model.created_date ? model.created_date.split(" ")[0] : "")
                         font.pointSize: 9
@@ -220,11 +250,11 @@ ColumnLayout {
                 ColumnLayout {
                     spacing: 10
                     Layout.rightMargin: 5
-                    visible: !readOnly  // HIDE buttons in readOnly mode
+                    visible: !readOnly
 
                     Button {
                         text: "Поставщики"
-                        Layout.preferredWidth: 120
+                        Layout.preferredWidth: 150
                         Layout.preferredHeight: 40
 
                         ToolTip.visible: hovered
@@ -253,52 +283,138 @@ ColumnLayout {
                         }
                     }
 
-                    Button {
-                        text: "Документ"
+                    // ===============================================
+                   // Меню с документами (объявляем ДО кнопки)
+                    Menu {
+                        id: documentsMenu
 
-                        Layout.preferredWidth: 120
+                        Repeater {
+                            model: documentsButton.documentsList
+
+                            MenuItem {
+                                text: modelData ? modelData.name : ""
+
+                                ToolTip.visible: hovered && modelData
+                                ToolTip.text: modelData ? modelData.name : ""
+                                ToolTip.delay: 300
+
+                                onTriggered: {
+                                    if (fileManager && modelData && modelData.path) {
+                                        console.log("Opening document:", modelData.path)
+                                        fileManager.open_file_externally(modelData.path)
+                                    }
+                                }
+
+                                contentItem: RowLayout {
+                                    spacing: 8
+
+                                    Text {
+                                        text: "📄"
+                                        font.pointSize: 10
+                                    }
+
+                                    Text {
+                                        text: parent.parent.text
+                                        font.pointSize: 10
+                                        color: parent.parent.highlighted ? "white" : "#333"
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                }
+
+                                background: Rectangle {
+                                    color: parent.highlighted ? "#86ac41" : "transparent"
+                                    radius: 2
+                                }
+                            }
+                        }
+                    }
+
+                    // Кнопка "Документы"
+                    Button {
+                        id: documentsButton
+                        Layout.preferredWidth: 150
                         Layout.preferredHeight: 40
 
-                        ToolTip.visible: hovered
-                        ToolTip.text: "Открыть документацию"
-                        ToolTip.delay: 500
+                        property string itemArticle: model.article
+                        property var documentsList: []
 
-                        // Улучшенная проверка
-                        enabled: model.document !== undefined &&
-                                 model.document !== null &&
-                                 model.document !== "" &&
-                                 String(model.document).trim().length > 0
+                        text: {
+                            if (documentsList.length === 0) return "Нет документов"
+                            if (documentsList.length === 1) return "1 документ"
+                            return documentsList.length + " документа"
+                        }
 
-                        onClicked: {
-                            if (model.document && String(model.document).trim() !== "") {
-                                documentDialog.openDocument(model.document)
+                        enabled: documentsList.length > 0
+
+                        font.pointSize: 9
+
+                        // Загружаем список документов при создании
+                        Component.onCompleted: {
+                            if (itemDocumentsModel && itemArticle) {
+                                itemDocumentsModel.loadDocuments(itemArticle)
+
+                                // Копируем документы в локальный массив
+                                var docs = []
+                                for (var i = 0; i < itemDocumentsModel.count(); i++) {
+                                    var docName = itemDocumentsModel.getDocumentName(i)
+                                    var docPath = itemDocumentsModel.getDocumentPath(i)
+
+                                    docs.push({
+                                        name: docName,
+                                        path: docPath
+                                    })
+
+                                    console.log("Document", i, ":", docName, "->", docPath)
+                                }
+                                documentsList = docs
+                                console.log("Article", itemArticle, "loaded", docs.length, "documents")
                             }
                         }
 
+                        onClicked: documentsMenu.popup(documentsButton)
+
                         background: Rectangle {
-                            color: parent.enabled ?
-                                   (parent.down ? "#68a225" : (parent.hovered ? "#68a225" : "#86ac41")) :
-                                   "#cccccc"  // Цвет для неактивной кнопки
-                            radius: 4
-                            border.color: parent.enabled ? "#265c00" : "#999999"
+                            color: parent.enabled ? "white" : "#f5f5f5"
+                            border.color: parent.enabled ? "#86ac41" : "#ccc"
                             border.width: 1
-
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                            radius: 4
                         }
 
-                        contentItem: Text {
-                            text: parent.text
-                            color: parent.enabled ? "white" : "#666666"
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            font.pointSize: 10
+                        contentItem: RowLayout {
+                            spacing: 6
+
+                            Text {
+                                text: "📄"
+                                font.pointSize: 12
+                                color: parent.parent.enabled ? "#86ac41" : "#999"
+                            }
+
+                            Text {
+                                text: parent.parent.text
+                                font: parent.parent.font
+                                color: parent.parent.enabled ? "#333" : "#999"
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            Text {
+                                text: "▼"
+                                font.pointSize: 8
+                                color: parent.parent.enabled ? "#86ac41" : "#999"
+                                visible: parent.parent.enabled
+                            }
                         }
+
+                        ToolTip.visible: hovered
+                        ToolTip.text: enabled ? "Открыть список документов" : "Нет документов"
+                        ToolTip.delay: 500
                     }
 
 
                     Button {
                         text: "Удалить"
-                        Layout.preferredWidth: 120
+                        Layout.preferredWidth: 150
                         Layout.preferredHeight: 40
 
                         ToolTip.visible: hovered
@@ -332,7 +448,7 @@ ColumnLayout {
                 Button {
                     visible: readOnly
                     text: "📋 Поставщики"
-                    Layout.preferredWidth: 120
+                    Layout.preferredWidth: 150
                     Layout.preferredHeight: 40
                     Layout.alignment: Qt.AlignVCenter
                     Layout.rightMargin: 5

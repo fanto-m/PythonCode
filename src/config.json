@@ -1,7 +1,96 @@
 {
-    "vat_included": false,
+    "vat_included": true,
     "vat_rate": 20.0,
     "default_currency": "RUB",
     "decimal_places": 2,
-    "theme": "light"
+    "theme": "light",
+    "file_storage": {
+        "root_directory": "files",
+        "images": {
+            "directory": "images",
+            "subdirectories": {
+                "modules": {
+                    "name": "modules",
+                    "display_name": "Модули"
+                },
+                "sensors": {
+                    "name": "sensors",
+                    "display_name": "Датчики"
+                },
+                "components_pc": {
+                    "name": "components_pc",
+                    "display_name": "Комплектующие ПК"
+                },
+                "pcb": {
+                    "name": "pcb",
+                    "display_name": "Печатные платы"
+                },
+                "other": {
+                    "name": "other",
+                    "display_name": "Прочее"
+                },
+                "diodes": {
+                    "name": "diodes",
+                    "display_name": "Диоды"
+                },
+                "transistors": {
+                    "name": "transistors",
+                    "display_name": "Транзисторы"
+                },
+                "capacitors": {
+                    "name": "capacitors",
+                    "display_name": "Конденсаторы"
+                },
+                "chips": {
+                    "name": "chips",
+                    "display_name": "Микросхемы"
+                },
+                "electrics": {
+                    "name": "electrics",
+                    "display_name": "Электрика"
+                },
+                "connectors": {
+                    "name": "connectors",
+                    "display_name": "Разъемы"
+                },
+                "fittings": {
+                    "name": "fittings",
+                    "display_name": "Фитинги"
+                },
+                "resistors": {
+                    "name": "resistors",
+                    "display_name": "Резисторы"
+                }
+            }
+        },
+        "documents": {
+            "directory": "documents",
+            "subdirectories": {
+                "datasheets": {
+                    "name": "datasheets",
+                    "display_name": "Техническая документация"
+                },
+                "invoices": {
+                    "name": "invoices",
+                    "display_name": "Счета"
+                },
+                "delivery_notes": {
+                    "name": "delivery_notes",
+                    "display_name": "Накладные"
+                },
+                "certificates": {
+                    "name": "certificates",
+                    "display_name": "Сертификаты"
+                },
+                "manuals": {
+                    "name": "manuals",
+                    "display_name": "Руководства"
+                },
+                "other": {
+                    "name": "other",
+                    "display_name": "Прочее"
+                }
+            }
+        }
+    }
 }

@@ -78,6 +78,17 @@ class DatabaseManager:
                         sku_digits INTEGER DEFAULT 4
                     )
                 ''')
+                # item_documents
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS item_documents (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        item_article TEXT NOT NULL,
+                        document_path TEXT NOT NULL,
+                        document_name TEXT,
+                        added_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (item_article) REFERENCES items(article) ON DELETE CASCADE
+                    )
+                ''')
             print("DEBUG: Database tables 'items' and 'categories' created successfully")
         except Exception as e:
             print(f"DEBUG: Error initializing database: {str(e)}")
@@ -492,7 +503,7 @@ class DatabaseManager:
             raise
 
     def delete_item(self, article):
-        """Удаляет товар из таблицы items по артикулу.
+        """Удаляет товар из таблицы items по артикулу и все связанные документы.
 
         Args:
             article (str): Артикул товара для удаления.
@@ -504,7 +515,17 @@ class DatabaseManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 c = conn.cursor()
+
+                # НОВОЕ: Сначала удаляем все документы этого товара
+                c.execute("DELETE FROM item_documents WHERE item_article=?", (article,))
+                deleted_docs = c.rowcount
+                print(f"DEBUG: Deleted {deleted_docs} documents for article {article}")
+
+                # Затем удаляем товар
                 c.execute("DELETE FROM items WHERE article=?", (article,))
+
+                conn.commit()
+
             print(f"DEBUG: Item with article {article} deleted successfully")
         except Exception as e:
             print(f"DEBUG: Error deleting item: {str(e)}")
@@ -866,3 +887,183 @@ class DatabaseManager:
         except Exception as e:
             print(f"DEBUG: Error saving specification with items: {str(e)}")
             return None
+
+    # ===========================
+    # МЕТОД 1: add_item_document
+    # ===========================
+    def add_item_document(self, article, document_path, document_name=None):
+        """Добавляет документ к товару.
+
+        Args:
+            article (str): Артикул товара.
+            document_path (str): Относительный путь к документу.
+            document_name (str, optional): Пользовательское имя документа.
+
+        Returns:
+            int: ID добавленного документа или None в случае ошибки.
+        """
+        print("=" * 60)
+        print("DATABASE: add_item_document CALLED")
+        print(f"article: {article}")
+        print(f"document_path: {document_path}")
+        print(f"document_name: {document_name}")
+        print("=" * 60)
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
+
+                # Если имя не указано, используем имя файла
+                if document_name is None:
+                    from pathlib import Path
+                    document_name = Path(document_path).name
+
+                c.execute("""
+                    INSERT INTO item_documents (item_article, document_path, document_name)
+                    VALUES (?, ?, ?)
+                """, (article, document_path, document_name))
+
+                doc_id = c.lastrowid
+                conn.commit()
+
+            print(f"DEBUG: Document added for item {article}: {document_name}")
+            return doc_id
+
+        except Exception as e:
+            print(f"DEBUG: Error adding document: {str(e)}")
+            return None
+
+    # =============================
+    # МЕТОД 2: get_item_documents
+    # =============================
+    def get_item_documents(self, article):
+        """Получает все документы товара.
+
+        Args:
+            article (str): Артикул товара.
+
+        Returns:
+            list: Список кортежей (id, document_path, document_name, added_date)
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
+                c.execute("""
+                    SELECT id, document_path, document_name, added_date
+                    FROM item_documents
+                    WHERE item_article = ?
+                    ORDER BY added_date DESC
+                """, (article,))
+
+                documents = c.fetchall()
+
+            print(f"DEBUG: Loaded {len(documents)} documents for item {article}")
+            return documents
+
+        except Exception as e:
+            print(f"DEBUG: Error loading documents: {str(e)}")
+            return []
+
+    # ===============================
+    # МЕТОД 3: delete_item_document
+    # ===============================
+    def delete_item_document(self, doc_id):
+        """Удаляет документ товара.
+
+        Args:
+            doc_id (int): ID документа.
+
+        Returns:
+            bool: True если удаление успешно, False в случае ошибки.
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
+                c.execute("DELETE FROM item_documents WHERE id = ?", (doc_id,))
+                conn.commit()
+
+            print(f"DEBUG: Document {doc_id} deleted")
+            return True
+
+        except Exception as e:
+            print(f"DEBUG: Error deleting document: {str(e)}")
+            return False
+
+    # =====================================
+    # МЕТОД 4: update_item_document_name
+    # =====================================
+    def update_item_document_name(self, doc_id, new_name):
+        """Обновляет имя документа.
+
+        Args:
+            doc_id (int): ID документа.
+            new_name (str): Новое имя документа.
+
+        Returns:
+            bool: True если обновление успешно, False в случае ошибки.
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
+                c.execute("""
+                    UPDATE item_documents
+                    SET document_name = ?
+                    WHERE id = ?
+                """, (new_name, doc_id))
+                conn.commit()
+
+            print(f"DEBUG: Document {doc_id} renamed to {new_name}")
+            return True
+
+        except Exception as e:
+            print(f"DEBUG: Error updating document name: {str(e)}")
+            return False
+
+    # ==========================================
+    # МЕТОД 5: migrate_documents_to_new_table
+    # ==========================================
+    def migrate_documents_to_new_table(self):
+        """Мигрирует существующие документы из поля document в новую таблицу item_documents.
+
+        Эта функция должна быть вызвана один раз после обновления структуры БД.
+
+        Returns:
+            int: Количество мигрированных документов.
+        """
+        try:
+            migrated_count = 0
+
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
+
+                # Получаем все товары с непустым полем document
+                c.execute("SELECT article, document FROM items WHERE document IS NOT NULL AND document != ''")
+                items_with_docs = c.fetchall()
+
+                for article, document_path in items_with_docs:
+                    # Проверяем, не добавлен ли уже этот документ
+                    c.execute("""
+                        SELECT COUNT(*) FROM item_documents 
+                        WHERE item_article = ? AND document_path = ?
+                    """, (article, document_path))
+
+                    if c.fetchone()[0] == 0:
+                        # Добавляем документ в новую таблицу
+                        from pathlib import Path
+                        document_name = Path(document_path).name
+
+                        c.execute("""
+                            INSERT INTO item_documents (item_article, document_path, document_name)
+                            VALUES (?, ?, ?)
+                        """, (article, document_path, document_name))
+
+                        migrated_count += 1
+
+                conn.commit()
+
+            print(f"DEBUG: Migration completed: {migrated_count} documents migrated")
+            return migrated_count
+
+        except Exception as e:
+            print(f"DEBUG: Error during document migration: {str(e)}")
+            return 0
+
