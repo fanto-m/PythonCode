@@ -147,7 +147,7 @@ class ConfigManager(QObject):
         """
         return self._config.get("vat_included", True)
 
-    def _set_vat_included(self, value):
+    def _set_vat_included(self, value: object) -> None:
         """Устанавливает флаг включения НДС и сохраняет конфигурацию.
 
         Args:

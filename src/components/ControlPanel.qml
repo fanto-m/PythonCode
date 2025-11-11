@@ -150,6 +150,8 @@ Rectangle {
         currentItemId = -1
         currentArticle = ""
         currentItemData = {}
+        vatIncluded.checked = false
+
     }
 
     // Main content wrapper
