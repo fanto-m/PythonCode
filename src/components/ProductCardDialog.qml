@@ -76,6 +76,8 @@ Dialog {
     readonly property int baseSpacing: 16
     readonly property int baseFontSize: 10
 
+
+
     // Диалоги выбора файлов
     ImageFileDialog {
         id: imageDialog
@@ -554,7 +556,12 @@ Dialog {
                 Layout.preferredWidth: 140
                 font.pointSize: baseFontSize
 
-                onClicked: productDialog.reject()
+                onClicked: {
+                    productDialog.reject()
+                    onClosed: {
+                        vatIncluded.checked = false  // Всегда сбрасываем при закрытии
+                    }
+                }
 
                 background: Rectangle {
                     color: parent.down ? "#e0e0e0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
@@ -625,6 +632,10 @@ Dialog {
                         addItemClicked(itemData)
                     }
                     productDialog.accept()
+
+                    onClosed: {
+                        vatIncluded.checked = false  // Всегда сбрасываем при закрытии
+                    }
                 }
             }
         }
@@ -682,7 +693,7 @@ Dialog {
         statusComboBox.currentIndex = -1
         unitComboBox.currentIndex = -1
         categoryComboBox.currentIndex = -1
-
+        vatIncluded.checked = false
         documentsManager.clearDocuments()
         clearErrors()
     }

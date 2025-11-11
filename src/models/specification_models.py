@@ -495,9 +495,9 @@ class SpecificationsModel(QObject):
         except Exception as e:
             self.errorOccurred.emit(f"Ошибка экспорта в Excel: {str(e)}")
 
-    @Slot(int)
-    def exportToPDF(self, spec_id):
-        """Экспорт спецификации в PDF"""
+    @Slot(int, bool)  # ✅ ДОБАВЛЕН ПАРАМЕТР bool для landscape
+    def exportToPDF(self, spec_id, landscape=False):
+        """Экспорт спецификации в PDF с выбором ориентации"""
         try:
             # Get specification data
             spec_data = self.db.get_specification(spec_id)
@@ -512,20 +512,128 @@ class SpecificationsModel(QObject):
 
             # Import reportlab
             try:
-                from reportlab.lib.pagesizes import A4
+                from reportlab.lib.pagesizes import A4, landscape as landscape_pagesize
                 from reportlab.lib import colors
                 from reportlab.lib.units import mm
-                from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+                from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
                 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
                 from reportlab.pdfbase import pdfmetrics
                 from reportlab.pdfbase.ttfonts import TTFont
-            except ImportError:
-                self.errorOccurred.emit("Библиотека reportlab не установлена. Установите: pip install reportlab")
+                from PIL import Image as PILImage
+            except ImportError as e:
+                if 'PIL' in str(e):
+                    self.errorOccurred.emit("Библиотека Pillow не установлена. Установите: pip install Pillow")
+                else:
+                    self.errorOccurred.emit("Библиотека reportlab не установлена. Установите: pip install reportlab")
                 return
+
+            # Регистрация шрифтов с поддержкой кириллицы
+            font_registered = False
+
+            # Вариант 1: DejaVu
+            try:
+                #pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
+                #pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
+                #font_name = 'DejaVuSans'
+                #font_name_bold = 'DejaVuSans-Bold'
+                #font_registered = True
+                #print("DEBUG: Используем шрифт DejaVu")
+                pdfmetrics.registerFont(TTFont('GOST type A', 'GOST_A_.ttf'))
+                pdfmetrics.registerFont(TTFont('GOST type A Bold', 'GOST type A Bold.ttf'))
+                font_name = 'GOST type A'
+                font_name_bold = 'GOST type A Bold'
+                font_registered = True
+                print("DEBUG: Используем шрифт GOST type A")
+            except:
+                pass
+
+            # Вариант 2: FreeSans (Linux)
+            if not font_registered:
+                try:
+                    pdfmetrics.registerFont(TTFont('FreeSans', '/usr/share/fonts/truetype/freefont/FreeSans.ttf'))
+                    pdfmetrics.registerFont(
+                        TTFont('FreeSans-Bold', '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf'))
+                    font_name = 'FreeSans'
+                    font_name_bold = 'FreeSans-Bold'
+                    font_registered = True
+                    print("DEBUG: Используем шрифт FreeSans")
+                except:
+                    pass
+
+            # Вариант 3: Arial (Windows)
+            if not font_registered:
+                try:
+                    pdfmetrics.registerFont(TTFont('Arial', 'arial.ttf'))
+                    pdfmetrics.registerFont(TTFont('Arial-Bold', 'arialbd.ttf'))
+                    font_name = 'Arial'
+                    font_name_bold = 'Arial-Bold'
+                    font_registered = True
+                    print("DEBUG: Используем шрифт Arial")
+                except:
+                    pass
+
+            if not font_registered:
+                self.errorOccurred.emit(
+                    "Не удалось найти шрифт с поддержкой кириллицы. "
+                    "Установите: pip install reportlab[rlPyCairo]"
+                )
+                return
+
+            # ✅ ВЫБОР ОРИЕНТАЦИИ СТРАНИЦЫ
+            if landscape:
+                pagesize = landscape_pagesize(A4)
+                orientation_text = "альбомная"
+                print("DEBUG: Используем альбомную ориентацию")
+            else:
+                pagesize = A4
+                orientation_text = "портретная"
+                print("DEBUG: Используем портретную ориентацию")
+
+            # ✅ ФУНКЦИЯ ДЛЯ МАСШТАБИРОВАНИЯ ИЗОБРАЖЕНИЙ
+            def scale_image(image_path, max_width_mm=15, max_height_mm=15):
+                """Масштабирует изображение с сохранением пропорций"""
+                import os
+                if not image_path or not os.path.exists(image_path):
+                    return None
+
+                try:
+                    with PILImage.open(image_path) as pil_img:
+                        orig_width, orig_height = pil_img.size
+
+                    max_width = max_width_mm * mm
+                    max_height = max_height_mm * mm
+
+                    aspect_ratio = orig_width / orig_height
+
+                    if aspect_ratio > 1:
+                        final_width = max_width
+                        final_height = max_width / aspect_ratio
+
+                        if final_height > max_height:
+                            final_height = max_height
+                            final_width = max_height * aspect_ratio
+                    else:
+                        final_height = max_height
+                        final_width = max_height * aspect_ratio
+
+                        if final_width > max_width:
+                            final_width = max_width
+                            final_height = max_width / aspect_ratio
+
+                    img = Image(image_path, width=final_width, height=final_height)
+                    img.hAlign = 'CENTER'
+
+                    print(
+                        f"DEBUG: Изображение масштабировано: {orig_width}x{orig_height} -> {final_width:.1f}x{final_height:.1f} pts")
+                    return img
+
+                except Exception as e:
+                    print(f"DEBUG: Ошибка обработки изображения {image_path}: {e}")
+                    return None
 
             # Create PDF
             filename = f"specification_{spec_id}_{spec_data[1].replace(' ', '_')}.pdf"
-            doc = SimpleDocTemplate(filename, pagesize=A4)
+            doc = SimpleDocTemplate(filename, pagesize=pagesize)  # ✅ ИСПОЛЬЗУЕМ ВЫБРАННУЮ ОРИЕНТАЦИЮ
             story = []
 
             styles = getSampleStyleSheet()
@@ -534,22 +642,38 @@ class SpecificationsModel(QObject):
             title_style = ParagraphStyle(
                 'CustomTitle',
                 parent=styles['Heading1'],
-                fontSize=18,
+                fontName=font_name_bold,
+                fontSize=20,
                 textColor=colors.HexColor('#366092'),
                 spaceAfter=30,
-                alignment=1  # Center
+                alignment=1
             )
             story.append(Paragraph(f"СПЕЦИФИКАЦИЯ: {spec_data[1]}", title_style))
 
             # Info
-            info_style = styles['Normal']
+            info_style = ParagraphStyle(
+                'CustomInfo',
+                parent=styles['Normal'],
+                fontName=font_name,
+                fontSize=12
+            )
             story.append(Paragraph(f"<b>Описание:</b> {spec_data[2] or 'Не указано'}", info_style))
             story.append(Paragraph(f"<b>Статус:</b> {spec_data[5]}", info_style))
             story.append(Paragraph(f"<b>Дата создания:</b> {spec_data[3]}", info_style))
-            story.append(Spacer(1, 20))
+            story.append(Spacer(1, 15))
 
-            # Table data
-            table_data = [['№', 'Артикул', 'Название', 'Кол-во', 'Ед.', 'Цена', 'Сумма']]
+            # ✅ АДАПТИВНЫЕ РАЗМЕРЫ ТАБЛИЦЫ В ЗАВИСИМОСТИ ОТ ОРИЕНТАЦИИ
+            if landscape:
+                # Альбомная: больше места для текста и изображений
+                col_widths = [20, 80, 60, 200, 40, 30, 55, 55]
+                img_size = 20  # мм
+            else:
+                # Портретная: стандартные размеры
+                col_widths = [15, 80, 45, 110, 45, 30, 55, 55]
+                img_size = 20  # мм
+
+            # ТАБЛИЦА С ПРАВИЛЬНО МАСШТАБИРОВАННЫМИ ИЗОБРАЖЕНИЯМИ
+            table_data = [['№', 'Фото', 'Артикул', 'Название', 'Кол-во', 'Ед.', 'Цена, руб.', 'Сумма, руб.']]
 
             materials_total = 0
             for idx, item in enumerate(items, 1):
@@ -558,27 +682,52 @@ class SpecificationsModel(QObject):
                 total = quantity * price
                 materials_total += total
 
+                # ПРАВИЛЬНАЯ ОБРАБОТКА ИЗОБРАЖЕНИЯ
+                image_path = item[8] if len(item) > 8 else ''
+                image_cell = scale_image(image_path, max_width_mm=img_size, max_height_mm=img_size)
+
+                if image_cell is None:
+                    no_image_style = ParagraphStyle(
+                        'NoImage',
+                        parent=styles['Normal'],
+                        fontName=font_name,
+                        fontSize=10,
+                        alignment=1,
+                        textColor=colors.grey
+                    )
+                    image_cell = Paragraph('Нет<br/>фото', no_image_style)
+
                 table_data.append([
                     str(idx),
-                    item[2],  # article
-                    item[5],  # name
+                    image_cell,
+                    item[2],
+                    item[5],
                     f"{quantity:.2f}",
-                    item[6],  # unit
+                    item[6],
                     f"{price:.2f}",
                     f"{total:.2f}"
                 ])
 
-            # Create table
-            table = Table(table_data, colWidths=[20, 60, 180, 40, 30, 50, 50])
+            # ✅ Создаем таблицу с адаптивными колонками
+            table = Table(table_data, colWidths=col_widths)
+
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#366092')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
+                ('FONTNAME', (0, 1), (-1, -1), font_name),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('FONTSIZE', (0, 1), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
+                ('TOPPADDING', (0, 1), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 3),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 3),
                 ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ]))
+
             story.append(table)
             story.append(Spacer(1, 20))
 
@@ -587,16 +736,19 @@ class SpecificationsModel(QObject):
             total = materials_total + spec_data[6] + overhead
 
             totals_data = [
-                ['Материалы:', f"{materials_total:.2f} ₽"],
-                ['Работа:', f"{spec_data[6]:.2f} ₽"],
-                [f'Накладные ({spec_data[7]}%):', f"{overhead:.2f} ₽"],
-                ['ИТОГО:', f"{total:.2f} ₽"]
+                ['Материалы:', f"{materials_total:.2f} руб."],
+                ['Работа:', f"{spec_data[6]:.2f} руб."],
+                [f'Накладные ({spec_data[7]}%):', f"{overhead:.2f} руб."],
+                ['ИТОГО:', f"{total:.2f} руб."]
             ]
 
-            totals_table = Table(totals_data, colWidths=[300, 100])
+            # ✅ Адаптивная ширина таблицы итогов
+            totals_width = 500 if landscape else 400
+            totals_table = Table(totals_data, colWidths=[totals_width - 100, 100])
             totals_table.setStyle(TableStyle([
                 ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+                ('FONTNAME', (0, 0), (-1, -1), font_name),
+                ('FONTNAME', (0, -1), (-1, -1), font_name_bold),
                 ('FONTSIZE', (0, -1), (-1, -1), 12),
                 ('LINEABOVE', (0, -1), (-1, -1), 2, colors.black),
             ]))
@@ -605,8 +757,10 @@ class SpecificationsModel(QObject):
             # Build PDF
             doc.build(story)
 
-            print(f"DEBUG: PDF file saved: {filename}")
-            self.errorOccurred.emit(f"Файл сохранён: {filename}")
+            print(f"DEBUG: PDF file saved: {filename} ({orientation_text})")
+            self.errorOccurred.emit(f"Файл сохранён: {filename} ({orientation_text})")
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             self.errorOccurred.emit(f"Ошибка экспорта в PDF: {str(e)}")

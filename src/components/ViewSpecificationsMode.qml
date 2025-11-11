@@ -12,6 +12,8 @@ Rectangle {
     signal editSpecification(int specId)
 
     property var allSpecifications: []
+    // Глобальная настройка ориентации PDF
+    property bool useLandscapeOrientation: false
 
     ListModel {
         id: specificationsListModel
@@ -133,9 +135,11 @@ Rectangle {
             }
         }
 
+        /// ========================================
+        // ИЗМЕНИТЬ СЕКЦИЮ FILTER / SEARCH BAR
+        // Добавить CheckBox для ориентации
         // ========================================
-        // FILTER / SEARCH BAR
-        // ========================================
+
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 50
@@ -175,6 +179,46 @@ Rectangle {
                     font.pointSize: 10
                     currentIndex: 0
                     onCurrentIndexChanged: filterSpecifications()
+                }
+
+                // ✅ ДОБАВИТЬ ЭТО - Разделитель
+                Rectangle {
+                    Layout.preferredWidth: 2
+                    Layout.fillHeight: true
+                    Layout.topMargin: 5
+                    Layout.bottomMargin: 5
+                    color: "#d0d0d0"
+                }
+
+                // ✅ ДОБАВИТЬ ЭТО - CheckBox для ориентации
+                RowLayout {
+                    spacing: 5
+
+                    Text {
+                        text: "📄 PDF:"
+                        font.pointSize: 9
+                        color: "#666"
+                    }
+
+                    CheckBox {
+                        id: landscapeCheckBox
+                        text: "Альбомная"
+                        font.pointSize: 9
+                        checked: root.useLandscapeOrientation
+
+                        Component.onCompleted: {
+                            console.log("✅ CheckBox created!")  // ✅ ДОБАВЬТЕ ЭТО
+                        }
+
+                        onCheckedChanged: {
+                            root.useLandscapeOrientation = checked
+                            console.log("📄 Ориентация изменена:", checked ? "альбомная" : "портретная")  // ✅ И ЭТО
+                        }
+
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Использовать альбомную ориентацию для экспорта PDF"
+                        ToolTip.delay: 500
+                    }
                 }
 
                 Text {
@@ -291,7 +335,7 @@ Rectangle {
                         }
 
                         ColumnLayout {
-                            Layout.preferredWidth: 180
+                            Layout.preferredWidth: 100
                             spacing: 10
 
                             Rectangle {
@@ -336,7 +380,7 @@ Rectangle {
                                     onClicked: editSpecificationDialog.openFor(model.id)
 
                                     background: Rectangle {
-                                        color: parent.down ? "#0056b3" : (parent.hovered ? "#0069d9" : "#007bff")
+                                        color: parent.down ? "#1E2D44" : (parent.hovered ? "#3B5278" : "#2D4262")
                                         radius: 4
                                     }
                                 }
@@ -351,39 +395,53 @@ Rectangle {
                                     onClicked: specificationsModel.exportToExcel(model.id)
 
                                     background: Rectangle {
-                                        color: parent.down ? "#117a8b" : (parent.hovered ? "#138496" : "#17a2b8")
+                                        color: parent.down ? "#4D6F6E" : (parent.hovered ? "#78A5A3" : "#66908F")
                                         radius: 4
                                     }
                                 }
 
                                 Button {
-                                    text: "📕"
+                                    text: "📄"
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 35
                                     font.pointSize: 12
                                     ToolTip.visible: hovered
                                     ToolTip.text: "Экспорт PDF"
-                                    onClicked: specificationsModel.exportToPDF(model.id)
+                                    onClicked: specificationsModel.exportToPDF(model.id, root.useLandscapeOrientation)  // ✅ ИЗМЕНЕНО
 
                                     background: Rectangle {
-                                        color: parent.down ? "#c82333" : (parent.hovered ? "#e02535" : "#dc3545")
+                                        color: parent.down ? "#CC5A1A" : (parent.hovered ? "#FA812F" : "#E66F20")
                                         radius: 4
                                     }
                                 }
 
+
                                 Button {
-                                    text: "🗑️"
+                                    text: "🗑️"  // trash — это emoji
                                     font.pointSize: 12
-                                    font.family: "Segoe UI Emoji"
+                                    font.family: "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, Twemoji Mozilla"
+
                                     Layout.preferredWidth: 35
                                     Layout.preferredHeight: 35
+
                                     ToolTip.visible: hovered
                                     ToolTip.text: "Удалить"
+
                                     onClicked: deleteConfirmDialog.openFor(model.id, model.name)
 
+                                    // ЯВНО ЗАДАЁМ ЦВЕТ ТЕКСТА
+                                    contentItem: Text {
+                                        text: parent.text
+                                        font: parent.font
+                                        color: "white"  // КЛЮЧЕВАЯ СТРОКА!
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
                                     background: Rectangle {
-                                        color: parent.down ? "#a71d2a" : (parent.hovered ? "#c82333" : "#dc3545")
-                                        radius: 4
+                                        color: parent.down ? "#C41C1C" : (parent.hovered ? "#E63535" : "#F34A4A")
+                                        radius: 8
+                                        border.width: 0
                                     }
                                 }
                             }

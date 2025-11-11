@@ -398,10 +398,20 @@ Rectangle {
             Image {
                 anchors.fill: parent
                 anchors.margins: 2
-                source: parent.hasImage ? "../images/" + parent.imagePath : ""
+                // ✅ ИСПРАВЛЕНО: убрали "images/"
+                source: parent.hasImage ? "../" + parent.imagePath : ""
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 visible: parent.hasImage
+
+                // ✅ Добавьте для отладки:
+                onStatusChanged: {
+                    if (status === Image.Error) {
+                        console.error("❌ Failed to load:", parent.imagePath)
+                    } else if (status === Image.Ready) {
+                        console.log("✅ Image loaded:", parent.imagePath)
+                    }
+                }
             }
 
             Text {
