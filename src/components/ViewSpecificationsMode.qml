@@ -336,6 +336,12 @@ Rectangle {
 
                         ColumnLayout {
                             Layout.preferredWidth: 100
+                            Layout.minimumWidth: 500      // ← не сужается
+                            Layout.maximumWidth: 500      // ← не растягивается
+
+                            Layout.preferredHeight: 105
+                            Layout.minimumHeight: 105
+                            Layout.maximumHeight: 105
                             spacing: 10
 
                             Rectangle {
@@ -789,7 +795,9 @@ Rectangle {
                             spacing: 10
 
                             ColumnLayout {
-                                Layout.fillWidth: true
+                                Layout.preferredWidth: 500
+                                Layout.minimumWidth: 500
+                                Layout.maximumWidth: 500
                                 spacing: 4
 
                                 Text {
@@ -815,7 +823,9 @@ Rectangle {
                             }
 
                             ColumnLayout {
-                                Layout.preferredWidth: 200
+                                 Layout.preferredWidth: 200
+                                 Layout.minimumWidth: 200
+                                 Layout.maximumWidth: 200
                                 spacing: 4
 
                                 Text {

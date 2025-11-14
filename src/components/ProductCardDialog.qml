@@ -373,7 +373,13 @@ Dialog {
                             to: 999999
                             value: 0
                             editable: true
+                            focusPolicy: Qt.StrongFocus
                             font.pointSize: baseFontSize
+
+                            validator: IntValidator {
+                                bottom: stockField.from
+                                top: stockField.to
+                            }
 
                             background: Rectangle {
                                 color: "white"

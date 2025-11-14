@@ -172,7 +172,9 @@ Rectangle {
 
                             // Name field
                             ColumnLayout {
-                                Layout.fillWidth: true
+                                Layout.preferredWidth: 800
+                                Layout.minimumWidth: 800
+                                Layout.maximumWidth: 800
                                 spacing: 4
 
                                 Text {
@@ -210,7 +212,9 @@ Rectangle {
 
                                 ComboBox {
                                     id: statusComboBox
-                                    Layout.fillWidth: true
+                                    Layout.preferredWidth: 200
+                                    Layout.minimumWidth: 200
+                                    Layout.maximumWidth: 200
                                     model: ["черновик", "утверждена", "архив"]
                                     currentIndex: 0
                                     font.pointSize: 10

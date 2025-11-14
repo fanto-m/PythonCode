@@ -53,9 +53,13 @@
                     "name": "connectors",
                     "display_name": "Разъемы"
                 },
-                "fittings": {
-                    "name": "fittings",
-                    "display_name": "Фитинги"
+                "pneumatics": {
+                    "name": "pneumatics",
+                    "display_name": "Пневматика"
+                },
+                "furniture": {
+                    "name": "furniture",
+                    "display_name": "Фурнитура"
                 },
                 "resistors": {
                     "name": "resistors",

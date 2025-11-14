@@ -495,7 +495,7 @@ class SpecificationsModel(QObject):
         except Exception as e:
             self.errorOccurred.emit(f"Ошибка экспорта в Excel: {str(e)}")
 
-    @Slot(int, bool)  # ✅ ДОБАВЛЕН ПАРАМЕТР bool для landscape
+    @Slot(int, bool)
     def exportToPDF(self, spec_id, landscape=False):
         """Экспорт спецификации в PDF с выбором ориентации"""
         try:
@@ -515,11 +515,14 @@ class SpecificationsModel(QObject):
                 from reportlab.lib.pagesizes import A4, landscape as landscape_pagesize
                 from reportlab.lib import colors
                 from reportlab.lib.units import mm
-                from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+                from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
                 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
                 from reportlab.pdfbase import pdfmetrics
                 from reportlab.pdfbase.ttfonts import TTFont
+                from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+                from reportlab.pdfgen import canvas
                 from PIL import Image as PILImage
+                from datetime import datetime
             except ImportError as e:
                 if 'PIL' in str(e):
                     self.errorOccurred.emit("Библиотека Pillow не установлена. Установите: pip install Pillow")
@@ -530,14 +533,8 @@ class SpecificationsModel(QObject):
             # Регистрация шрифтов с поддержкой кириллицы
             font_registered = False
 
-            # Вариант 1: DejaVu
+            # Вариант 1: GOST type A
             try:
-                #pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
-                #pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
-                #font_name = 'DejaVuSans'
-                #font_name_bold = 'DejaVuSans-Bold'
-                #font_registered = True
-                #print("DEBUG: Используем шрифт DejaVu")
                 pdfmetrics.registerFont(TTFont('GOST type A', 'GOST_A_.ttf'))
                 pdfmetrics.registerFont(TTFont('GOST type A Bold', 'GOST type A Bold.ttf'))
                 font_name = 'GOST type A'
@@ -579,7 +576,7 @@ class SpecificationsModel(QObject):
                 )
                 return
 
-            # ✅ ВЫБОР ОРИЕНТАЦИИ СТРАНИЦЫ
+            # ВЫБОР ОРИЕНТАЦИИ СТРАНИЦЫ
             if landscape:
                 pagesize = landscape_pagesize(A4)
                 orientation_text = "альбомная"
@@ -589,7 +586,44 @@ class SpecificationsModel(QObject):
                 orientation_text = "портретная"
                 print("DEBUG: Используем портретную ориентацию")
 
-            # ✅ ФУНКЦИЯ ДЛЯ МАСШТАБИРОВАНИЯ ИЗОБРАЖЕНИЙ
+            # ✅ КЛАСС ДЛЯ НУМЕРАЦИИ СТРАНИЦ С ОБЩИМ КОЛИЧЕСТВОМ
+            class NumberedCanvas(canvas.Canvas):
+                def __init__(self, *args, **kwargs):
+                    canvas.Canvas.__init__(self, *args, **kwargs)
+                    self._saved_page_states = []
+
+                def showPage(self):
+                    self._saved_page_states.append(dict(self.__dict__))
+                    self._startPage()
+
+                def save(self):
+                    """Добавляем номера страниц после создания всех страниц"""
+                    num_pages = len(self._saved_page_states)
+                    for state in self._saved_page_states:
+                        self.__dict__.update(state)
+                        self.draw_page_number(num_pages)
+                        canvas.Canvas.showPage(self)
+                    canvas.Canvas.save(self)
+
+                def draw_page_number(self, page_count):
+                    """Рисуем номер страницы в формате X/Y и дату"""
+                    self.saveState()
+                    self.setFont(font_name, 9)
+                    self.setFillColor(colors.grey)
+
+                    page_num = self._pageNumber
+
+                    # ✅ Номер страницы в формате "1/5"
+                    page_text = f"{page_num}/{page_count}"
+                    self.drawRightString(pagesize[0] - 30, 30, page_text)
+
+                    # ✅ Дата под номером страницы
+                    current_date = datetime.now().strftime("%d.%m.%Y")
+                    self.drawRightString(pagesize[0] - 30, 15, current_date)
+
+                    self.restoreState()
+
+            # ФУНКЦИЯ ДЛЯ МАСШТАБИРОВАНИЯ ИЗОБРАЖЕНИЙ
             def scale_image(image_path, max_width_mm=15, max_height_mm=15):
                 """Масштабирует изображение с сохранением пропорций"""
                 import os
@@ -631,49 +665,85 @@ class SpecificationsModel(QObject):
                     print(f"DEBUG: Ошибка обработки изображения {image_path}: {e}")
                     return None
 
-            # Create PDF
+            # ✅ ФУНКЦИЯ ДЛЯ ДОБАВЛЕНИЯ ШАПКИ
+            def add_header(canvas, doc):
+                """Добавляет шапку на каждую страницу"""
+                canvas.saveState()
+
+                # Шапка
+                canvas.setFont(font_name_bold, 14)
+                canvas.setFillColor(colors.HexColor('#366092'))
+
+                # Название спецификации с переносом на следующую строку
+                canvas.drawString(30, pagesize[1] - 30, "СПЕЦИФИКАЦИЯ:")
+                canvas.drawString(30, pagesize[1] - 50, spec_data[1])
+
+                # Линия под шапкой
+                canvas.setStrokeColor(colors.HexColor('#366092'))
+                canvas.setLineWidth(2)
+                canvas.line(30, pagesize[1] - 60, pagesize[0] - 30, pagesize[1] - 60)
+
+                canvas.restoreState()
+
+            # Create PDF with custom header/footer
             filename = f"specification_{spec_id}_{spec_data[1].replace(' ', '_')}.pdf"
-            doc = SimpleDocTemplate(filename, pagesize=pagesize)  # ✅ ИСПОЛЬЗУЕМ ВЫБРАННУЮ ОРИЕНТАЦИЮ
+            doc = SimpleDocTemplate(
+                filename,
+                pagesize=pagesize,
+                topMargin=80,  # Увеличиваем верхний отступ для шапки
+                bottomMargin=50,  # Увеличиваем нижний отступ для даты и номера
+                leftMargin=30,
+                rightMargin=30
+            )
             story = []
 
             styles = getSampleStyleSheet()
 
-            # Title
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontName=font_name_bold,
-                fontSize=20,
-                textColor=colors.HexColor('#366092'),
-                spaceAfter=30,
-                alignment=1
-            )
-            story.append(Paragraph(f"СПЕЦИФИКАЦИЯ: {spec_data[1]}", title_style))
-
-            # Info
+            # Info section
             info_style = ParagraphStyle(
                 'CustomInfo',
                 parent=styles['Normal'],
                 fontName=font_name,
-                fontSize=12
+                fontSize=10,
+                spaceAfter=6
             )
             story.append(Paragraph(f"<b>Описание:</b> {spec_data[2] or 'Не указано'}", info_style))
             story.append(Paragraph(f"<b>Статус:</b> {spec_data[5]}", info_style))
             story.append(Paragraph(f"<b>Дата создания:</b> {spec_data[3]}", info_style))
             story.append(Spacer(1, 15))
 
-            # ✅ АДАПТИВНЫЕ РАЗМЕРЫ ТАБЛИЦЫ В ЗАВИСИМОСТИ ОТ ОРИЕНТАЦИИ
+            # АДАПТИВНЫЕ РАЗМЕРЫ ТАБЛИЦЫ
             if landscape:
-                # Альбомная: больше места для текста и изображений
-                col_widths = [20, 80, 60, 200, 40, 30, 55, 55]
-                img_size = 20  # мм
+                # Альбомная: №, Фото, Название, Производитель, Кол-во, Ед., Цена, Сумма, Примечание
+                col_widths = [20, 60, 150, 80, 35, 30, 50, 50, 100]
+                img_size = 18
             else:
-                # Портретная: стандартные размеры
-                col_widths = [15, 80, 45, 110, 45, 30, 55, 55]
-                img_size = 20  # мм
+                # Портретная
+                col_widths = [15, 50, 110, 70, 30, 25, 45, 45, 80]
+                img_size = 15
 
-            # ТАБЛИЦА С ПРАВИЛЬНО МАСШТАБИРОВАННЫМИ ИЗОБРАЖЕНИЯМИ
-            table_data = [['№', 'Фото', 'Артикул', 'Название', 'Кол-во', 'Ед.', 'Цена, руб.', 'Сумма, руб.']]
+            # СОЗДАНИЕ ЗАГОЛОВКА ТАБЛИЦЫ С ПЕРЕНОСОМ СТРОК
+            header_style = ParagraphStyle(
+                'TableHeader',
+                parent=styles['Normal'],
+                fontName=font_name_bold,
+                fontSize=9,
+                alignment=TA_CENTER,
+                leading=10,
+                textColor=colors.whitesmoke
+            )
+
+            table_data = [[
+                Paragraph('№', header_style),
+                Paragraph('Изображение', header_style),
+                Paragraph('Наименование', header_style),
+                Paragraph('Производитель', header_style),
+                Paragraph('Кол-во', header_style),
+                Paragraph('Ед.', header_style),
+                Paragraph('Цена, руб.<br/>без НДС', header_style),
+                Paragraph('Сумма, руб.<br/>без НДС', header_style),
+                Paragraph('Примечание', header_style)
+            ]]
 
             materials_total = 0
             for idx, item in enumerate(items, 1):
@@ -691,38 +761,78 @@ class SpecificationsModel(QObject):
                         'NoImage',
                         parent=styles['Normal'],
                         fontName=font_name,
-                        fontSize=10,
-                        alignment=1,
+                        fontSize=8,
+                        alignment=TA_CENTER,
                         textColor=colors.grey
                     )
                     image_cell = Paragraph('Нет<br/>фото', no_image_style)
 
+                # Стили для ячеек
+                name_style = ParagraphStyle(
+                    'TableName',
+                    parent=styles['Normal'],
+                    fontName=font_name,
+                    fontSize=9,
+                    leading=11,
+                    alignment=TA_CENTER,
+                    wordWrap='CJK',
+                )
+
+
+                center_style = ParagraphStyle(
+                    'TableCenter',
+                    parent=styles['Normal'],
+                    fontName=font_name,
+                    fontSize=9,
+                    alignment=TA_CENTER,
+                )
+
+                note_style = ParagraphStyle(
+                    'TableNote',
+                    parent=styles['Normal'],
+                    fontName=font_name,
+                    fontSize=9,
+                    leading=11,
+                    alignment=TA_CENTER,
+                    wordWrap='CJK',
+                )
+
+                # ✅ ПРАВИЛЬНЫЕ ИНДЕКСЫ для новой структуры
+                manufacturer = item[11] if len(item) > 11 else ''  # Производитель
+                note = item[10] if len(item) > 10 else ''  # Описание
+
+                # Можно также использовать si.notes если хотите примечание из спецификации:
+                # note = item[4]  # si.notes из specification_items
+
                 table_data.append([
-                    str(idx),
+                    Paragraph(str(idx), center_style),
                     image_cell,
-                    item[2],
-                    item[5],
-                    f"{quantity:.2f}",
-                    item[6],
-                    f"{price:.2f}",
-                    f"{total:.2f}"
+                    Paragraph(item[5].replace('\n', '<br/>'), name_style),  # i.name
+                    Paragraph(manufacturer, name_style),  # i.manufacturer
+                    Paragraph(f"{quantity:.2f}", center_style),
+                    Paragraph(item[6], center_style),  # i.unit
+                    Paragraph(f"{price:.2f}", center_style),
+                    Paragraph(f"{total:.2f}", center_style),
+                    Paragraph(note, note_style)  # i.description или si.notes
                 ])
 
-            # ✅ Создаем таблицу с адаптивными колонками
-            table = Table(table_data, colWidths=col_widths)
+            # Создаем таблицу с адаптивными колонками
+            table = Table(table_data, colWidths=col_widths, repeatRows=1)
 
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#366092')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('VALIGN', (8, 1), (8, -1), 'TOP'),
                 ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
                 ('FONTNAME', (0, 1), (-1, -1), font_name),
-                ('FONTSIZE', (0, 0), (-1, 0), 12),
-                ('FONTSIZE', (0, 1), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
-                ('TOPPADDING', (0, 1), (-1, -1), 8),
-                ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+                ('TOPPADDING', (0, 0), (-1, 0), 10),
+                ('TOPPADDING', (0, 1), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
                 ('LEFTPADDING', (0, 0), (-1, -1), 3),
                 ('RIGHTPADDING', (0, 0), (-1, -1), 3),
                 ('GRID', (0, 0), (-1, -1), 1, colors.black),
@@ -739,10 +849,10 @@ class SpecificationsModel(QObject):
                 ['Материалы:', f"{materials_total:.2f} руб."],
                 ['Работа:', f"{spec_data[6]:.2f} руб."],
                 [f'Накладные ({spec_data[7]}%):', f"{overhead:.2f} руб."],
-                ['ИТОГО:', f"{total:.2f} руб."]
+                ['ИТОГО:', f"{total:.2f} руб."]  # ✅ Исправлено: закрывающая кавычка
             ]
 
-            # ✅ Адаптивная ширина таблицы итогов
+            # Адаптивная ширина таблицы итогов
             totals_width = 500 if landscape else 400
             totals_table = Table(totals_data, colWidths=[totals_width - 100, 100])
             totals_table.setStyle(TableStyle([
@@ -754,8 +864,13 @@ class SpecificationsModel(QObject):
             ]))
             story.append(totals_table)
 
-            # Build PDF
-            doc.build(story)
+            # ✅ Build PDF с кастомным canvas для нумерации страниц
+            doc.build(
+                story,
+                onFirstPage=add_header,
+                onLaterPages=add_header,
+                canvasmaker=NumberedCanvas  # ✅ Используем кастомный canvas
+            )
 
             print(f"DEBUG: PDF file saved: {filename} ({orientation_text})")
             self.errorOccurred.emit(f"Файл сохранён: {filename} ({orientation_text})")

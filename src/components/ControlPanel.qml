@@ -34,6 +34,7 @@ Rectangle {
     signal addCategoryClicked()
     signal editCategoryClicked(var categoryData)
     signal deleteCategoryClicked(var categoryData)
+    signal copyItemClicked(var itemData)
 
     // Properties
     property int currentItemId: -1
@@ -150,7 +151,7 @@ Rectangle {
         currentItemId = -1
         currentArticle = ""
         currentItemData = {}
-        vatIncluded.checked = false
+        //vatIncluded.checked = false
 
     }
 
@@ -171,7 +172,7 @@ Rectangle {
             // Top spacer
             Item { Layout.preferredHeight: root.contentTopPadding }
 
-            // Кнопка "Добавить товар"
+            // Кнопка "Добавить товар" - ЗЕЛЁНАЯ
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
@@ -179,16 +180,16 @@ Rectangle {
                 font.pointSize: baseFontSize + 1
 
                 background: Rectangle {
-                    color: parent.hovered ? "#FFD700" : "#FFC700"
+                    color: parent.hovered ? "#66BB6A" : "#4CAF50"
                     radius: 4
-                    border.color: "#FFA000"
+                    border.color: "#388E3C"
                     border.width: 2
                 }
 
                 contentItem: Text {
                     text: parent.text
                     font: parent.font
-                    color: "#333333"
+                    color: "#FFFFFF"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -196,7 +197,7 @@ Rectangle {
                 onClicked: root.openProductCardDialog()
             }
 
-            // Кнопка "Редактировать товар"
+            // Кнопка "Редактировать товар" - СИНЯЯ
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
@@ -205,16 +206,16 @@ Rectangle {
                 enabled: currentItemId !== -1
 
                 background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? "#FFA500" : "#FFB84D") : "#CCCCCC"
+                    color: parent.enabled ? (parent.hovered ? "#42A5F5" : "#2196F3") : "#CCCCCC"
                     radius: 4
-                    border.color: parent.enabled ? "#FF8C00" : "#999999"
+                    border.color: parent.enabled ? "#1976D2" : "#999999"
                     border.width: 2
                 }
 
                 contentItem: Text {
                     text: parent.text
                     font: parent.font
-                    color: parent.enabled ? "#333333" : "#666666"
+                    color: "#FFFFFF"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -228,6 +229,36 @@ Rectangle {
                         console.error("ERROR: No valid item data available for editing")
                         console.error("currentItemId:", currentItemId)
                         console.error("currentItemData keys:", Object.keys(currentItemData))
+                    }
+                }
+            }
+
+            // Кнопка "Копировать товар" - ФИОЛЕТОВАЯ
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                text: "📋 Копировать товар"
+                font.pointSize: baseFontSize + 1
+                enabled: currentItemId !== -1
+
+                background: Rectangle {
+                    color: parent.enabled ? (parent.hovered ? "#AB47BC" : "#9C27B0") : "#CCCCCC"
+                    radius: 4
+                    border.color: parent.enabled ? "#7B1FA2" : "#999999"
+                    border.width: 2
+                }
+
+                contentItem: Text {
+                    text: parent.text
+                    font: parent.font
+                    color: "#FFFFFF"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    if (currentItemId !== -1) {
+                        root.copyItemClicked(currentItemData)
                     }
                 }
             }

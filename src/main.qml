@@ -371,7 +371,8 @@ ApplicationWindow {
                         onItemSelected: (itemData) => {
                             controlPanel.currentItemId = itemData.index
                             controlPanel.currentArticle = itemData.article
-                            controlPanel.currentItemData = itemData  // ← ДОБАВЬТЕ ЭТУ СТРОКУ
+                            //controlPanel.currentItemData = itemData  // ← ДОБАВЬТЕ ЭТУ СТРОКУ
+                            controlPanel.currentItemData = Object.assign({}, itemData)
                             mainWindow.selectedImagePath = itemData.image_path
                             mainWindow.selectedDocumentPath = itemData.document
                         }
@@ -443,6 +444,50 @@ ApplicationWindow {
                                 controlPanel.clearFields()
                             }
                         }
+
+                        onCopyItemClicked: (itemData) => {
+                            console.log("QML: Копируем товар:", itemData.name, "из категории:", itemData.category)
+
+                            // Получаем ID категории по имени (как и в addItemClicked)
+                            var categoryId = categoryModel.getCategoryIdByName(itemData.category)
+                            if (categoryId === undefined || categoryId === -1) {
+                                errorDialog.message = "Не удалось определить категорию для копирования"
+                                errorDialog.open()
+                                return
+                            }
+
+                            // Генерируем артикул через существующую логику!
+                            var newArticle = categoryModel.generateSkuForCategory(categoryId)
+                            if (!newArticle) {
+                                errorDialog.message = "Не удалось сгенерировать артикул для категории"
+                                errorDialog.open()
+                                return
+                            }
+
+                            // Копируем товар с новым артикулом
+                            var errorMessage = itemsModel.addItem(
+                                newArticle,
+                                itemData.name,
+                                itemData.description,
+                                itemData.image_path,
+                                categoryId,
+                                itemData.price,
+                                itemData.stock,
+                                itemData.status || "в наличии",
+                                itemData.unit || "шт.",
+                                itemData.manufacturer || "",
+                                itemData.document || ""
+                            )
+
+                            if (errorMessage) {
+                                errorDialog.message = errorMessage
+                                errorDialog.open()
+                            } else {
+                                console.log("Товар успешно скопирован с артикулом:", newArticle)
+                                controlPanel.clearFields()  // Сбрасываем выделение
+                            }
+                        }
+
                     }
                 }
             }

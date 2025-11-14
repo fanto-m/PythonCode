@@ -692,7 +692,7 @@ class DatabaseManager:
 
         Returns:
             list: Список кортежей с данными позиций (id, specification_id, article, quantity, notes,
-            name, unit, price, image_path, category, status).
+            name, unit, price, image_path, category, status, manufacturer, description).
             Пустой список в случае ошибки.
 
         """
@@ -710,7 +710,9 @@ class DatabaseManager:
                                  i.price,
                                  i.image_path,
                                  c.name as category,
-                                 i.status
+                                 i.status,
+                                 COALESCE(i.manufacturer, '') as manufacturer,
+                                 COALESCE(i.description, '') as description
                           FROM specification_items si
                                    JOIN items i ON si.article = i.article
                                    LEFT JOIN categories c ON i.category_id = c.id

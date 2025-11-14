@@ -1,3 +1,4 @@
+# filter_proxy_model.py
 from PySide6.QtCore import QSortFilterProxyModel, Slot, QSettings, Property, Qt
 from items_model import ItemsModel
 

@@ -23,6 +23,19 @@ GroupBox {
     Layout.fillWidth: true
     Layout.preferredHeight: 220
 
+    // ДОБАВЛЕНО: Обработчик изменения количества документов
+    Connections {
+        target: documentsModel
+        function onCountChanged() {
+            console.log("Documents count changed:", documentsModel.count())
+            // Автоматически выбираем первый документ, если есть документы
+            if (documentsModel && documentsModel.count() > 0 && documentsComboBox.currentIndex < 0) {
+                documentsComboBox.currentIndex = 0
+                console.log("Auto-selected first document, currentIndex:", documentsComboBox.currentIndex)
+            }
+        }
+    }
+
     // Диалог выбора документа
     DocumentFileDialog {
         id: documentDialog
@@ -250,6 +263,7 @@ GroupBox {
                 enabled: documentsModel && documentsModel.count() > 0 && documentsComboBox.currentIndex >= 0
 
                 onClicked: {
+                    console.log("Delete button clicked, currentIndex:", documentsComboBox.currentIndex)
                     deleteConfirmDialog.documentIndex = documentsComboBox.currentIndex
                     deleteConfirmDialog.open()
                 }
@@ -372,17 +386,31 @@ GroupBox {
 
     // Функции
     function loadDocuments(article) {
+        console.log("loadDocuments called with article:", article)
         currentArticle = article
         if (documentsModel) {
             documentsModel.loadDocuments(article)
+
+            // ИСПРАВЛЕНО: Устанавливаем currentIndex после загрузки
+            // Используем Qt.callLater чтобы дождаться обновления модели
+            Qt.callLater(function() {
+                if (documentsModel.count() > 0) {
+                    documentsComboBox.currentIndex = 0
+                    console.log("Set currentIndex to 0 after loading, count:", documentsModel.count())
+                } else {
+                    documentsComboBox.currentIndex = -1
+                    console.log("No documents loaded, currentIndex set to -1")
+                }
+            })
         }
     }
 
     function clearDocuments() {
+        console.log("clearDocuments called")
         currentArticle = ""
+        documentsComboBox.currentIndex = -1
         if (documentsModel) {
             documentsModel.clear()
         }
-        documentsComboBox.currentIndex = -1
     }
 }

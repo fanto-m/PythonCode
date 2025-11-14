@@ -445,36 +445,164 @@ ColumnLayout {
                 }
 
                 // --- View-only info button (shown in readOnly mode) ---
-                Button {
+                // --- View-only info button (shown in readOnly mode) ---
+                ColumnLayout {
                     visible: readOnly
-                    text: "📋 Поставщики"
-                    Layout.preferredWidth: 150
-                    Layout.preferredHeight: 40
-                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 10
                     Layout.rightMargin: 5
 
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Просмотр поставщиков товара"
-                    ToolTip.delay: 500
+                    Button {
+                        text: "📋 Поставщики"
+                        Layout.preferredWidth: 150
+                        Layout.preferredHeight: 40
+                        Layout.alignment: Qt.AlignVCenter
 
-                    onClicked: {
-                        itemSuppliersDialog.openFor(model.article)
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Просмотр поставщиков товара"
+                        ToolTip.delay: 500
+
+                        onClicked: {
+                            itemSuppliersDialog.openFor(model.article)
+                        }
+
+                        background: Rectangle {
+                            color: parent.down ? "#0056b3" : (parent.hovered ? "#0069d9" : "#007bff")
+                            radius: 4
+                            border.color: "#0056b3"
+                            border.width: 1
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: "white"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.pointSize: 10
+                        }
                     }
 
-                    background: Rectangle {
-                        color: parent.down ? "#0056b3" : (parent.hovered ? "#0069d9" : "#007bff")
-                        radius: 4
-                        border.color: "#0056b3"
-                        border.width: 1
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                    // НОВОЕ: Кнопка "Документы" в режиме просмотра
+                    Button {
+                        id: documentsButtonReadOnly
+                        Layout.preferredWidth: 150
+                        Layout.preferredHeight: 40
+                        Layout.alignment: Qt.AlignVCenter
+
+                        property string itemArticle: model.article
+                        property var documentsList: []
+
+                        text: {
+                            if (documentsList.length === 0) return "Нет документов"
+                            if (documentsList.length === 1) return "1 документ"
+                            return documentsList.length + " документов"
+                        }
+
+                        enabled: documentsList.length > 0
+                        font.pointSize: 9
+
+                        // Загружаем список документов при создании
+                        Component.onCompleted: {
+                            if (itemDocumentsModel && itemArticle) {
+                                itemDocumentsModel.loadDocuments(itemArticle)
+
+                                var docs = []
+                                for (var i = 0; i < itemDocumentsModel.count(); i++) {
+                                    var docName = itemDocumentsModel.getDocumentName(i)
+                                    var docPath = itemDocumentsModel.getDocumentPath(i)
+
+                                    docs.push({
+                                        name: docName,
+                                        path: docPath
+                                    })
+                                }
+                                documentsList = docs
+                            }
+                        }
+
+                        onClicked: documentsMenuReadOnly.popup(documentsButtonReadOnly)
+
+                        background: Rectangle {
+                            color: parent.enabled ? "white" : "#f5f5f5"
+                            border.color: parent.enabled ? "#86ac41" : "#ccc"
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: RowLayout {
+                            spacing: 6
+
+                            Text {
+                                text: "📄"
+                                font.pointSize: 12
+                                color: parent.parent.enabled ? "#86ac41" : "#999"
+                            }
+
+                            Text {
+                                text: parent.parent.text
+                                font: parent.parent.font
+                                color: parent.parent.enabled ? "#333" : "#999"
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            Text {
+                                text: "▼"
+                                font.pointSize: 8
+                                color: parent.parent.enabled ? "#86ac41" : "#999"
+                                visible: parent.parent.enabled
+                            }
+                        }
+
+                        ToolTip.visible: hovered
+                        ToolTip.text: enabled ? "Открыть список документов" : "Нет документов"
+                        ToolTip.delay: 500
                     }
 
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        font.pointSize: 10
+                    // Меню документов для режима просмотра
+                    Menu {
+                        id: documentsMenuReadOnly
+
+                        Repeater {
+                            model: documentsButtonReadOnly.documentsList
+
+                            MenuItem {
+                                text: modelData ? modelData.name : ""
+
+                                ToolTip.visible: hovered && modelData
+                                ToolTip.text: modelData ? modelData.name : ""
+                                ToolTip.delay: 300
+
+                                onTriggered: {
+                                    if (fileManager && modelData && modelData.path) {
+                                        console.log("Opening document:", modelData.path)
+                                        fileManager.open_file_externally(modelData.path)
+                                    }
+                                }
+
+                                contentItem: RowLayout {
+                                    spacing: 8
+
+                                    Text {
+                                        text: "📄"
+                                        font.pointSize: 10
+                                    }
+
+                                    Text {
+                                        text: parent.parent.text
+                                        font.pointSize: 10
+                                        color: parent.parent.highlighted ? "white" : "#333"
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                }
+
+                                background: Rectangle {
+                                    color: parent.highlighted ? "#86ac41" : "transparent"
+                                    radius: 2
+                                }
+                            }
+                        }
                     }
                 }
             }

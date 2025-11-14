@@ -1,4 +1,4 @@
-// SuppliersManagerDialog.qml - Improved Version
+// SuppliersManagerDialog.qml - Improved Version with Search
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -9,7 +9,7 @@ Dialog {
     id: suppliersManagerDialog
     title: currentArticle === "" ? "Управление поставщиками" : "Привязка поставщиков к артикулу: " + currentArticle
     modal: true
-    width: Math.min(Screen.width * 0.9, 1000)
+    width: Math.min(Screen.width * 0.9, 1400)
     height: Math.min(Screen.height * 0.8, 900)
 
     // Theme constants for easy customization
@@ -29,11 +29,11 @@ Dialog {
     readonly property var columnConfig: [
         { proportion: 0.03, minWidth: 40, role: "checkbox" },
         { proportion: 0.03, minWidth: 40, role: "number" },
-        { proportion: 0.20, minWidth: 120, role: "name" },
-        { proportion: 0.20, minWidth: 120, role: "company" },
-        { proportion: 0.20, minWidth: 140, role: "email" },
-        { proportion: 0.12, minWidth: 100, role: "phone" },
-        { proportion: 0.15, minWidth: 150, role: "website" }
+        { proportion: 0.21, minWidth: 120, role: "name" },      // было 0.20
+        { proportion: 0.21, minWidth: 120, role: "company" },   // было 0.20
+        { proportion: 0.21, minWidth: 140, role: "email" },     // было 0.20
+        { proportion: 0.17, minWidth: 100, role: "phone" },     // было 0.12
+        { proportion: 0.14, minWidth: 150, role: "website" }    // было 0.15
     ]
 
     ColumnLayout {
@@ -64,8 +64,8 @@ Dialog {
                 }
 
                 onTextChanged: {
-                    // Implement filter logic here
-                    // suppliersTableModel.setFilterString(text)
+                    // Применяем фильтр при изменении текста
+                    suppliersTableModel.setFilterString(text)
                 }
             }
 
@@ -310,7 +310,7 @@ Dialog {
                                 border.color: borderColor
                                 border.width: 0.5
 
-                                Text {
+                                TextEdit {
                                     text: {
                                         switch (column) {
                                             case 1: return row + 1
@@ -327,18 +327,31 @@ Dialog {
                                     horizontalAlignment: column === 1 ? Text.AlignHCenter : Text.AlignLeft
                                     verticalAlignment: Text.AlignVCenter
                                     font.pointSize: baseFontSize + 1
-                                    elide: Text.ElideRight
                                     color: "#212121"
+                                    wrapMode: TextEdit.NoWrap
+                                    clip: true
+
+                                    // Делаем текст выделяемым и копируемым
+                                    readOnly: true
+                                    selectByMouse: true
+                                    selectByKeyboard: true
+                                    cursorVisible: false
+
+                                    // ВАЖНО: поднимаем выше MouseArea
+                                    z: 1
                                 }
 
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: currentArticle === "" ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    z: 0  // ниже чем TextEdit
                                     onClicked: {
                                         if (currentArticle === "") {
                                             selectedRow = row
                                         }
                                     }
+                                    // Пропускаем события, если они не обработаны
+                                    propagateComposedEvents: true
                                 }
 
                                 // Hover effect
@@ -462,6 +475,7 @@ Dialog {
     function openForManagement() {
         currentArticle = ""
         selectedRow = -1
+        searchField.text = ""  // Очищаем поле поиска при открытии
         isLoading = true
         suppliersTableModel.load()
         isLoading = false
@@ -475,6 +489,12 @@ Dialog {
         suppliersTableModel.loadForArticle(article)
         isLoading = false
         open()
+    }
+
+    // Сброс фильтра при закрытии диалога
+    onClosed: {
+        searchField.text = ""
+        suppliersTableModel.setFilterString("")
     }
 
     // Keyboard navigation

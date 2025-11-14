@@ -199,7 +199,7 @@ class ItemsModel(QAbstractListModel):
             self.loadData()
             self.endResetModel()
             print(f"DEBUG: Model reset complete. Total items after load: {len(self.items)}")
-
+            print("DEBUG addItem object id:", id(self.items[-1]))
             return ""
 
         except Exception as e:

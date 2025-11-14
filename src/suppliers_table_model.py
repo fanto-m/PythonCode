@@ -1,5 +1,7 @@
+# suppliers_table_model.py
 from PySide6.QtCore import QAbstractTableModel, Qt, Slot, Signal
 from database import DatabaseManager
+
 
 class SuppliersTableModel(QAbstractTableModel):
     """Табличная модель данных для управления списком поставщиков в Qt/QML-приложении.
@@ -8,6 +10,7 @@ class SuppliersTableModel(QAbstractTableModel):
     в QML, включая идентификатор, имя, компанию, email, телефон и веб-сайт. Поддерживает выбор
     поставщиков с помощью флажков, загрузку данных, добавление, обновление, удаление и привязку
     поставщиков к товарам через DatabaseManager. Испускает сигнал errorOccurred при ошибках.
+    Поддерживает фильтрацию по имени, компании и email.
     """
 
     # Роли для QML
@@ -29,9 +32,63 @@ class SuppliersTableModel(QAbstractTableModel):
         """
         super().__init__(parent)
         self._db = DatabaseManager()  # Менеджер базы данных
-        self._suppliers = []         # Список данных поставщиков: [(id, name, company, email, phone, website), ...]
-        self._checked = set()        # Множество ID выбранных поставщиков
+        self._suppliers = []  # Список всех данных поставщиков: [(id, name, company, email, phone, website), ...]
+        self._filtered_suppliers = []  # Отфильтрованный список поставщиков
+        self._checked = set()  # Множество ID выбранных поставщиков
+        self._filter_string = ""  # Строка фильтра
         self.load()
+
+    # ------------------- Filtering -------------------
+
+    @Slot(str)
+    def setFilterString(self, filter_string):
+        """Устанавливает строку фильтра и применяет фильтрацию.
+
+        Args:
+            filter_string (str): Строка для поиска по имени, компании и email.
+
+        Фильтрует список поставщиков и обновляет модель.
+        """
+        self._filter_string = filter_string.lower().strip()
+        print(f"DEBUG: setFilterString called with: '{self._filter_string}'")
+        self._applyFilter()
+
+    def _applyFilter(self):
+        """Применяет фильтр к списку поставщиков и обновляет представление."""
+        self.beginResetModel()
+
+        if not self._filter_string:
+            # Если фильтр пустой, показываем всех
+            self._filtered_suppliers = self._suppliers.copy()
+        else:
+            # Фильтруем по имени, компании и email
+            self._filtered_suppliers = [
+                supplier for supplier in self._suppliers
+                if self._matchesFilter(supplier)
+            ]
+
+        print(f"DEBUG: Filter applied. Total: {len(self._suppliers)}, Filtered: {len(self._filtered_suppliers)}")
+        self.endResetModel()
+
+    def _matchesFilter(self, supplier):
+        """Проверяет, соответствует ли поставщик фильтру.
+
+        Args:
+            supplier (tuple): Кортеж с данными поставщика (id, name, company, email, phone, website).
+
+        Returns:
+            bool: True, если поставщик соответствует фильтру.
+        """
+        sid, name, company, email, phone, website = supplier
+
+        # Поиск в имени, компании и email
+        search_fields = [
+            str(name or "").lower(),
+            str(company or "").lower(),
+            str(email or "").lower(),
+        ]
+
+        return any(self._filter_string in field for field in search_fields)
 
     # ------------------- Loading -------------------
 
@@ -46,6 +103,7 @@ class SuppliersTableModel(QAbstractTableModel):
         raw_suppliers = self._db.load_suppliers()
         self._suppliers = [(int(s[0]),) + s[1:] for s in raw_suppliers]
         self._checked.clear()
+        self._applyFilter()  # Применяем текущий фильтр
         self.endResetModel()
 
     @Slot(str)
@@ -65,6 +123,7 @@ class SuppliersTableModel(QAbstractTableModel):
             self._checked = {int(sid[0]) for sid in checked_ids}
         else:
             self._checked = {int(sid) for sid in checked_ids}
+        self._applyFilter()  # Применяем текущий фильтр
         self.endResetModel()
 
     # ------------------- Qt Model API -------------------
@@ -97,15 +156,15 @@ class SuppliersTableModel(QAbstractTableModel):
         return 7
 
     def rowCount(self, parent=None):
-        """Возвращает количество строк в модели (число поставщиков).
+        """Возвращает количество строк в модели (число отфильтрованных поставщиков).
 
         Args:
             parent (QModelIndex, optional): Родительский индекс (не используется). По умолчанию None.
 
         Returns:
-            int: Количество поставщиков в списке.
+            int: Количество отфильтрованных поставщиков в списке.
         """
-        return len(self._suppliers)
+        return len(self._filtered_suppliers)
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         """Возвращает заголовки столбцов для табличного представления.
@@ -133,10 +192,10 @@ class SuppliersTableModel(QAbstractTableModel):
         Returns:
             Значение, соответствующее роли, или None, если индекс недействителен.
         """
-        if not index.isValid() or index.row() >= len(self._suppliers):
+        if not index.isValid() or index.row() >= len(self._filtered_suppliers):
             return None
 
-        supplier = self._suppliers[index.row()]
+        supplier = self._filtered_suppliers[index.row()]
         sid, name, company, email, phone, website = supplier
 
         if role == self.IdRole:
@@ -172,7 +231,7 @@ class SuppliersTableModel(QAbstractTableModel):
         if not index.isValid() or role != Qt.CheckStateRole:
             return False
 
-        supplier_id = int(self._suppliers[index.row()][0])
+        supplier_id = int(self._filtered_suppliers[index.row()][0])
         is_checked = (value == Qt.Checked.value)
 
         if is_checked:
@@ -239,14 +298,14 @@ class SuppliersTableModel(QAbstractTableModel):
         """Возвращает данные поставщика по указанной строке.
 
         Args:
-            row (int): Индекс строки в модели.
+            row (int): Индекс строки в модели (отфильтрованной).
 
         Returns:
             dict: Словарь с данными поставщика (id, name, company, email, phone, website)
                   или словарь с id=-1, если строка недействительна.
         """
-        if 0 <= row < len(self._suppliers):
-            sid, name, company, email, phone, website = self._suppliers[row]
+        if 0 <= row < len(self._filtered_suppliers):
+            sid, name, company, email, phone, website = self._filtered_suppliers[row]
             return {
                 "id": sid,
                 "name": name,
