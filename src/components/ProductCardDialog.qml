@@ -435,7 +435,7 @@ Dialog {
                         ComboBox {
                             id: unitComboBox
                             Layout.fillWidth: true
-                            model: ["шт.", "кг", "л", "м", "м²", "м³", "упак.", "компл."]
+                            model: ["шт.", "кг", "л", "м","см", "м²", "м³", "упак.", "компл."]
                             editable: true
                             font.pointSize: baseFontSize
 

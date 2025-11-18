@@ -24,14 +24,13 @@ GroupBox {
     Layout.preferredHeight: 220
 
     // ДОБАВЛЕНО: Обработчик изменения количества документов
+    // ДОБАВЛЕНО: Обработчик изменения количества документов
     Connections {
         target: documentsModel
         function onCountChanged() {
-            console.log("Documents count changed:", documentsModel.count())
-            // Автоматически выбираем первый документ, если есть документы
-            if (documentsModel && documentsModel.count() > 0 && documentsComboBox.currentIndex < 0) {
+            console.log("Documents count changed:", documentsModel.count)
+            if (documentsModel.count > 0 && documentsComboBox.currentIndex < 0) {
                 documentsComboBox.currentIndex = 0
-                console.log("Auto-selected first document, currentIndex:", documentsComboBox.currentIndex)
             }
         }
     }
@@ -46,7 +45,7 @@ GroupBox {
             console.log("subdirectory:", subdirectory)
             console.log("currentArticle:", currentArticle)
             console.log("documentsModel:", documentsModel)
-            console.log("documentsModel.count() BEFORE:", documentsModel ? documentsModel.count() : "null")
+            console.log("documentsModel.count BEFORE:", documentsModel ? documentsModel.count : "null")
             console.log("==================================================")
 
             if (!documentsModel) {
@@ -67,7 +66,7 @@ GroupBox {
 
             console.log("==================================================")
             console.log("STEP 13: addDocument result:", result)
-            console.log("documentsModel.count() AFTER:", documentsModel ? documentsModel.count() : "null")
+            console.log("documentsModel.count AFTER:", documentsModel ? documentsModel.count : "null")
             console.log("==================================================")
         }
     }
@@ -165,7 +164,7 @@ GroupBox {
 
                 displayText: currentIndex >= 0 ? currentText : "Нет документов"
 
-                enabled: documentsModel && documentsModel.count() > 0
+                enabled: documentsModel && documentsModel.count > 0
 
                 background: Rectangle {
                     color: "white"
@@ -203,7 +202,7 @@ GroupBox {
                     console.log("STEP 1: Add document button clicked")
                     console.log("currentArticle:", currentArticle)
                     console.log("documentsModel:", documentsModel)
-                    console.log("documentsModel.count():", documentsModel ? documentsModel.count() : "null")
+                    console.log("documentsModel.count:", documentsModel ? documentsModel.count : "null")
                     console.log("parentDialog:", parentDialog)
                     console.log("==================================================")
 
@@ -260,7 +259,7 @@ GroupBox {
                 ToolTip.visible: hovered
                 ToolTip.text: "Удалить документ"
 
-                enabled: documentsModel && documentsModel.count() > 0 && documentsComboBox.currentIndex >= 0
+                enabled: documentsModel && documentsModel.count > 0 && documentsComboBox.currentIndex >= 0
 
                 onClicked: {
                     console.log("Delete button clicked, currentIndex:", documentsComboBox.currentIndex)
@@ -375,8 +374,8 @@ GroupBox {
 
         // Информационная подсказка
         Text {
-            text: documentsModel && documentsModel.count() > 0
-                  ? `Всего документов: ${documentsModel.count()}`
+            text: documentsModel && documentsModel.count > 0
+                  ? `Всего документов: ${documentsModel.count}`
                   : "Нажмите ➕ чтобы добавить документ"
             font.pointSize: 8
             color: "#666"
@@ -394,9 +393,9 @@ GroupBox {
             // ИСПРАВЛЕНО: Устанавливаем currentIndex после загрузки
             // Используем Qt.callLater чтобы дождаться обновления модели
             Qt.callLater(function() {
-                if (documentsModel.count() > 0) {
+                if (documentsModel.count > 0) {
                     documentsComboBox.currentIndex = 0
-                    console.log("Set currentIndex to 0 after loading, count:", documentsModel.count())
+                    console.log("Set currentIndex to 0 after loading, count:", documentsModel.count)
                 } else {
                     documentsComboBox.currentIndex = -1
                     console.log("No documents loaded, currentIndex set to -1")

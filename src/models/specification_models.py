@@ -389,7 +389,6 @@ class SpecificationsModel(QObject):
     def exportToExcel(self, spec_id):
         """Экспорт спецификации в Excel"""
         try:
-            # Get specification data
             spec_data = self.db.get_specification(spec_id)
             if not spec_data:
                 self.errorOccurred.emit("Спецификация не найдена")
@@ -400,20 +399,17 @@ class SpecificationsModel(QObject):
                 self.errorOccurred.emit("В спецификации нет позиций")
                 return
 
-            # Import openpyxl
             try:
                 import openpyxl
-                from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+                from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
             except ImportError:
                 self.errorOccurred.emit("Библиотека openpyxl не установлена. Установите: pip install openpyxl")
                 return
 
-            # Create workbook
             wb = openpyxl.Workbook()
             ws = wb.active
             ws.title = "Спецификация"
 
-            # Styles
             header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
             header_font = Font(bold=True, color="FFFFFF", size=12)
             border = Border(
@@ -423,58 +419,124 @@ class SpecificationsModel(QObject):
                 bottom=Side(style='thin')
             )
 
-            # Title
             ws['A1'] = f"СПЕЦИФИКАЦИЯ: {spec_data[1]}"
             ws['A1'].font = Font(bold=True, size=16)
             ws.merge_cells('A1:G1')
 
-            # Info
-            ws['A3'] = f"Описание: {spec_data[2] or ''}"
-            ws['A4'] = f"Статус: {spec_data[5]}"
-            ws['A5'] = f"Дата создания: {spec_data[3]}"
+            # Описание построчно
+            description = (spec_data[2] or "").strip()
+            description_lines = description.split("\n") if description else [""]
 
-            # Headers
-            headers = ['№', 'Артикул', 'Название', 'Кол-во', 'Ед.', 'Цена', 'Сумма']
+            ws['A3'] = "Описание:"
+            ws['A3'].font = Font(bold=True)
+
+            cur_row = 4
+            for line in description_lines:
+                ws.cell(row=cur_row, column=1, value=line)
+                cur_row += 1
+
+            # Другие поля
+            ws.cell(row=cur_row, column=1, value=f"Статус: {spec_data[5]}")
+            cur_row += 1
+
+            ws.cell(row=cur_row, column=1, value=f"Дата создания: {spec_data[3]}")
+            cur_row += 2  # отступ
+
+            # Заголовки таблицы
+            header_row = cur_row
+            headers = [
+                '№',
+                'Артикул',
+                'Название',
+                'Кол-во',
+                'Ед.',
+                'Цена\nбез НДС',
+                'Сумма\nбез НДС'
+            ]
+
             for col, header in enumerate(headers, 1):
-                cell = ws.cell(row=7, column=col, value=header)
+                cell = ws.cell(row=header_row, column=col, value=header)
                 cell.fill = header_fill
                 cell.font = header_font
-                cell.alignment = Alignment(horizontal='center', vertical='center')
+                cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
                 cell.border = border
 
-            # Data rows
-            materials_total = 0
+            # Данные
+            materials_total = 0.0
+
             for idx, item in enumerate(items, 1):
-                # item: (id, spec_id, article, quantity, notes, name, unit, price, stock)
-                row = idx + 7
-                quantity = item[3]
-                price = item[7]
-                total = quantity * price
-                materials_total += total
+                row = header_row + idx
+
+                # Безопасно обработаем числа
+                try:
+                    quantity = float(item[3] or 0)
+                except Exception:
+                    quantity = 0.0
+                try:
+                    price = float(item[7] or 0)
+                except Exception:
+                    price = 0.0
+
+                line_total = quantity * price
+                materials_total += line_total
 
                 ws.cell(row=row, column=1, value=idx).border = border
                 ws.cell(row=row, column=2, value=item[2]).border = border  # article
                 ws.cell(row=row, column=3, value=item[5]).border = border  # name
                 ws.cell(row=row, column=4, value=quantity).border = border
                 ws.cell(row=row, column=5, value=item[6]).border = border  # unit
-                ws.cell(row=row, column=6, value=price).border = border
-                ws.cell(row=row, column=7, value=total).border = border
+                price_cell = ws.cell(row=row, column=6, value=price)
+                price_cell.number_format = '0.00'
+                price_cell.border = border
+                total_cell = ws.cell(row=row, column=7, value=line_total)
+                total_cell.number_format = '0.00'
+                total_cell.border = border
 
-            # Totals
-            total_row = len(items) + 9
-            ws.cell(row=total_row, column=6, value="Материалы:").font = Font(bold=True)
-            ws.cell(row=total_row, column=7, value=materials_total).font = Font(bold=True)
+            # Итоги
+            total_row = header_row + len(items) + 2
 
-            ws.cell(row=total_row + 1, column=6, value="Работа:").font = Font(bold=True)
-            ws.cell(row=total_row + 1, column=7, value=spec_data[6]).font = Font(bold=True)
+            # Приведём работу и процент накладных к числам (безопасно)
+            try:
+                work_cost = float(spec_data[6] or 0)
+            except Exception:
+                work_cost = 0.0
+            try:
+                overhead_pct = float(spec_data[7] or 0)
+            except Exception:
+                overhead_pct = 0.0
 
-            overhead = materials_total * (spec_data[7] / 100)
-            ws.cell(row=total_row + 2, column=6, value=f"Накладные ({spec_data[7]}%):").font = Font(bold=True)
-            ws.cell(row=total_row + 2, column=7, value=overhead).font = Font(bold=True)
+            overhead = materials_total * (overhead_pct / 100.0)
+            grand_total = materials_total + work_cost + overhead
 
-            total = materials_total + spec_data[6] + overhead
-            ws.cell(row=total_row + 3, column=6, value="ИТОГО:").font = Font(bold=True, size=14)
-            ws.cell(row=total_row + 3, column=7, value=total).font = Font(bold=True, size=14)
+            ws.cell(row=total_row, column=5, value="Материалы:").font = Font(bold=True)
+            mat_val = ws.cell(row=total_row, column=7, value=round(materials_total, 2))
+            mat_val.number_format = '0.00'
+            mat_val.font = Font(bold=True)
+
+            ws.cell(row=total_row + 1, column=5, value="Работа:").font = Font(bold=True)
+            work_val = ws.cell(row=total_row + 1, column=7, value=round(work_cost, 2))
+            work_val.number_format = '0.00'
+            work_val.font = Font(bold=True)
+
+            ws.cell(row=total_row + 2, column=5, value=f"Накладные ({overhead_pct}%):").font = Font(bold=True)
+            overhead_val = ws.cell(row=total_row + 2, column=7, value=round(overhead, 2))
+            overhead_val.number_format = '0.00'
+            overhead_val.font = Font(bold=True)
+
+            ws.cell(row=total_row + 3, column=5, value="ИТОГО:").font = Font(bold=True, size=12)
+            total_val = ws.cell(row=total_row + 3, column=7, value=round(grand_total, 2))
+            total_val.number_format = '0.00'
+            total_val.font = Font(bold=True, size=12)
+
+            # =========== ИТОГО с НДС 20% ===========
+            nds_rate = 0.20
+            total_with_nds = grand_total * (1 + nds_rate)
+
+            ws.cell(row=total_row + 4, column=5, value="ИТОГО с НДС (20%):").font = Font(bold=True, size=12)
+
+            total_nds_cell = ws.cell(row=total_row + 4, column=7, value=round(total_with_nds, 2))
+            total_nds_cell.number_format = '0.00'
+            total_nds_cell.font = Font(bold=True, size=12)
 
             # Column widths
             ws.column_dimensions['A'].width = 5
@@ -486,7 +548,7 @@ class SpecificationsModel(QObject):
             ws.column_dimensions['G'].width = 12
 
             # Save file
-            filename = f"specification_{spec_id}_{spec_data[1].replace(' ', '_')}.xlsx"
+            filename = f"specification_{spec_id}_{str(spec_data[1]).replace(' ', '_')}.xlsx"
             wb.save(filename)
 
             print(f"DEBUG: Excel file saved: {filename}")
