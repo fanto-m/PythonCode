@@ -1,14 +1,26 @@
-from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex, Slot, Signal, Property
-from database import DatabaseManager
+"""Модель товаров для Qt/QML интерфейса с Repository Pattern"""
+
+from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex, Slot, Signal
+from loguru import logger
+
+from repositories.items_repository import ItemsRepository
+from models.dto import Item
 from validators import validate_item
 
 
 class ItemsModel(QAbstractListModel):
-    """Модель для работы с данными товаров в интерфейсе Qt, основанная на QAbstractListModel.
+    """
+    Модель для работы с данными товаров в интерфейсе Qt/QML.
 
-    Поддерживает загрузку, фильтрацию, добавление, обновление и удаление товаров из базы данных.
+    Использует Repository Pattern для работы с данными.
+    Поддерживает загрузку, фильтрацию, добавление, обновление и удаление товаров.
+
+    Attributes:
+        repository: ItemsRepository для работы с базой данных
+        items: Отфильтрованный список товаров для отображения
     """
 
+    # Роли данных для QML
     ArticleRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2
     DescriptionRole = Qt.UserRole + 3
@@ -22,8 +34,11 @@ class ItemsModel(QAbstractListModel):
     ManufacturerRole = Qt.UserRole + 11
     DocumentCodeRole = Qt.UserRole + 12
 
+    # Сигналы
     errorOccurred = Signal(str)
+    itemsLoaded = Signal(int)  # Новый сигнал - количество загруженных товаров
 
+    # Маппинг ролей на индексы в кортеже
     _ROLE_TO_INDEX = {
         ArticleRole: 0,
         NameRole: 1,
@@ -39,64 +54,89 @@ class ItemsModel(QAbstractListModel):
         DocumentCodeRole: 11,
     }
 
-    def __init__(self, db_path="items.db"):
-        """Инициализирует экземпляр ItemsModel.
+    def __init__(self, items_repository: ItemsRepository):
+        """
+        Инициализирует модель товаров.
 
         Args:
-            db_path (str): Путь к файлу базы данных SQLite. По умолчанию 'items.db'.
+            items_repository: Репозиторий для работы с товарами.
         """
         super().__init__()
-        self.db_manager = DatabaseManager(db_path)
+
+        self.repository = items_repository
         self.items = []
-        self._all_items = []  # Store all items for filtering
+        self._all_items = []  # Полный список для фильтрации
         self._filter_string = ""
         self._filter_field = "name"
+
+        logger.debug("ItemsModel initialized")
         self.loadData()
-        print("DEBUG: Model initialized and data loaded.")
 
     def loadData(self):
-        """Загружает все данные товаров из базы данных.
-
-        Использует DatabaseManager для получения данных и применяет текущий фильтр.
         """
-        print("DEBUG: Loading data via DatabaseManager")
-        self._all_items = self.db_manager.load_data()
-        self._applyFilter()
-        print(f"DEBUG: Data loaded. Total items: {len(self._all_items)}, Filtered: {len(self.items)}")
+        Загружает все данные товаров из репозитория.
+
+        Применяет текущий фильтр к загруженным данным.
+        """
+        logger.info("Loading items data...")
+
+        try:
+            self._all_items = self.repository.get_all()
+            self._applyFilter()
+
+            logger.success(
+                f"✅ Loaded {len(self._all_items)} items, "
+                f"filtered to {len(self.items)}"
+            )
+
+            self.itemsLoaded.emit(len(self.items))
+
+        except Exception as e:
+            logger.exception("❌ Failed to load items")
+            self.errorOccurred.emit(f"Ошибка загрузки: {str(e)}")
 
     def _applyFilter(self):
-        """Применяет текущий фильтр к списку товаров.
+        """
+        Применяет текущий фильтр к списку товаров.
 
-        Фильтрует товары на основе строки фильтра и выбранного поля (например, article, name).
+        Фильтрует товары на основе строки фильтра и выбранного поля.
         """
         if not self._filter_string:
             self.items = self._all_items.copy()
+            logger.debug("No filter applied, showing all items")
             return
 
         filter_lower = self._filter_string.lower()
 
-        # Map filter field to column index
+        # Маппинг поля фильтра на индекс колонки
         field_map = {
             "article": 0,
             "name": 1,
             "description": 2,
             "category": 4,
-            "price": 5,
-            "stock": 6
+            "manufacturer": 10,
         }
 
-        field_index = field_map.get(self._filter_field, 1)  # Default to name
+        field_index = field_map.get(self._filter_field, 1)  # По умолчанию name
 
         self.items = [
             item for item in self._all_items
             if filter_lower in str(item[field_index]).lower()
         ]
 
+        logger.debug(
+            f"🔍 Filter applied: '{self._filter_string}' in '{self._filter_field}' "
+            f"-> {len(self.items)} results"
+        )
+
+    # ==================== Qt Model Methods ====================
+
     def rowCount(self, parent=QModelIndex()):
-        """Возвращает количество строк в модели.
+        """
+        Возвращает количество строк в модели.
 
         Args:
-            parent (QModelIndex): Родительский индекс модели. По умолчанию пустой QModelIndex.
+            parent: Родительский индекс модели.
 
         Returns:
             int: Количество товаров в отфильтрованном списке.
@@ -104,14 +144,15 @@ class ItemsModel(QAbstractListModel):
         return len(self.items)
 
     def data(self, index, role=Qt.DisplayRole):
-        """Получает данные для указанного индекса и роли.
+        """
+        Получает данные для указанного индекса и роли.
 
         Args:
-            index (QModelIndex): Индекс элемента в модели.
-            role (int): Роль данных (например, ArticleRole, NameRole). По умолчанию Qt.DisplayRole.
+            index: Индекс элемента в модели.
+            role: Роль данных (ArticleRole, NameRole и т.д.).
 
         Returns:
-            Значение для указанной роли или None, если индекс или роль недопустимы.
+            Значение для указанной роли или None.
         """
         if not index.isValid() or index.row() >= len(self.items):
             return None
@@ -122,17 +163,18 @@ class ItemsModel(QAbstractListModel):
         item = self.items[index.row()]
         value = item[self._ROLE_TO_INDEX[role]]
 
-        # Special handling for DocumentCodeRole - return empty string for None
+        # Специальная обработка для DocumentCodeRole
         if role == self.DocumentCodeRole:
             return value if value is not None else ""
 
         return value
 
     def roleNames(self):
-        """Возвращает словарь ролей данных для использования в QML.
+        """
+        Возвращает словарь ролей данных для использования в QML.
 
         Returns:
-            dict: Словарь, сопоставляющий роли данных с их именами в байтовом формате.
+            dict: Словарь ролей и их имен в байтовом формате.
         """
         return {
             self.ArticleRole: b"article",
@@ -149,220 +191,323 @@ class ItemsModel(QAbstractListModel):
             self.DocumentCodeRole: b"document"
         }
 
+    # ==================== CRUD Operations ====================
+
     @Slot(str, str, str, str, int, float, int, str, str, str, str, result=str)
-    def addItem(self, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer,
-                document):
-        """Добавляет новый товар в базу данных.
+    def addItem(
+            self,
+            article: str,
+            name: str,
+            description: str,
+            image_path: str,
+            category_id: int,
+            price: float,
+            stock: int,
+            status: str,
+            unit: str,
+            manufacturer: str,
+            document: str
+    ) -> str:
+        """
+        Добавляет новый товар в базу данных.
 
         Args:
-            article (str): Артикул товара.
-            name (str): Название товара.
-            description (str): Описание товара.
-            image_path (str): Путь к изображению товара.
-            category_id (int): ID категории.
-            price (float): Цена товара.
-            stock (int): Количество на складе.
-            status (str): Статус товара.
-            unit (str): Единица измерения.
-            manufacturer (str): Производитель.
-            document (str): Связанный документ.
+            article: Артикул товара.
+            name: Название товара.
+            description: Описание товара.
+            image_path: Путь к изображению товара.
+            category_id: ID категории.
+            price: Цена товара.
+            stock: Количество на складе.
+            status: Статус товара.
+            unit: Единица измерения.
+            manufacturer: Производитель.
+            document: Связанный документ.
 
         Returns:
             str: Пустая строка при успехе, сообщение об ошибке при неудаче.
-
-        Raises:
-            Exception: Если произошла ошибка при добавлении товара.
         """
         try:
-            print(f"DEBUG: addItem called with: article={article}, name={name}, description={description}, "
-                  f"image_path={image_path}, category_id={category_id}, price={price}, stock={stock}, "
-                  f"status={status}, unit={unit}, manufacturer={manufacturer}, document={document}")
+            logger.info(
+                f"Adding item: article={article}, name={name}, "
+                f"category_id={category_id}, price={price}, stock={stock}"
+            )
 
-            # Validate input
+            # Валидация входных данных
             is_valid, error_message = validate_item(
                 article, name, description, image_path,
                 category_id, price, stock
             )
-            print(f"DEBUG: Validation result: is_valid={is_valid}, error_message={error_message}")
+
             if not is_valid:
+                logger.warning(f"⚠️ Validation failed: {error_message}")
                 self.errorOccurred.emit(error_message)
                 return error_message
 
-            # Add to database - БЕЗ добавления папок!
-            self.db_manager.add_item(
-                article, name, description, image_path,
-                category_id, price, stock, status, unit, manufacturer, document
+            # Создаем DTO объект
+            item = Item(
+                article=article,
+                name=name,
+                description=description,
+                image_path=image_path,
+                category_id=category_id,
+                price=price,
+                stock=stock,
+                status=status or 'в наличии',
+                unit=unit or 'шт.',
+                manufacturer=manufacturer or '',
+                document=document or ''
             )
 
-            print("DEBUG: Item added successfully. Reloading data...")
+            # Добавляем в базу данных через репозиторий
+            self.repository.add(item)
+
+            logger.success(f"✅ Item added: {article} - {name}")
+
+            # Обновляем модель
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
-            print(f"DEBUG: Model reset complete. Total items after load: {len(self.items)}")
-            print("DEBUG addItem object id:", id(self.items[-1]))
+
+            logger.debug(f"Model refreshed. Total items: {len(self.items)}")
             return ""
 
         except Exception as e:
             error_message = f"Ошибка добавления товара: {str(e)}"
-            print(f"DEBUG: Error in addItem: {error_message}")
+            logger.error(f"❌ {error_message}")
             self.errorOccurred.emit(error_message)
             return error_message
 
     @Slot(int, str, str, str, str, int, float, int, str, str, str, str, result=str)
-    def updateItem(self, row, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document):
-        """Обновляет существующий товар в базе данных.
+    def updateItem(
+            self,
+            row: int,
+            article: str,
+            name: str,
+            description: str,
+            image_path: str,
+            category_id: int,
+            price: float,
+            stock: int,
+            status: str,
+            unit: str,
+            manufacturer: str,
+            document: str
+    ) -> str:
+        """
+        Обновляет существующий товар в базе данных.
 
         Args:
-            row (int): Индекс строки в отфильтрованном списке.
-            article (str): Новый артикул товара.
-            name (str): Новое название товара.
-            description (str): Новое описание товара.
-            image_path (str): Новый путь к изображению.
-            category_id (int): Новый ID категории.
-            price (float): Новая цена.
-            stock (int): Новое количество на складе.
-            status (str): Новый статус.
-            unit (str): Новая единица измерения.
-            manufacturer (str): Новый производитель.
-            document (str): Новый документ.
+            row: Индекс строки в отфильтрованном списке.
+            article: Новый артикул товара.
+            name: Новое название товара.
+            description: Новое описание товара.
+            image_path: Новый путь к изображению.
+            category_id: Новый ID категории.
+            price: Новая цена.
+            stock: Новое количество на складе.
+            status: Новый статус.
+            unit: Новая единица измерения.
+            manufacturer: Новый производитель.
+            document: Новый документ.
 
         Returns:
             str: Пустая строка при успехе, сообщение об ошибке при неудаче.
-
-        Raises:
-            Exception: Если произошла ошибка при обновлении товара.
         """
         try:
-            # Validate row index
+            # Проверка индекса строки
             if row < 0 or row >= len(self.items):
                 error_message = f"Недопустимый индекс строки: {row}"
-                print(f"DEBUG: {error_message}")
+                logger.warning(f"⚠️ {error_message}")
                 self.errorOccurred.emit(error_message)
                 return error_message
 
-            # Validate input
+            # Получаем старый артикул
+            old_article = self.items[row][0]
+
+            logger.info(
+                f"Updating item: {old_article} -> {article}, "
+                f"name={name}, price={price}"
+            )
+
+            # Валидация входных данных
             is_valid, error_message = validate_item(
                 article, name, description, image_path,
                 category_id, price, stock
             )
+
             if not is_valid:
-                print(f"DEBUG: Validation failed in updateItem: {error_message}")
+                logger.warning(f"⚠️ Validation failed: {error_message}")
                 self.errorOccurred.emit(error_message)
                 return error_message
 
-            # Get old article for updating
-            old_article = self.items[row][0]
-
-            # Update in database
-            self.db_manager.update_item(
-                old_article, article, name, description, image_path,
-                category_id, price, stock, status, unit, manufacturer, document
+            # Создаем DTO объект с новыми данными
+            item = Item(
+                article=article,
+                name=name,
+                description=description,
+                image_path=image_path,
+                category_id=category_id,
+                price=price,
+                stock=stock,
+                status=status,
+                unit=unit,
+                manufacturer=manufacturer,
+                document=document
             )
 
-            print("DEBUG: Item updated successfully. Reloading data...")
+            # Обновляем в базе данных через репозиторий
+            self.repository.update(old_article, item)
+
+            logger.success(f"✅ Item updated: {old_article} -> {article}")
+
+            # Обновляем модель
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
-            print("DEBUG: Model reset complete.")
 
+            logger.debug("Model refreshed after update")
             return ""
 
         except Exception as e:
             error_message = f"Ошибка обновления товара: {str(e)}"
-            print(f"DEBUG: Error in updateItem: {error_message}")
+            logger.error(f"❌ {error_message}")
             self.errorOccurred.emit(error_message)
             return error_message
 
     @Slot(int)
-    def deleteItem(self, row):
-        """Удаляет товар из базы данных по индексу строки.
+    def deleteItem(self, row: int):
+        """
+        Удаляет товар из базы данных по индексу строки.
 
         Args:
-            row (int): Индекс строки в отфильтрованном списке.
-
-        Raises:
-            Exception: Если произошла ошибка при удалении товара.
+            row: Индекс строки в отфильтрованном списке.
         """
         try:
-            # Validate row index
+            # Проверка индекса строки
             if row < 0 or row >= len(self.items):
                 error_message = f"Недопустимый индекс строки: {row}"
-                print(f"DEBUG: {error_message}")
+                logger.warning(f"⚠️ {error_message}")
                 self.errorOccurred.emit(error_message)
                 return
 
             article = self.items[row][0]
-            print(f"DEBUG: Deleting item: article = {article}")
+            logger.info(f"Deleting item: {article}")
 
-            self.db_manager.delete_item(article)
+            # Удаляем через репозиторий
+            self.repository.delete(article)
 
-            print("DEBUG: Item deleted successfully. Reloading data...")
+            logger.success(f"✅ Item deleted: {article}")
+
+            # Обновляем модель
             self.beginResetModel()
             self.loadData()
             self.endResetModel()
-            print("DEBUG: Model reset complete.")
+
+            logger.debug("Model refreshed after deletion")
 
         except Exception as e:
             error_message = f"Ошибка удаления товара: {str(e)}"
-            print(f"DEBUG: Error in deleteItem: {error_message}")
+            logger.error(f"❌ {error_message}")
             self.errorOccurred.emit(error_message)
 
-    @Slot(str)
-    def setFilterString(self, filter_string):
-        """Устанавливает строку для фильтрации товаров.
+    @Slot(str, result=bool)
+    def deleteItemByArticle(self, article: str) -> bool:
+        """
+        Удаляет товар по артикулу.
 
         Args:
-            filter_string (str): Строка для фильтрации.
+            article: Артикул товара для удаления.
+
+        Returns:
+            bool: True при успехе, False при ошибке.
+        """
+        try:
+            logger.info(f"Deleting item by article: {article}")
+
+            # Ищем товар в текущем списке
+            for i, item in enumerate(self.items):
+                if item[0] == article:  # item[0] это article
+                    logger.debug(f"Found item at index {i}")
+                    self.deleteItem(i)
+                    return True
+
+            logger.warning(f"⚠️ Item not found: {article}")
+            self.errorOccurred.emit(f"Товар с артикулом {article} не найден")
+            return False
+
+        except Exception as e:
+            logger.exception(f"❌ Error deleting item by article: {e}")
+            self.errorOccurred.emit(f"Ошибка удаления: {str(e)}")
+            return False
+
+    # ==================== Filter Methods ====================
+
+    @Slot(str)
+    def setFilterString(self, filter_string: str):
+        """
+        Устанавливает строку для фильтрации товаров.
+
+        Args:
+            filter_string: Строка для фильтрации.
         """
         if self._filter_string != filter_string:
             self._filter_string = filter_string
-            print(f"DEBUG: Filter string set to: '{filter_string}'")
+            logger.debug(f"Filter string set to: '{filter_string}'")
+
             self.beginResetModel()
             self._applyFilter()
             self.endResetModel()
 
     @Slot(str)
-    def setFilterField(self, field):
-        """Устанавливает поле для фильтрации товаров.
+    def setFilterField(self, field: str):
+        """
+        Устанавливает поле для фильтрации товаров.
 
         Args:
-            field (str): Поле для фильтрации (article, name, description, category, price, stock).
+            field: Поле для фильтрации (article, name, description, category, manufacturer).
         """
         if self._filter_field != field:
             self._filter_field = field
-            print(f"DEBUG: Filter field set to: '{field}'")
+            logger.debug(f"Filter field set to: '{field}'")
+
             self.beginResetModel()
             self._applyFilter()
             self.endResetModel()
 
     @Slot()
     def clearFilter(self):
-        """Сбрасывает все фильтры, возвращая модель к полному списку товаров.
+        """
+        Сбрасывает все фильтры, возвращая модель к полному списку товаров.
         """
         self._filter_string = ""
         self._filter_field = "name"
-        print("DEBUG: Filters cleared")
+        logger.debug("Filters cleared")
+
         self.beginResetModel()
         self._applyFilter()
         self.endResetModel()
 
+    # ==================== Utility Methods ====================
+
     @Slot(int, result='QVariantMap')
-    def get(self, row):
-        """Получает данные товара по индексу строки.
+    def get(self, row: int):
+        """
+        Получает данные товара по индексу строки.
 
         Args:
-            row (int): Индекс строки в отфильтрованном списке.
+            row: Индекс строки в отфильтрованном списке.
 
         Returns:
-            dict: Словарь с данными товара (index, article, name, description, image_path,
-            category, price, stock, created_date, status, unit, manufacturer, document)
-            или пустой словарь, если индекс недопустим.
+            dict: Словарь с данными товара или пустой словарь при ошибке.
         """
         if row < 0 or row >= len(self.items):
+            logger.warning(f"⚠️ Invalid row index: {row}")
             return {}
 
         item = self.items[row]
-        return {
+
+        result = {
             "index": row,
             "article": item[0],
             "name": item[1],
@@ -378,23 +523,63 @@ class ItemsModel(QAbstractListModel):
             "document": item[11] if len(item) > 11 else ""
         }
 
-    @Slot(str, result=bool)
-    def deleteItemByArticle(self, article):
-        """Удаляет товар по артикулу"""
+        logger.trace(f"Retrieved item data for row {row}: {item[0]}")
+        return result
+
+    @Slot(str, str, result=list)
+    def searchItems(self, query: str, field: str = "name"):
+        """
+        Поиск товаров по запросу в указанном поле.
+
+        Args:
+            query: Поисковый запрос.
+            field: Поле для поиска (name, article, manufacturer, description).
+
+        Returns:
+            list: Список найденных товаров.
+        """
         try:
-            print(f"=== ItemsModel.deleteItemByArticle called ===")
-            print(f"article: {article}")
+            logger.info(f"Searching items: query='{query}', field='{field}'")
 
-            for i, item in enumerate(self.items):
-                if item.get('article') == article:
-                    print(f"Found item at index {i}")
-                    return self.deleteItem(i)
+            results = self.repository.search(query, field)
 
-            print(f"ERROR: Item not found: {article}")
-            return False
+            logger.info(f"🔍 Found {len(results)} results")
+            return results
 
         except Exception as e:
-            print(f"ERROR: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
+            logger.error(f"❌ Search error: {e}")
+            self.errorOccurred.emit(f"Ошибка поиска: {str(e)}")
+            return []
+
+    @Slot()
+    def refresh(self):
+        """
+        Принудительно обновляет данные модели.
+        """
+        logger.info("Manual refresh triggered")
+
+        self.beginResetModel()
+        self.loadData()
+        self.endResetModel()
+
+        logger.debug("Model manually refreshed")
+
+    @Slot(result=int)
+    def getTotalCount(self) -> int:
+        """
+        Возвращает общее количество товаров (без фильтра).
+
+        Returns:
+            int: Общее количество товаров.
+        """
+        return len(self._all_items)
+
+    @Slot(result=int)
+    def getFilteredCount(self) -> int:
+        """
+        Возвращает количество отфильтрованных товаров.
+
+        Returns:
+            int: Количество товаров после применения фильтра.
+        """
+        return len(self.items)

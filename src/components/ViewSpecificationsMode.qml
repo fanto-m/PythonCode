@@ -364,7 +364,9 @@ Rectangle {
                                     }
                                     Text {
                                         Layout.alignment: Qt.AlignHCenter
-                                        text: model.final_price.toFixed(2) + " ₽"
+                                        text: (model.final_price !== undefined && model.final_price !== null)
+                                            ? Number(model.final_price).toFixed(2) + " ₽"
+                                            : "0 ₽"
                                         font.pointSize: 14
                                         font.bold: true
                                         color: "#28a745"
@@ -495,7 +497,7 @@ Rectangle {
             specStatus = status
             laborCost = labor
             overheadPercentage = overhead
-            finalPrice = price
+            finalPrice = (price !== undefined && price !== null) ? price : 0
             createdDate = created
             modifiedDate = modified
 

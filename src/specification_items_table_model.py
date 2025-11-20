@@ -1,14 +1,22 @@
-# specification_items_table_model.py
+"""Табличная модель для позиций спецификации с Loguru"""
+
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, Slot, Signal
+from loguru import logger
+from typing import List, Dict, Any
 
 
 class SpecificationItemsTableModel(QAbstractTableModel):
     """
-    Table model for specification items with columns:
-    Image | Article | Name | Category | Quantity | Unit | Price | Total | Delete
+    Табличная модель для позиций спецификации.
+
+    Столбцы: Вид | Артикул | Название | Категория | Кол-во | Ед. | Цена | Сумма | Статус | Удалить
+
+    Примечание: Эта модель работает с временными данными в памяти,
+    которые загружаются/сохраняются через SpecificationsModel.
+    Не требует Repository Pattern.
     """
 
-    # Define column indices
+    # Индексы столбцов
     COL_IMAGE = 0
     COL_ARTICLE = 1
     COL_NAME = 2
@@ -22,31 +30,39 @@ class SpecificationItemsTableModel(QAbstractTableModel):
 
     COLUMN_COUNT = 10
 
-    # Custom signals
+    # Сигналы
     totalCostChanged = Signal(float)
+    itemAdded = Signal()
+    itemRemoved = Signal()
 
     def __init__(self):
+        """Инициализация модели."""
         super().__init__()
-        self._items = []
+
+        self._items: List[Dict[str, Any]] = []
         self._headers = [
             "Вид", "Артикул", "Название", "Категория",
             "Кол-во", "Ед.", "Цена", "Сумма", "Статус", "Удалить"
         ]
 
+        logger.debug("SpecificationItemsTableModel initialized")
+
+    # ==================== Qt Model API ====================
+
     def rowCount(self, parent=QModelIndex()):
-        """Return number of rows"""
+        """Возвращает количество строк."""
         if parent.isValid():
             return 0
         return len(self._items)
 
     def columnCount(self, parent=QModelIndex()):
-        """Return number of columns"""
+        """Возвращает количество столбцов."""
         if parent.isValid():
             return 0
         return self.COLUMN_COUNT
 
     def data(self, index, role=Qt.DisplayRole):
-        """Return data for given index and role"""
+        """Возвращает данные для указанного индекса и роли."""
         if not index.isValid():
             return None
 
@@ -56,7 +72,7 @@ class SpecificationItemsTableModel(QAbstractTableModel):
         item = self._items[index.row()]
         column = index.column()
 
-        # Handle custom roles for direct property access (model.property_name)
+        # Custom roles для QML (прямой доступ к свойствам)
         if role >= Qt.UserRole:
             if role == Qt.UserRole + 1:  # image_path
                 value = item.get('image_path', '')
@@ -82,22 +98,21 @@ class SpecificationItemsTableModel(QAbstractTableModel):
             elif role == Qt.UserRole + 8:  # total
                 quantity = item.get('quantity', 0.0)
                 price = item.get('price', 0.0)
-                return float(quantity) * float(price) if (quantity is not None and price is not None) else 0.0
+                total = float(quantity) * float(price) if (quantity is not None and price is not None) else 0.0
+                return total
             elif role == Qt.UserRole + 9:  # status
                 value = item.get('status', '')
                 return value if value is not None else ''
             return None
 
-        # Handle DisplayRole for column-based access (TableView)
+        # DisplayRole для TableView
         if role == Qt.DisplayRole or role == Qt.EditRole:
-            # Return ALL data as a dictionary for the entire row
-            # TableView will access it via model.property_name
             return item
 
         return None
 
     def setData(self, index, value, role=Qt.EditRole):
-        """Set data for given index"""
+        """Устанавливает данные для указанного индекса."""
         if not index.isValid():
             return False
 
@@ -112,31 +127,42 @@ class SpecificationItemsTableModel(QAbstractTableModel):
                 try:
                     new_quantity = float(value)
                     if new_quantity >= 0:
+                        old_quantity = item['quantity']
                         item['quantity'] = new_quantity
-                        # Emit dataChanged for both quantity and total columns
-                        self.dataChanged.emit(index, self.index(index.row(), self.COL_TOTAL))
+
+                        logger.debug(
+                            f"Quantity updated: row={index.row()}, "
+                            f"{old_quantity} → {new_quantity}"
+                        )
+
+                        # Обновляем количество и сумму
+                        self.dataChanged.emit(
+                            index,
+                            self.index(index.row(), self.COL_TOTAL)
+                        )
                         self._emitTotalCostChanged()
                         return True
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"⚠️ Invalid quantity value: {e}")
                     return False
 
         return False
 
     def flags(self, index):
-        """Return item flags"""
+        """Возвращает флаги для элемента."""
         if not index.isValid():
             return Qt.NoItemFlags
 
         flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
-        # Only quantity column is editable
+        # Только столбец количества редактируемый
         if index.column() == self.COL_QUANTITY:
             flags |= Qt.ItemIsEditable
 
         return flags
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-        """Return header data"""
+        """Возвращает заголовки."""
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 if 0 <= section < len(self._headers):
@@ -144,7 +170,7 @@ class SpecificationItemsTableModel(QAbstractTableModel):
         return None
 
     def roleNames(self):
-        """Define role names for QML access"""
+        """Роли для QML."""
         roles = {
             Qt.DisplayRole: b"display",
             Qt.UserRole + 1: b"image_path",
@@ -159,46 +185,64 @@ class SpecificationItemsTableModel(QAbstractTableModel):
         }
         return roles
 
-    # ✅ Добавлен возвращаемый тип bool
+    # ==================== CRUD Operations ====================
+
     @Slot(str, str, float, str, float, str, str, str, result=bool)
-    def addItem(self, article, name, quantity, unit, price, image_path="", category="", status=""):
+    def addItem(self, article: str, name: str, quantity: float, unit: str,
+                price: float, image_path: str = "", category: str = "",
+                status: str = "") -> bool:
         """
-        Add new item to specification.
-        If article already exists, increase quantity and update the item.
-        Returns True if item was added, False if quantity was updated.
+        Добавляет позицию в спецификацию.
+        Если артикул уже существует, увеличивает количество.
+
+        Args:
+            article: Артикул товара.
+            name: Название товара.
+            quantity: Количество.
+            unit: Единица измерения.
+            price: Цена.
+            image_path: Путь к изображению (опционально).
+            category: Категория (опционально).
+            status: Статус (опционально).
+
+        Returns:
+            bool: True если добавлен новый товар, False если увеличено количество.
         """
-        # 1. Нормализация входных данных
+        # Нормализация
         article_normalized = str(article).strip()
         quantity_float = float(quantity) if quantity is not None else 1.0
 
-        # 2. ПРОВЕРКА НА ДУБЛИКАТ
+        logger.info(
+            f"Adding item: article={article_normalized}, "
+            f"name={name}, qty={quantity_float}"
+        )
+
+        # Проверка на дубликат
         for i, existing_item in enumerate(self._items):
             existing_article = str(existing_item.get('article', '')).strip()
 
             if existing_article == article_normalized:
-                # ✅ НАШЛИ! Увеличиваем количество
+                # Найден дубликат - увеличиваем количество
                 old_quantity = existing_item['quantity']
                 existing_item['quantity'] += quantity_float
 
-                # Уведомляем модель об изменении (количества и суммы)
+                logger.info(
+                    f"📦 Duplicate found: '{article_normalized}', "
+                    f"quantity {old_quantity} → {existing_item['quantity']}"
+                )
+
+                # Уведомляем об изменении
                 index_start = self.index(i, self.COL_QUANTITY)
                 index_end = self.index(i, self.COL_TOTAL)
                 self.dataChanged.emit(index_start, index_end, [Qt.DisplayRole, Qt.EditRole])
 
-                # Обновляем общую стоимость
                 self._emitTotalCostChanged()
+                return False  # Не добавлен, увеличено количество
 
-                print(f"DEBUG: Quantity updated for '{article_normalized}' to {existing_item['quantity']}")
-                return False  # не добавлен, только увеличено количество
-
-        # 3. НЕ НАШЛИ - ДОБАВЛЯЕМ НОВЫЙ
-        print(f"No existing item found with article '{article_normalized}'")
-
-        # Уведомляем модель о начале вставки
+        # Не найден дубликат - добавляем новый
         row = len(self._items)
         self.beginInsertRows(QModelIndex(), row, row)
 
-        # Создание нового элемента
         new_item = {
             'article': article_normalized,
             'name': str(name) if name is not None else '',
@@ -211,113 +255,173 @@ class SpecificationItemsTableModel(QAbstractTableModel):
         }
 
         self._items.append(new_item)
-
-        # Уведомляем модель об окончании вставки
         self.endInsertRows()
-        self._emitTotalCostChanged()
 
-        print(f"✓ New item added successfully: {article_normalized}")
-        print(f"Current items count AFTER: {len(self._items)}")
-        return True  # добавлен новый товар
+        self._emitTotalCostChanged()
+        self.itemAdded.emit()
+
+        logger.success(
+            f"✅ New item added: {article_normalized}, "
+            f"total items: {len(self._items)}"
+        )
+
+        return True  # Добавлен новый товар
 
     @Slot(int)
-    def removeItem(self, row):
-        """Remove item at specified row"""
-        if 0 <= row < len(self._items):
-            self.beginRemoveRows(QModelIndex(), row, row)
-            removed_item = self._items.pop(row)
-            self.endRemoveRows()
-            self._emitTotalCostChanged()
+    def removeItem(self, row: int) -> bool:
+        """
+        Удаляет позицию по индексу.
 
-            print(f"DEBUG: Removed item at row {row}: {removed_item.get('name', '')}")
+        Args:
+            row: Индекс строки.
+
+        Returns:
+            bool: True если удаление успешно.
+        """
+        if 0 <= row < len(self._items):
+            item = self._items[row]
+            article = item.get('article', 'unknown')
+
+            logger.info(f"Removing item at row {row}: {article}")
+
+            self.beginRemoveRows(QModelIndex(), row, row)
+            self._items.pop(row)
+            self.endRemoveRows()
+
+            self._emitTotalCostChanged()
+            self.itemRemoved.emit()
+
+            logger.success(f"✅ Item removed: {article}")
             return True
+
+        logger.warning(f"⚠️ Invalid row for removal: {row}")
         return False
 
     @Slot(int, float)
-    def updateQuantity(self, row, new_quantity):
-        """Update quantity for item at specified row"""
+    def updateQuantity(self, row: int, new_quantity: float) -> bool:
+        """
+        Обновляет количество для позиции.
+
+        Args:
+            row: Индекс строки.
+            new_quantity: Новое количество.
+
+        Returns:
+            bool: True если обновление успешно.
+        """
         if 0 <= row < len(self._items):
             try:
                 quantity = float(new_quantity)
                 if quantity >= 0:
+                    old_quantity = self._items[row]['quantity']
                     self._items[row]['quantity'] = quantity
 
-                    # Emit dataChanged for quantity and total columns
+                    logger.debug(
+                        f"Quantity updated: row={row}, "
+                        f"{old_quantity} → {quantity}"
+                    )
+
+                    # Обновляем количество и сумму
                     index_start = self.index(row, self.COL_QUANTITY)
                     index_end = self.index(row, self.COL_TOTAL)
                     self.dataChanged.emit(index_start, index_end)
 
                     self._emitTotalCostChanged()
-
-                    print(f"DEBUG: Updated quantity for row {row}: {quantity}")
                     return True
+                else:
+                    logger.warning(f"⚠️ Negative quantity rejected: {quantity}")
+
             except (ValueError, TypeError) as e:
-                print(f"ERROR: Invalid quantity value: {e}")
+                logger.error(f"❌ Invalid quantity value: {e}")
+
         return False
 
+    # ==================== Utility Methods ====================
+
     @Slot(result=float)
-    def getTotalMaterialsCost(self):
-        """Calculate total cost of all materials"""
+    def getTotalMaterialsCost(self) -> float:
+        """
+        Вычисляет общую стоимость материалов.
+
+        Returns:
+            float: Общая стоимость.
+        """
         total = sum(
             item.get('quantity', 0.0) * item.get('price', 0.0)
             for item in self._items
         )
+
+        logger.trace(f"Total materials cost calculated: {total}")
         return float(total)
 
     @Slot()
     def clear(self):
-        """Clear all items"""
+        """Очищает все позиции."""
         if len(self._items) > 0:
+            item_count = len(self._items)
+
+            logger.info(f"Clearing {item_count} items")
+
             self.beginResetModel()
             self._items.clear()
             self.endResetModel()
-            self._emitTotalCostChanged()
-            print("DEBUG: Cleared all specification items")
 
-    @Slot(result=list)
+            self._emitTotalCostChanged()
+
+            logger.success(f"✅ Cleared {item_count} items")
+
+    @Slot(result="QVariantList")
     def getAllItems(self):
-        """Get all items as list of dictionaries"""
-        print(f"DEBUG: getAllItems called, returning {len(self._items)} items")
+        """
+        Возвращает все позиции.
+
+        Returns:
+            QVariantList: Список словарей с данными позиций.
+        """
+        logger.debug(f"getAllItems called, returning {len(self._items)} items")
+
         items_copy = self._items.copy()
-        for i, item in enumerate(items_copy):
-            print(
-                f"  Item {i}: {item.get('article')} - {item.get('name')}, qty={item.get('quantity')}, price={item.get('price')}")
+
+        # Логируем для отладки (только если TRACE включен)
+        if logger.level("TRACE").no >= logger._core.min_level:
+            for i, item in enumerate(items_copy):
+                logger.trace(
+                    f"  Item {i}: {item.get('article')} - {item.get('name')}, "
+                    f"qty={item.get('quantity')}, price={item.get('price')}"
+                )
+
         return items_copy
 
-    @Slot(result=list)
+    @Slot(result="QVariantList")
     def getItems(self):
-        """Alias for getAllItems - for compatibility"""
+        """Алиас для getAllItems (для совместимости)."""
         return self.getAllItems()
 
     @Slot(result=int)
-    def count(self):
-        """Get number of items"""
+    def count(self) -> int:
+        """Возвращает количество позиций."""
         return len(self._items)
 
     @Slot(result=int)
-    def itemCount(self):
-        """Alias for count - for compatibility"""
+    def itemCount(self) -> int:
+        """Алиас для count (для совместимости)."""
         return self.count()
 
-    @Slot()
-    def debugPrintItems(self):
-        """Debug method to print all items"""
-        print(f"\n=== DEBUG: Current items in model ===")
-        print(f"Total items: {len(self._items)}")
-        for i, item in enumerate(self._items):
-            print(f"Item {i}:")
-            for key, value in item.items():
-                print(f"  {key}: {value} (type: {type(value)})")
-        print(f"=== END DEBUG ===\n")
-
-    @Slot(list)
+    @Slot("QVariantList")
     def loadItems(self, items):
-        """Load items from list of dictionaries"""
+        """
+        Загружает позиции из списка словарей.
+
+        Args:
+            items: Список словарей с данными позиций (QVariantList из QML).
+        """
+        logger.info(f"Loading {len(items)} items into table")
+
         self.beginResetModel()
         self._items = []
 
         for item_data in items:
-            # Ensure all values are properly typed and not None
+            # Нормализация данных
             item = {
                 'article': str(item_data.get('article', '')) if item_data.get('article') is not None else '',
                 'name': str(item_data.get('name', '')) if item_data.get('name') is not None else '',
@@ -332,17 +436,42 @@ class SpecificationItemsTableModel(QAbstractTableModel):
 
         self.endResetModel()
         self._emitTotalCostChanged()
-        print(f"DEBUG: Loaded {len(self._items)} items into specification table")
+
+        logger.success(f"✅ Loaded {len(self._items)} items")
 
     @Slot(int, result='QVariantMap')
-    def getItem(self, row):
-        """Get item data at specified row"""
+    def getItem(self, row: int) -> Dict[str, Any]:
+        """
+        Возвращает данные позиции по индексу.
+
+        Args:
+            row: Индекс строки.
+
+        Returns:
+            dict: Словарь с данными позиции или пустой словарь.
+        """
         if 0 <= row < len(self._items):
             return self._items[row].copy()
+
+        logger.warning(f"⚠️ Invalid row index: {row}")
         return {}
 
-    # ✅ Реализация метода _emitTotalCostChanged
+    @Slot()
+    def debugPrintItems(self):
+        """Отладочный метод для вывода всех позиций."""
+        logger.info("=" * 60)
+        logger.info(f"DEBUG: Current items in table model")
+        logger.info(f"Total items: {len(self._items)}")
+
+        for i, item in enumerate(self._items):
+            logger.info(f"Item {i}:")
+            for key, value in item.items():
+                logger.info(f"  {key}: {value} (type: {type(value).__name__})")
+
+        logger.info("=" * 60)
+
     def _emitTotalCostChanged(self):
-        """Emit signal when total cost changes"""
+        """Испускает сигнал при изменении общей стоимости."""
         total = self.getTotalMaterialsCost()
         self.totalCostChanged.emit(total)
+        logger.trace(f"Total cost changed signal emitted: {total}")

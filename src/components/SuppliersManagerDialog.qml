@@ -1,4 +1,4 @@
-// SuppliersManagerDialog.qml - Improved Version with Search
+// SuppliersManagerDialog.qml - FIXED VERSION with proper checkbox binding
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -29,11 +29,11 @@ Dialog {
     readonly property var columnConfig: [
         { proportion: 0.03, minWidth: 40, role: "checkbox" },
         { proportion: 0.03, minWidth: 40, role: "number" },
-        { proportion: 0.21, minWidth: 120, role: "name" },      // было 0.20
-        { proportion: 0.21, minWidth: 120, role: "company" },   // было 0.20
-        { proportion: 0.21, minWidth: 140, role: "email" },     // было 0.20
-        { proportion: 0.17, minWidth: 100, role: "phone" },     // было 0.12
-        { proportion: 0.14, minWidth: 150, role: "website" }    // было 0.15
+        { proportion: 0.21, minWidth: 120, role: "name" },
+        { proportion: 0.21, minWidth: 120, role: "company" },
+        { proportion: 0.21, minWidth: 140, role: "email" },
+        { proportion: 0.17, minWidth: 100, role: "phone" },
+        { proportion: 0.14, minWidth: 150, role: "website" }
     ]
 
     ColumnLayout {
@@ -265,22 +265,14 @@ Dialog {
                                     anchors.centerIn: parent
                                     visible: currentArticle !== ""
 
-                                    Component.onCompleted: {
-                                        checked = (model.checkState === 2)
-                                    }
+                                    // ✅ ИСПРАВЛЕНО: Используем прямой биндинг вместо Component.onCompleted
+                                    // Это гарантирует что checkbox всегда синхронизирован с моделью
+                                    checked: model.checkState === Qt.Checked
 
-                                    Connections {
-                                        target: suppliersTable.model
-                                        function onDataChanged(topLeft, bottomRight) {
-                                            if (row >= topLeft.row && row <= bottomRight.row &&
-                                                column >= topLeft.column && column <= bottomRight.column) {
-                                                checkboxControl.checked = (model.checkState === 2)
-                                            }
-                                        }
-                                    }
-
+                                    // Обработка клика
                                     onClicked: {
-                                        model.checkState = checked ? 2 : 0
+                                        console.log("Checkbox clicked: row=" + row + ", checked=" + checked)
+                                        model.checkState = checked ? Qt.Checked : Qt.Unchecked
                                     }
                                 }
 
@@ -448,8 +440,10 @@ Dialog {
                 highlighted: true
                 font.pointSize: baseFontSize
                 onClicked: {
+                    console.log("Saving supplier binding...")
                     isLoading = true
                     var selectedIds = suppliersTableModel.getSelectedSupplierIds()
+                    console.log("Selected IDs:", selectedIds)
                     suppliersTableModel.bindSuppliersToItem(currentArticle, selectedIds)
                     isLoading = false
                     close()
@@ -473,9 +467,10 @@ Dialog {
     }
 
     function openForManagement() {
+        console.log("Opening suppliers manager for management mode")
         currentArticle = ""
         selectedRow = -1
-        searchField.text = ""  // Очищаем поле поиска при открытии
+        searchField.text = ""
         isLoading = true
         suppliersTableModel.load()
         isLoading = false
@@ -483,6 +478,7 @@ Dialog {
     }
 
     function openForBinding(article) {
+        console.log("Opening suppliers manager for binding to article:", article)
         currentArticle = article
         selectedRow = -1
         isLoading = true
@@ -493,6 +489,7 @@ Dialog {
 
     // Сброс фильтра при закрытии диалога
     onClosed: {
+        console.log("Dialog closed, clearing filter")
         searchField.text = ""
         suppliersTableModel.setFilterString("")
     }

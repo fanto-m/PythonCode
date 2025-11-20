@@ -1,110 +1,122 @@
-# filter_proxy_model.py
+"""Прокси-модель для фильтрации и сортировки товаров с Loguru"""
+
 from PySide6.QtCore import QSortFilterProxyModel, Slot, QSettings, Property, Qt
+from loguru import logger
+
 from items_model import ItemsModel
 
-class FilterProxyModel(QSortFilterProxyModel):
-    """Прокси-модель для фильтрации и сортировки данных из ItemsModel.
 
-    Эта модель расширяет QSortFilterProxyModel, предоставляя функциональность
-    для фильтрации данных по указанному полю и строке фильтра, а также
-    для сортировки данных. Поддерживает сохранение и загрузку настроек
-    фильтрации через QSettings. Также предоставляет методы для добавления,
-    обновления и удаления элементов, перенаправляя их в исходную модель.
+class FilterProxyModel(QSortFilterProxyModel):
+    """
+    Прокси-модель для фильтрации и сортировки данных из ItemsModel.
+
+    Предоставляет функциональность фильтрации по указанному полю,
+    сортировки данных, а также сохранения настроек фильтрации.
+    Делегирует операции CRUD в исходную модель (ItemsModel).
     """
 
     def __init__(self, parent=None):
-        """Инициализация прокси-модели.
+        """
+        Инициализация прокси-модели.
 
         Args:
-            parent: Родительский объект (по умолчанию None).
+            parent: Родительский объект Qt.
         """
         super().__init__(parent)
+
         self._filter_field = "name"  # Поле для фильтрации по умолчанию
         self._filter_string = ""     # Строка фильтра по умолчанию
-        self._settings = QSettings("ООО ОЗТМ", "Склад-0.1")  # Настройки приложения
-        self._loadSettings()  # Загрузка сохраненных настроек
-        self.setDynamicSortFilter(True)  # Включение динамической сортировки
-        print(f"DEBUG: FilterProxyModel initialized with filterField: {self._filter_field}")
+        self._settings = QSettings("ООО ОЗТМ", "Склад-0.1")
+
+        # Загрузка сохраненных настроек
+        self._loadSettings()
+
+        # Включение динамической сортировки
+        self.setDynamicSortFilter(True)
+
+        logger.debug(
+            f"FilterProxyModel initialized: "
+            f"field={self._filter_field}, filter='{self._filter_string}'"
+        )
+
+    # ==================== Properties ====================
 
     def get_filter_string(self):
-        """Получение текущей строки фильтра.
-
-        Returns:
-            str: Текущая строка фильтра.
-        """
+        """Получение текущей строки фильтра."""
         return self._filter_string
 
     def get_filter_field(self):
-        """Получение текущего поля фильтрации.
-
-        Returns:
-            str: Текущее поле фильтрации.
-        """
+        """Получение текущего поля фильтрации."""
         return self._filter_field
 
     filterString = Property(str, get_filter_string, notify=None)
     filterField = Property(str, get_filter_field, notify=None)
 
-    def _loadSettings(self):
-        """Загрузка настроек фильтрации из QSettings.
+    # ==================== Settings ====================
 
-        Загружает сохраненные значения поля фильтрации и строки фильтра.
-        Если настройки отсутствуют, используются значения по умолчанию.
-        """
+    def _loadSettings(self):
+        """Загрузка настроек фильтрации из QSettings."""
         saved_field = self._settings.value("filterField", "name")
         saved_string = self._settings.value("filterString", "")
+
         self._filter_field = saved_field
         self._filter_string = saved_string.lower()
-        print(f"DEBUG: Loaded filter settings: field={self._filter_field}, string='{self._filter_string}'")
+
+        logger.debug(
+            f"Loaded filter settings: "
+            f"field={self._filter_field}, string='{self._filter_string}'"
+        )
 
     def _saveSettings(self):
-        """Сохранение настроек фильтрации в QSettings.
-
-        Сохраняет текущее поле фильтрации и строку фильтра.
-        """
+        """Сохранение настроек фильтрации в QSettings."""
         self._settings.setValue("filterField", self._filter_field)
         self._settings.setValue("filterString", self._filter_string)
-        print(f"DEBUG: Saved filter settings: field={self._filter_field}, string='{self._filter_string}'")
+
+        logger.trace(
+            f"Saved filter settings: "
+            f"field={self._filter_field}, string='{self._filter_string}'"
+        )
+
+    # ==================== Filter & Sort ====================
 
     @Slot(str)
-    def setFilterString(self, filterString):
-        """Установка строки фильтра.
+    def setFilterString(self, filterString: str):
+        """
+        Установка строки фильтра.
 
         Args:
-            filterString (str): Новая строка фильтра.
-
-        Обновляет строку фильтра, вызывает инвалидацию фильтра и сохраняет настройки.
+            filterString: Новая строка фильтра.
         """
         self._filter_string = filterString.lower()
         self.invalidateFilter()
         self._saveSettings()
-        print(f"DEBUG: setFilterString called with: {self._filter_string}")
+
+        logger.debug(f"Filter string set to: '{self._filter_string}'")
 
     @Slot(str)
-    def setFilterField(self, field):
-        """Установка поля фильтрации.
+    def setFilterField(self, field: str):
+        """
+        Установка поля фильтрации.
 
         Args:
-            field (str): Новое поле для фильтрации.
-
-        Обновляет поле фильтрации, вызывает инвалидацию фильтра и сохраняет настройки.
+            field: Новое поле для фильтрации.
         """
         self._filter_field = field
         self.invalidateFilter()
         self._saveSettings()
-        print(f"DEBUG: setFilterField called with: {self._filter_field}")
+
+        logger.debug(f"Filter field set to: {self._filter_field}")
 
     @Slot(str, str)
-    def setSort(self, role_name, order="ascending"):
-        """Установка сортировки данных.
+    def setSort(self, role_name: str, order: str = "ascending"):
+        """
+        Установка сортировки данных.
 
         Args:
-            role_name (str): Имя роли (поля) для сортировки.
-            order (str): Порядок сортировки ("ascending" или "descending").
-
-        Устанавливает роль сортировки и порядок, затем сортирует данные.
-        Выводит отладочную информацию о значениях в отсортированных строках.
+            role_name: Имя роли (поля) для сортировки.
+            order: Порядок сортировки ("ascending" или "descending").
         """
+        # Маппинг имен ролей на константы
         role_map = {
             "article": ItemsModel.ArticleRole,
             "name": ItemsModel.NameRole,
@@ -113,37 +125,49 @@ class FilterProxyModel(QSortFilterProxyModel):
             "price": ItemsModel.PriceRole,
             "stock": ItemsModel.StockRole
         }
-        role = role_map.get(role_name, ItemsModel.NameRole)
-        order = Qt.AscendingOrder if order.lower() == "ascending" else Qt.DescendingOrder
-        self.setSortRole(role)
-        self.sort(0, order)
-        print(f"DEBUG: Sorting set on role {role_name}, order: {order}")
-        for row in range(self.rowCount()):
-            index = self.index(row, 0)
-            source_index = self.mapToSource(index)
-            value = self.sourceModel().data(source_index, role) if source_index.isValid() else None
-            print(f"DEBUG: Row {row} (source row {source_index.row() if source_index.isValid() else -1}): {value}")
 
-    def filterAcceptsRow(self, sourceRow, sourceParent):
-        """Проверка, проходит ли строка фильтр.
+        role = role_map.get(role_name, ItemsModel.NameRole)
+        order_qt = Qt.AscendingOrder if order.lower() == "ascending" else Qt.DescendingOrder
+
+        self.setSortRole(role)
+        self.sort(0, order_qt)
+
+        logger.info(f"Sorting set: role={role_name}, order={order}")
+
+        # Логируем первые 5 строк для проверки
+        if logger.level("TRACE").no >= logger._core.min_level:
+            for row in range(min(5, self.rowCount())):
+                index = self.index(row, 0)
+                source_index = self.mapToSource(index)
+                if source_index.isValid():
+                    value = self.sourceModel().data(source_index, role)
+                    logger.trace(
+                        f"Row {row} (source {source_index.row()}): {value}"
+                    )
+
+    def filterAcceptsRow(self, sourceRow: int, sourceParent):
+        """
+        Проверка, проходит ли строка фильтр.
 
         Args:
-            sourceRow (int): Индекс строки в исходной модели.
-            sourceParent: Родительский индекс в исходной модели.
+            sourceRow: Индекс строки в исходной модели.
+            sourceParent: Родительский индекс.
 
         Returns:
-            bool: True, если строка проходит фильтр, иначе False.
-
-        Проверяет, содержит ли значение в указанном поле фильтрации подстроку
-        из строки фильтра. Выводит отладочную информацию о результате.
+            bool: True если строка проходит фильтр.
         """
         if not self.sourceModel():
             return False
+
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.isValid():
             return False
+
+        # Без фильтра - показываем все
         if not self._filter_string:
             return True
+
+        # Маппинг полей на роли
         role_map = {
             "article": ItemsModel.ArticleRole,
             "name": ItemsModel.NameRole,
@@ -152,140 +176,169 @@ class FilterProxyModel(QSortFilterProxyModel):
             "price": ItemsModel.PriceRole,
             "stock": ItemsModel.StockRole
         }
+
         role = role_map.get(self._filter_field, ItemsModel.NameRole)
         value = self.sourceModel().data(index, role)
         value_str = "" if value is None else str(value).lower()
-        #print(f"DEBUG: Row {sourceRow}, field {self._filter_field}, value: {value_str}")
+
         result = self._filter_string in value_str
-        #print(f"DEBUG: Filter result for row {sourceRow}: {result}")
+
+        # Логируем только если TRACE включен
+        if result and logger.level("TRACE").no >= logger._core.min_level:
+            logger.trace(
+                f"Row {sourceRow} PASSED filter: "
+                f"field={self._filter_field}, value='{value_str}'"
+            )
+
         return result
 
+    # ==================== CRUD Operations (delegated to source model) ====================
+
     @Slot(str, str, str, str, int, float, int, str, str, str, str)
-    def addItem(self, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document):
-        """Добавление нового элемента в исходную модель.
+    def addItem(self, article: str, name: str, description: str, image_path: str,
+                category_id: int, price: float, stock: int, status: str,
+                unit: str, manufacturer: str, document: str):
+        """
+        Добавление нового элемента (делегируется в исходную модель).
 
         Args:
-            article (str): Артикул элемента.
-            name (str): Название элемента.
-            description (str): Описание элемента.
-            image_path (str): Путь к изображению.
-            category_id (int): Идентификатор категории.
-            price (float): Цена элемента.
-            stock (int): Количество на складе.
-            status (str): Статус элемента.
-            unit (str): Единица измерения.
-            manufacturer (str): Производитель.
-            document (str): Документ, связанный с элементом.
+            article: Артикул.
+            name: Название.
+            description: Описание.
+            image_path: Путь к изображению.
+            category_id: ID категории.
+            price: Цена.
+            stock: Количество на складе.
+            status: Статус.
+            unit: Единица измерения.
+            manufacturer: Производитель.
+            document: Документ.
 
         Returns:
-            Результат выполнения метода addItem исходной модели или сообщение об ошибке.
-
-        Выполняет безопасное преобразование типов и вызывает метод добавления
-        в исходной модели. Выводит отладочную информацию.
+            Результат операции или сообщение об ошибке.
         """
-        print(f"DEBUG: FilterProxyModel.addItem called with category_id={category_id}")
-        print(
-            f"addItem called with: article={article}, name={name}, description={description}, image_path={image_path}, category_id={category_id}, price={price}, stock={stock}, status={status}, unit={unit}, manufacturer={manufacturer}, document={document}")
+        logger.info(f"Adding item via proxy: article={article}, name={name}")
+
         try:
+            # Безопасное преобразование типов
             price = float(price) if price else 0.0
             stock = int(stock) if stock else 0
+
+            # Делегируем в source model
             result = self.sourceModel().addItem(
                 article, name, description, image_path, category_id,
                 price, stock, status, unit, manufacturer, document
             )
-            print(f"DEBUG: FilterProxyModel.addItem completed with result: {result}")
+
+            logger.success(f"✅ Item added via proxy: {article}")
             return result
+
         except Exception as e:
-            print(f"DEBUG: Error in addItem: Ошибка добавления товара: {str(e)}")
-            return f"Ошибка добавления товара: {str(e)}"
+            error_msg = f"Ошибка добавления товара: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            return error_msg
 
     @Slot(int, str, str, str, str, int, float, int, str, str, str, str)
-    def updateItem(self, proxy_row, article, name, description, image_path, category_id, price, stock, status, unit, manufacturer, document):
-        """Обновление существующего элемента в исходной модели.
+    def updateItem(self, proxy_row: int, article: str, name: str, description: str,
+                   image_path: str, category_id: int, price: float, stock: int,
+                   status: str, unit: str, manufacturer: str, document: str):
+        """
+        Обновление элемента (делегируется в исходную модель).
 
         Args:
-            proxy_row (int): Индекс строки в прокси-модели.
-            article (str): Артикул элемента.
-            name (str): Название элемента.
-            description (str): Описание элемента.
-            image_path (str): Путь к изображению.
-            category_id (int): Идентификатор категории.
-            price (float): Цена элемента.
-            stock (int): Количество на складе.
-            status (str): Статус элемента.
-            unit (str): Единица измерения.
-            manufacturer (str): Производитель.
-            document (str): Документ, связанный с элементом.
-
-        Выполняет преобразование индекса из прокси-модели в исходную,
-        проверяет валидность индексов и вызывает метод обновления
-        в исходной модели. Выводит отладочную информацию.
+            proxy_row: Индекс строки в прокси-модели.
+            Остальные параметры - данные товара.
         """
-        print(f"DEBUG: FilterProxyModel.updateItem called with proxy_row: {proxy_row}, redirecting to sourceModel")
+        logger.info(f"Updating item via proxy: proxy_row={proxy_row}, article={article}")
+
         try:
+            # Маппинг proxy_row -> source_row
             proxy_index = self.index(proxy_row, 0)
             if not proxy_index.isValid():
                 raise ValueError(f"Invalid proxy index for row {proxy_row}")
+
             source_index = self.mapToSource(proxy_index)
             if not source_index.isValid():
                 raise ValueError(f"Invalid source index for proxy row {proxy_row}")
-            source_row = source_index.row()
-            print(f"DEBUG: Mapped proxy_row {proxy_row} to source_row {source_row}")
 
+            source_row = source_index.row()
+            logger.debug(f"Mapped proxy_row {proxy_row} → source_row {source_row}")
+
+            # Безопасное преобразование типов
             price = float(price) if price is not None and str(price).strip() else 0.0
             stock = int(stock) if stock is not None and str(stock).strip() else 0
+
+            # Делегируем в source model
             self.sourceModel().updateItem(
                 source_row, article, name, description, image_path,
                 category_id, price, stock, status, unit, manufacturer, document
             )
-            print("DEBUG: FilterProxyModel.updateItem completed")
+
+            logger.success(f"✅ Item updated via proxy: {article}")
+
         except Exception as e:
-            print(f"DEBUG: Error in FilterProxyModel.updateItem: {str(e)}")
+            logger.exception(f"❌ Error updating item via proxy: {e}")
 
     @Slot(int)
-    def deleteItem(self, proxy_row):
-        """Удаление элемента из исходной модели.
+    def deleteItem(self, proxy_row: int):
+        """
+        Удаление элемента по индексу (делегируется в исходную модель).
 
         Args:
-            proxy_row (int): Индекс строки в прокси-модели.
-
-        Выполняет преобразование индекса из прокси-модели в исходную,
-        проверяет валидность индексов и вызывает метод удаления
-        в исходной модели. Выводит отладочную информацию.
+            proxy_row: Индекс строки в прокси-модели.
         """
-        print(f"DEBUG: FilterProxyModel.deleteItem called with proxy_row: {proxy_row}, redirecting to sourceModel")
+        logger.info(f"Deleting item via proxy: proxy_row={proxy_row}")
+
         try:
+            # Маппинг proxy_row -> source_row
             proxy_index = self.index(proxy_row, 0)
             if not proxy_index.isValid():
                 raise ValueError(f"Invalid proxy index for row {proxy_row}")
+
             source_index = self.mapToSource(proxy_index)
             if not source_index.isValid():
                 raise ValueError(f"Invalid source index for proxy row {proxy_row}")
-            source_row = source_index.row()
-            print(f"DEBUG: Mapped proxy_row {proxy_row} to source_row {source_row}")
 
+            source_row = source_index.row()
+            logger.debug(f"Mapped proxy_row {proxy_row} → source_row {source_row}")
+
+            # Делегируем в source model
             self.sourceModel().deleteItem(source_row)
-            print("DEBUG: FilterProxyModel.deleteItem completed")
+
+            logger.success(f"✅ Item deleted via proxy: row {proxy_row}")
+
         except Exception as e:
-            print(f"DEBUG: Error in FilterProxyModel.deleteItem: {str(e)}")
+            logger.exception(f"❌ Error deleting item via proxy: {e}")
 
     @Slot(str, result=bool)
-    def deleteItemByArticle(self, article):
-        """Удаляет товар по артикулу (proxy версия)"""
+    def deleteItemByArticle(self, article: str) -> bool:
+        """
+        Удаление элемента по артикулу (делегируется в исходную модель).
+
+        Args:
+            article: Артикул товара.
+
+        Returns:
+            bool: True если удаление успешно.
+        """
+        logger.info(f"Deleting item by article via proxy: {article}")
+
         try:
-            print(f"=== FilterProxyModel.deleteItemByArticle called ===")
-            print(f"article: {article}")
-
             source_model = self.sourceModel()
-            if source_model:
-                # Делегируем source model
-                return source_model.deleteItemByArticle(article)
+            if not source_model:
+                logger.error("❌ No source model available")
+                return False
 
-            print("ERROR: No source model")
-            return False
+            # Делегируем в source model
+            result = source_model.deleteItemByArticle(article)
+
+            if result:
+                logger.success(f"✅ Item deleted by article: {article}")
+            else:
+                logger.warning(f"⚠️ Failed to delete item by article: {article}")
+
+            return result
 
         except Exception as e:
-            print(f"ERROR: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.exception(f"❌ Error deleting item by article: {e}")
             return False

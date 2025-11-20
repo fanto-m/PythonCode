@@ -61,10 +61,6 @@
                     "name": "furniture",
                     "display_name": "Фурнитура"
                 },
-                "fmaterials": {
-                    "name": "materials",
-                    "display_name": "Материалы"
-                },
                 "resistors": {
                     "name": "resistors",
                     "display_name": "Резисторы"

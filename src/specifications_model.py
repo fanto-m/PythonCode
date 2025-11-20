@@ -1,415 +1,303 @@
 """
-Specifications Models for Manufacturing BOM (Bill of Materials)
-models/specification_models.py
+Модель управления спецификациями (BOM - Bill of Materials)
+Работает с SpecificationItemsTableModel для отображения позиций
+С Repository Pattern и экспортом в PDF/Excel
 """
-#specification_models.py
-from PySide6.QtCore import QObject, Signal, Slot, QAbstractListModel, Qt, QModelIndex
-from typing import Optional, List
-from PySide6.QtGui import QColor
 
+from PySide6.QtCore import QObject, Signal, Slot
+from loguru import logger
 
-class SpecificationItemsModel(QAbstractListModel):
-    """Модель для позиций спецификации (материалов)"""
-
-    ArticleRole = Qt.ItemDataRole.UserRole + 1
-    NameRole = Qt.ItemDataRole.UserRole + 2
-    QuantityRole = Qt.ItemDataRole.UserRole + 3
-    UnitRole = Qt.ItemDataRole.UserRole + 4
-    PriceRole = Qt.ItemDataRole.UserRole + 5
-    NotesRole = Qt.ItemDataRole.UserRole + 6
-    ImagePathRole = Qt.ItemDataRole.UserRole + 7 #добавлено
-    CategoryRole = Qt.ItemDataRole.UserRole + 8 #добавлено
-    StatusRole = Qt.ItemDataRole.UserRole + 9
-
-    def __init__(self, db_manager, parent=None):
-        super().__init__(parent)
-        self.db = db_manager
-        self.items = []  # List of dicts: {article, name, quantity, unit, price, notes}
-        self.current_spec_id = None
-        print(f"DEBUG: SpecificationItemsModel initialized at {id(self)}")
-
-    def roleNames(self):
-        return {
-            self.ArticleRole: b"article",
-            self.NameRole: b"name",
-            self.QuantityRole: b"quantity",
-            self.UnitRole: b"unit",
-            self.PriceRole: b"price",
-            self.NotesRole: b"notes",
-            self.ImagePathRole: b"image_path",#добавлено
-            self. CategoryRole: b"category",
-            self.StatusRole: b"status",
-        }
-
-    def rowCount(self, parent=QModelIndex()):
-        return len(self.items)
-
-    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        if not index.isValid() or index.row() >= len(self.items):
-            return None
-
-        item = self.items[index.row()]
-
-        if role == self.ArticleRole:
-            return item['article']
-        elif role == self.NameRole:
-            return item['name']
-        elif role == self.QuantityRole:
-            return item['quantity']
-        elif role == self.UnitRole:
-            return item['unit']
-        elif role == self.PriceRole:
-            return item['price']
-        elif role == self.NotesRole:
-            return item.get('notes', '')
-        elif role == self.ImagePathRole:    #добавлено
-            return item.get('image_path', '')
-        elif role == self.CategoryRole:
-            return item.get('category', '')
-        elif role == self.StatusRole:
-            return item.get('status', '')
-        return None
-
-    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
-        if not index.isValid() or index.row() >= len(self.items):
-            return False
-
-        item = self.items[index.row()]
-
-        if role == self.QuantityRole:
-            try:
-                item['quantity'] = float(value)
-                self.dataChanged.emit(index, index, [role])
-                return True
-            except (ValueError, TypeError):
-                return False
-        elif role == self.NotesRole:
-            item['notes'] = str(value)
-            self.dataChanged.emit(index, index, [role])
-            return True
-
-        return False
-
-    @Slot(str, str, float, str, float, str, str, str)
-    def addItem(self, article, name, quantity, unit, price, image_path, category, status):
-        """Добавляет материал в список. Если артикул уже есть — увеличивает количество."""
-
-        print("=" * 80)
-        print("=== DEBUG: addItem called ===")
-        print(f"Article: {article} (type: {type(article)})")
-        print(f"Name: {name} (type: {type(name)})")
-        print(f"Quantity: {quantity} (type: {type(quantity)})")
-        print(f"Unit: {unit} (type: {type(unit)})")
-        print(f"Price: {price} (type: {type(price)})")
-        print(f"Image: {image_path} (type: {type(image_path)})")
-        print(f"Category: {category} (type: {type(category)})")
-        print(f"Status: {status} (type: {type(status)})")
-        print(f"Current items count BEFORE: {len(self.items)}")
-        print("-" * 80)
-
-        # Нормализуем артикул для сравнения
-        article_normalized = str(article).strip()
-        print(f"Normalized article for comparison: '{article_normalized}'")
-
-        # ✅ ПРОВЕРЯЕМ, ЕСТЬ ЛИ УЖЕ ТОВАР С ТАКИМ АРТИКУЛОМ
-        for i, existing_item in enumerate(self.items):
-            existing_article = str(existing_item.get('article', '')).strip()
-
-            print(f"Comparing with item [{i}]:")
-            print(f"  Existing article: '{existing_article}'")
-            print(f"  New article:      '{article_normalized}'")
-            print(f"  Are equal? {existing_article == article_normalized}")
-
-            if existing_article == article_normalized:
-                # ✅ НАШЛИ! Увеличиваем количество
-                old_quantity = existing_item['quantity']
-                existing_item['quantity'] += quantity
-
-                print(f"  ✓ MATCH FOUND! Updating quantity:")
-                print(f"    Old quantity: {old_quantity}")
-                print(f"    Added: {quantity}")
-                print(f"    New quantity: {existing_item['quantity']}")
-
-                # Уведомляем модель об изменении
-                index = self.index(i)
-                self.dataChanged.emit(index, index, [self.QuantityRole])
-
-                print("=" * 80)
-                return  # ⚠️ ВАЖНО: Выходим из функции, не добавляя новый элемент!
-
-        # ✅ НЕ НАШЛИ - ДОБАВЛЯЕМ НОВЫЙ
-        print(f"No existing item found with article '{article_normalized}'")
-        print("Adding as NEW item...")
-
-        self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
-
-        new_item = {
-            'article': article_normalized,  # Используем нормализованный артикул
-            'name': name,
-            'quantity': quantity,
-            'unit': unit,
-            'price': price,
-            'image_path': image_path,
-            'category': category,
-            'status': status,
-        }
-
-        self.items.append(new_item)
-        self.endInsertRows()
-
-        print(f"✓ New item added successfully")
-        print(f"Current items count AFTER: {len(self.items)}")
-        print("=== DEBUG: addItem completed ===")
-        print("=" * 80)
-
-    @Slot(int)
-    def removeItem(self, index):
-        """Удаляет материал из списка"""
-        if 0 <= index < len(self.items):
-            self.beginRemoveRows(QModelIndex(), index, index)
-            removed = self.items.pop(index)
-            self.endRemoveRows()
-            print(f"DEBUG: Removed item {removed['article']}")
-
-    @Slot()
-    def clear(self):
-        """Очищает все позиции"""
-        self.beginResetModel()
-        self.items = []
-        self.current_spec_id = None
-        self.endResetModel()
-
-    @Slot(int)
-    def loadForSpecification(self, spec_id):
-        """Загружает позиции для спецификации из БД"""
-        self.beginResetModel()
-        self.current_spec_id = spec_id
-        self.items = []
-
-        db_items = self.db.load_specification_items(spec_id)
-        for row in db_items:
-            # row: (id, spec_id, article, quantity, notes, name, unit, price, image_path)
-            self.items.append({
-                'id': row[0],
-                'article': row[2],
-                'name': row[5],
-                'quantity': row[3],
-                'unit': row[6],
-                'price': row[7],
-                'notes': row[4] or '',
-                'image_path': row[8] or '',#добавлено
-                'category': row[9] or '',
-            })
-
-        self.endResetModel()
-        print(f"DEBUG: Loaded {len(self.items)} items for specification {spec_id}")
-
-    @Slot(result=float)
-    def getTotalMaterialsCost(self):
-        """Возвращает общую стоимость материалов"""
-        total = sum(item['quantity'] * item['price'] for item in self.items)
-        return total
-
-    def getItems(self):
-        """Возвращает список всех позиций для сохранения"""
-        return self.items
-
-    @Slot()
-    def debugPrintItems(self):
-        """Выводит все элементы модели для отладки"""
-        import sys
-        print("\n" + "=" * 80, file=sys.stderr, flush=True)
-        print(f"DEBUG: Current model state (id={id(self)})", file=sys.stderr, flush=True)
-        print(f"Total items: {len(self.items)}", file=sys.stderr, flush=True)
-        print("-" * 80, file=sys.stderr, flush=True)
-
-        for i, item in enumerate(self.items):
-            print(f"[{i}] Article: '{item.get('article', '')}' | "
-                  f"Name: '{item.get('name', '')}' | "
-                  f"Qty: {item.get('quantity', 0)} | "
-                  f"Unit: '{item.get('unit', '')}' | "
-                  f"Price: {item.get('price', 0)}",
-                  file=sys.stderr, flush=True)
-
-        print("=" * 80 + "\n", file=sys.stderr, flush=True)
+from repositories.specifications_repository import SpecificationsRepository
+from models.dto import Specification, SpecificationItem
 
 
 class SpecificationsModel(QObject):
-    """Модель для управления спецификациями"""
+    """
+    Модель для управления спецификациями (BOM).
 
+    Координирует работу со спецификациями и их позициями.
+    Поддерживает сохранение, загрузку, удаление и экспорт.
+    Работает с SpecificationItemsTableModel для управления позициями.
+    """
+
+    # Сигналы
     errorOccurred = Signal(str)
     specificationsLoaded = Signal()
 
-    def __init__(self, db_manager, items_model, parent=None):
+    def __init__(
+        self,
+        specifications_repository: SpecificationsRepository,
+        items_table_model,  # SpecificationItemsTableModel
+        parent=None
+    ):
+        """
+        Инициализирует модель спецификаций.
+
+        Args:
+            specifications_repository: Репозиторий для работы со спецификациями.
+            items_table_model: Табличная модель для позиций (SpecificationItemsTableModel).
+            parent: Родительский объект Qt (опционально).
+        """
         super().__init__(parent)
-        self.db = db_manager
-        self.specification_items_model = items_model  # Use the shared instance
+
+        self.repository = specifications_repository
+        self.specification_items_model = items_table_model
+
+        logger.debug("SpecificationsModel initialized")
+
+    # ==================== CRUD Operations ====================
 
     @Slot(int, str, str, str, float, float, result=int)
-    def saveSpecification(self, spec_id, name, description, status, labor_cost, overhead_percentage):
+    def saveSpecification(
+        self,
+        spec_id: int,
+        name: str,
+        description: str,
+        status: str,
+        labor_cost: float,
+        overhead_percentage: float
+    ) -> int:
         """
-        Сохраняет спецификацию с позициями
-        Возвращает ID спецификации или -1 при ошибке
+        Сохраняет спецификацию с позициями.
+
+        Args:
+            spec_id: ID спецификации (0 для новой).
+            name: Название спецификации.
+            description: Описание.
+            status: Статус.
+            labor_cost: Стоимость работ.
+            overhead_percentage: Процент накладных расходов.
+
+        Returns:
+            int: ID сохраненной спецификации или -1 при ошибке.
         """
         try:
+            # Проверка имени
             if not name or not name.strip():
                 self.errorOccurred.emit("Название спецификации не может быть пустым")
+                logger.warning("⚠️ Empty specification name")
                 return -1
 
-            items = self.specification_items_model.getItems()
-
-            if not items:
-                self.errorOccurred.emit("Спецификация должна содержать хотя бы один материал")
-                return -1
-
-            # Convert items to format expected by database
-            db_items = [
-                {
-                    'article': item['article'],
-                    'quantity': item['quantity'],
-                    'notes': item.get('notes', ''),
-                    'image_path': item.get('image_path', ''),#добавлено
-                    'category': item.get('category', ''),#добавлено
-                }
-                for item in items
-            ]
-
-            # Save to database (transactionally)
-            result_id = self.db.save_specification_with_items(
-                spec_id if spec_id > 0 else None,
-                name,
-                description,
-                status,
-                labor_cost,
-                overhead_percentage,
-                db_items
+            logger.info(
+                f"Saving specification: id={spec_id}, "
+                f"name='{name}', status='{status}'"
             )
 
-            if result_id:
-                print(f"DEBUG: Specification saved with ID: {result_id}")
-                return result_id
-            else:
-                self.errorOccurred.emit("Ошибка при сохранении спецификации")
+            # Получаем позиции из табличной модели
+            items_data = self.specification_items_model.getAllItems()
+
+            if not items_data:
+                self.errorOccurred.emit("Спецификация должна содержать хотя бы один материал")
+                logger.warning("⚠️ No items in specification")
                 return -1
 
+            logger.debug(f"Got {len(items_data)} items from table model")
+
+            # Создаем DTO для спецификации
+            spec = Specification(
+                id=spec_id if spec_id > 0 else None,
+                name=name,
+                description=description,
+                status=status,
+                labor_cost=labor_cost,
+                overhead_percentage=overhead_percentage,
+                final_price=0.0,
+                created_date=None,
+                modified_date=None
+            )
+
+            # Сохраняем спецификацию
+            if spec_id == 0 or spec_id <= 0:
+                # Создаем новую
+                saved_spec_id = self.repository.add(spec)
+                logger.info(f"Created new specification with ID: {saved_spec_id}")
+            else:
+                # Обновляем существующую
+                self.repository.update(spec)
+                saved_spec_id = spec_id
+                logger.info(f"Updated specification ID: {saved_spec_id}")
+
+            # Удаляем старые позиции
+            self.repository.delete_specification_items(saved_spec_id)
+            logger.debug(f"Deleted old items for specification {saved_spec_id}")
+
+            # Сохраняем новые позиции
+            for item_data in items_data:
+                spec_item = SpecificationItem(
+                    id=None,
+                    specification_id=saved_spec_id,
+                    article=item_data['article'],
+                    quantity=float(item_data['quantity']),
+                    notes=item_data.get('notes', '')
+                )
+                self.repository.add_specification_item(spec_item)
+
+            logger.success(
+                f"✅ Specification saved: ID={saved_spec_id}, "
+                f"items={len(items_data)}"
+            )
+
+            return saved_spec_id
+
         except Exception as e:
-            error_msg = f"Ошибка: {str(e)}"
-            print(f"DEBUG: {error_msg}")
+            error_msg = f"Ошибка сохранения спецификации: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
             self.errorOccurred.emit(error_msg)
             return -1
 
-    @Slot(int)
-    def loadSpecification(self, spec_id):
-        """Загружает спецификацию для редактирования"""
-        try:
-            spec_data = self.db.get_specification(spec_id)
-            if spec_data:
-                # Load items for this specification
-                self.specification_items_model.loadForSpecification(spec_id)
-                print(f"DEBUG: Loaded specification {spec_id}")
-            else:
-                self.errorOccurred.emit(f"Спецификация {spec_id} не найдена")
-        except Exception as e:
-            self.errorOccurred.emit(f"Ошибка загрузки: {str(e)}")
-
     @Slot(int, result=bool)
-    def deleteSpecification(self, spec_id):
-        """Удаляет спецификацию"""
+    def deleteSpecification(self, spec_id: int) -> bool:
+        """
+        Удаляет спецификацию.
+
+        Args:
+            spec_id: ID спецификации.
+
+        Returns:
+            bool: True если удаление успешно.
+        """
         try:
-            success = self.db.delete_specification(spec_id)
-            if not success:
-                self.errorOccurred.emit("Не удалось удалить спецификацию")
-            return success
+            logger.info(f"Deleting specification {spec_id}")
+
+            self.repository.delete(spec_id)
+
+            logger.success(f"✅ Specification {spec_id} deleted")
+            return True
+
         except Exception as e:
-            self.errorOccurred.emit(f"Ошибка удаления: {str(e)}")
+            error_msg = f"Ошибка удаления спецификации: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
             return False
+
+    # ==================== Loading ====================
 
     @Slot(result="QVariantList")
     def loadAllSpecifications(self):
-        """Загружает все спецификации для отображения в списке"""
+        """
+        Загружает все спецификации для отображения в списке.
+
+        Returns:
+            QVariantList: Список словарей с данными спецификаций.
+        """
         try:
-            specs = self.db.load_specifications()
+            logger.info("Loading all specifications")
+
+            specs = self.repository.get_all()
+
             result = []
             for spec in specs:
                 result.append({
-                    'id': spec[0],
-                    'name': spec[1],
-                    'description': spec[2] or '',
-                    'created_date': spec[3],
-                    'modified_date': spec[4],
-                    'status': spec[5],
-                    'labor_cost': spec[6],
-                    'overhead_percentage': spec[7],
-                    'final_price': spec[8]
+                    'id': spec.id,
+                    'name': spec.name,
+                    'description': spec.description or '',
+                    'status': spec.status or 'черновик',
+                    'labor_cost': spec.labor_cost or 0.0,
+                    'overhead_percentage': spec.overhead_percentage or 0.0,
+                    'created_date': spec.created_date or '',
+                    'modified_date': spec.modified_date or '',
+                    'final_price': spec.final_price
                 })
-            print(f"DEBUG: Loaded {len(result)} specifications")
+
+            logger.success(f"✅ Loaded {len(result)} specifications")
+            self.specificationsLoaded.emit()
+
             return result
+
         except Exception as e:
-            print(f"DEBUG: Error loading all specifications: {str(e)}")
-            self.errorOccurred.emit(f"Ошибка загрузки: {str(e)}")
+            error_msg = f"Ошибка загрузки спецификаций: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
             return []
 
     @Slot(int, result="QVariantList")
-    def loadSpecificationItems(self, spec_id):
-        """Загружает позиции спецификации для отображения"""
+    def loadSpecificationItems(self, spec_id: int):
+        """
+        Загружает позиции спецификации для табличной модели.
+
+        Args:
+            spec_id: ID спецификации.
+
+        Returns:
+            QVariantList: Список словарей с данными позиций.
+        """
         try:
-            items = self.db.load_specification_items(spec_id)
+            logger.info(f"Loading items for specification {spec_id}")
+
+            items = self.repository.get_items(spec_id)
+
             result = []
+            for row in items:
+                # row: (id, spec_id, article, quantity, notes, name, unit, price, image_path, category)
+                result.append({
+                    'article': row[2] if len(row) > 2 else '',
+                    'name': row[5] if len(row) > 5 else '',
+                    'quantity': float(row[3]) if len(row) > 3 else 1.0,
+                    'unit': row[6] if len(row) > 6 else 'шт.',
+                    'price': float(row[7]) if len(row) > 7 and row[7] is not None else 0.0,
+                    'image_path': row[8] if len(row) > 8 else '',
+                    'category': row[9] if len(row) > 9 else '',
+                    'status': row[10] if len(row) > 10 else ''
+                })
 
-            # ✅ ОТЛАДКА: Проверяем структуру данных
-            if items and len(items) > 0:
-                print(f"DEBUG: First item has {len(items[0])} fields")
-                print(f"DEBUG: First item: {items[0]}")
+            logger.success(
+                f"✅ Loaded {len(result)} items for specification {spec_id}"
+            )
 
-            for item in items:
-                # ✅ Безопасный доступ к полям с проверкой длины
-                item_dict = {
-                    'article': item[2] if len(item) > 2 else '',
-                    'name': item[5] if len(item) > 5 else '',
-                    'quantity': float(item[3]) if len(item) > 3 else 1.0,
-                    'unit': item[6] if len(item) > 6 else 'шт.',
-                    'price': float(item[7]) if len(item) > 7 else 0.0,
-                    'total': (float(item[3]) * float(item[7])) if len(item) > 7 else 0.0,
-                    'image_path': item[8] if len(item) > 8 else '',
-                    'category': item[9] if len(item) > 9 else '',
-                    'status': item[10] if len(item) > 10 else ''
-                }
-                result.append(item_dict)
-
-            print(f"DEBUG: Loaded {len(result)} items for spec {spec_id}")
             return result
 
         except Exception as e:
-            print(f"DEBUG: Error loading spec items: {str(e)}")
-            import traceback
-            traceback.print_exc()  # ✅ Полный traceback для отладки
+            error_msg = f"Ошибка загрузки позиций: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
             return []
 
+    # ==================== Export ====================
+
     @Slot(int)
-    def exportToExcel(self, spec_id):
-        """Экспорт спецификации в Excel"""
+    def exportToExcel(self, spec_id: int):
+        """
+        Экспортирует спецификацию в Excel.
+
+        Args:
+            spec_id: ID спецификации.
+        """
         try:
-            spec_data = self.db.get_specification(spec_id)
-            if not spec_data:
+            logger.info(f"Exporting specification {spec_id} to Excel")
+
+            # Получаем данные спецификации (возвращается кортеж)
+            raw_spec = self.repository.get_by_id(spec_id)
+            if not raw_spec:
                 self.errorOccurred.emit("Спецификация не найдена")
+                logger.warning(f"⚠️ Specification {spec_id} not found")
                 return
 
-            items = self.db.load_specification_items(spec_id)
+            # Распаковываем кортеж (согласно SELECT в get_by_id: id, name, description, created_date, modified_date, status, labor_cost, overhead_percentage, final_price)
+            spec_id_db, spec_name, spec_description, spec_created_date, spec_modified_date, spec_status, spec_labor_cost, spec_overhead_percentage, spec_final_price = raw_spec
+
+            # Получаем позиции
+            items = self.repository.get_items(spec_id)
             if not items:
                 self.errorOccurred.emit("В спецификации нет позиций")
+                logger.warning(f"⚠️ No items in specification {spec_id}")
                 return
 
+            # Проверяем наличие openpyxl
             try:
                 import openpyxl
-                from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
+                from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
             except ImportError:
-                self.errorOccurred.emit("Библиотека openpyxl не установлена. Установите: pip install openpyxl")
+                error_msg = "Библиотека openpyxl не установлена. Установите: pip install openpyxl"
+                self.errorOccurred.emit(error_msg)
+                logger.error(f"❌ {error_msg}")
                 return
 
+            # Создаем книгу
             wb = openpyxl.Workbook()
             ws = wb.active
             ws.title = "Спецификация"
 
+            # Стили
             header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
             header_font = Font(bold=True, color="FFFFFF", size=12)
             border = Border(
@@ -419,12 +307,13 @@ class SpecificationsModel(QObject):
                 bottom=Side(style='thin')
             )
 
-            ws['A1'] = f"СПЕЦИФИКАЦИЯ: {spec_data[1]}"
+            # Заголовок
+            ws['A1'] = f"СПЕЦИФИКАЦИЯ: {spec_name}"  # <-- Используем переменную
             ws['A1'].font = Font(bold=True, size=16)
-            ws.merge_cells('A1:G1')
+            ws.merge_cells('A1:G1')  # <-- Обновлено: 7 столбцов теперь
 
-            # Описание построчно
-            description = (spec_data[2] or "").strip()
+            # Описание
+            description = (spec_description or "").strip()  # <-- Используем переменную
             description_lines = description.split("\n") if description else [""]
 
             ws['A3'] = "Описание:"
@@ -435,24 +324,17 @@ class SpecificationsModel(QObject):
                 ws.cell(row=cur_row, column=1, value=line)
                 cur_row += 1
 
-            # Другие поля
-            ws.cell(row=cur_row, column=1, value=f"Статус: {spec_data[5]}")
+            # Статус и дата
+            ws.cell(row=cur_row, column=1, value=f"Статус: {spec_status}")  # <-- Используем переменную
             cur_row += 1
+            ws.cell(row=cur_row, column=1,
+                    value=f"Дата создания: {spec_created_date or ''}")  # <-- Используем переменную
+            cur_row += 2
 
-            ws.cell(row=cur_row, column=1, value=f"Дата создания: {spec_data[3]}")
-            cur_row += 2  # отступ
-
-            # Заголовки таблицы
+            # Заголовки таблицы (убран Артикул, добавлено Примечание)
             header_row = cur_row
-            headers = [
-                '№',
-                'Артикул',
-                'Название',
-                'Кол-во',
-                'Ед.',
-                'Цена\nбез НДС',
-                'Сумма\nбез НДС'
-            ]
+            headers = ['№', 'Название', 'Кол-во', 'Ед.', 'Цена\nбез НДС', 'Сумма\nбез НДС',
+                       'Примечание']  # <-- Новый заголовок
 
             for col, header in enumerate(headers, 1):
                 cell = ws.cell(row=header_row, column=col, value=header)
@@ -467,107 +349,104 @@ class SpecificationsModel(QObject):
             for idx, item in enumerate(items, 1):
                 row = header_row + idx
 
-                # Безопасно обработаем числа
-                try:
-                    quantity = float(item[3] or 0)
-                except Exception:
-                    quantity = 0.0
-                try:
-                    price = float(item[7] or 0)
-                except Exception:
-                    price = 0.0
-
+                quantity = float(item[3] or 0)  # <-- Индекс quantity
+                price = float(item[7] or 0)  # <-- Индекс price
                 line_total = quantity * price
                 materials_total += line_total
 
-                ws.cell(row=row, column=1, value=idx).border = border
-                ws.cell(row=row, column=2, value=item[2]).border = border  # article
-                ws.cell(row=row, column=3, value=item[5]).border = border  # name
-                ws.cell(row=row, column=4, value=quantity).border = border
-                ws.cell(row=row, column=5, value=item[6]).border = border  # unit
-                price_cell = ws.cell(row=row, column=6, value=price)
+                ws.cell(row=row, column=1, value=idx).border = border  # <-- № -> A
+                ws.cell(row=row, column=2, value=item[5]).border = border  # <-- ИЗМЕНЕНО: name -> B (был column 3)
+                ws.cell(row=row, column=3, value=quantity).border = border  # <-- ИЗМЕНЕНО: quantity -> C (был column 4)
+                ws.cell(row=row, column=4, value=item[6]).border = border  # <-- ИЗМЕНЕНО: unit -> D (был column 5)
+
+                price_cell = ws.cell(row=row, column=5, value=price)  # <-- ИЗМЕНЕНО: price -> E (был column 6)
                 price_cell.number_format = '0.00'
                 price_cell.border = border
-                total_cell = ws.cell(row=row, column=7, value=line_total)
+
+                total_cell = ws.cell(row=row, column=6, value=line_total)  # <-- ИЗМЕНЕНО: total -> F (был column 7)
                 total_cell.number_format = '0.00'
                 total_cell.border = border
 
-            # Итоги
+                # Добавляем примечание в последний столбец (G)
+                note_value = item[10] if len(item) > 10 else ''  # <-- Используем item[4] как примечание (si.notes)
+                note_cell = ws.cell(row=row, column=7,
+                                    value=note_value)  # <-- ИЗМЕНЕНО: примечание -> G (новый столбец 7)
+                note_cell.border = border
+
+            # Итоги (метки в столбце D, значения в столбце F)
             total_row = header_row + len(items) + 2
 
-            # Приведём работу и процент накладных к числам (безопасно)
-            try:
-                work_cost = float(spec_data[6] or 0)
-            except Exception:
-                work_cost = 0.0
-            try:
-                overhead_pct = float(spec_data[7] or 0)
-            except Exception:
-                overhead_pct = 0.0
-
+            work_cost = float(spec_labor_cost or 0)  # <-- Используем переменную
+            overhead_pct = float(spec_overhead_percentage or 0)  # <-- Используем переменную
             overhead = materials_total * (overhead_pct / 100.0)
             grand_total = materials_total + work_cost + overhead
+            total_with_nds = grand_total * 1.20
 
-            ws.cell(row=total_row, column=5, value="Материалы:").font = Font(bold=True)
-            mat_val = ws.cell(row=total_row, column=7, value=round(materials_total, 2))
+            # Метки в столбце D (column=4), значения в столбце F (column=6)
+            ws.cell(row=total_row, column=4, value="Материалы:").font = Font(bold=True)  # <-- Столбец D
+            mat_val = ws.cell(row=total_row, column=6, value=round(materials_total, 2))  # <-- Столбец F
             mat_val.number_format = '0.00'
             mat_val.font = Font(bold=True)
 
-            ws.cell(row=total_row + 1, column=5, value="Работа:").font = Font(bold=True)
-            work_val = ws.cell(row=total_row + 1, column=7, value=round(work_cost, 2))
+            ws.cell(row=total_row + 1, column=4, value="Работа:").font = Font(bold=True)  # <-- Столбец D
+            work_val = ws.cell(row=total_row + 1, column=6, value=round(work_cost, 2))  # <-- Столбец F
             work_val.number_format = '0.00'
             work_val.font = Font(bold=True)
 
-            ws.cell(row=total_row + 2, column=5, value=f"Накладные ({overhead_pct}%):").font = Font(bold=True)
-            overhead_val = ws.cell(row=total_row + 2, column=7, value=round(overhead, 2))
+            ws.cell(row=total_row + 2, column=4, value=f"Накладные ({overhead_pct}%):").font = Font(
+                bold=True)  # <-- Столбец D
+            overhead_val = ws.cell(row=total_row + 2, column=6, value=round(overhead, 2))  # <-- Столбец F
             overhead_val.number_format = '0.00'
             overhead_val.font = Font(bold=True)
 
-            ws.cell(row=total_row + 3, column=5, value="ИТОГО:").font = Font(bold=True, size=12)
-            total_val = ws.cell(row=total_row + 3, column=7, value=round(grand_total, 2))
+            ws.cell(row=total_row + 3, column=4, value="ИТОГО:").font = Font(bold=True, size=12)  # <-- Столбец D
+            total_val = ws.cell(row=total_row + 3, column=6, value=round(grand_total, 2))  # <-- Столбец F
             total_val.number_format = '0.00'
             total_val.font = Font(bold=True, size=12)
 
-            # =========== ИТОГО с НДС 20% ===========
-            nds_rate = 0.20
-            total_with_nds = grand_total * (1 + nds_rate)
-
-            ws.cell(row=total_row + 4, column=5, value="ИТОГО с НДС (20%):").font = Font(bold=True, size=12)
-
-            total_nds_cell = ws.cell(row=total_row + 4, column=7, value=round(total_with_nds, 2))
+            # НДС
+            ws.cell(row=total_row + 4, column=4, value="ИТОГО с НДС (20%):").font = Font(bold=True,
+                                                                                         size=12)  # <-- Столбец D
+            total_nds_cell = ws.cell(row=total_row + 4, column=6, value=round(total_with_nds, 2))  # <-- Столбец F
             total_nds_cell.number_format = '0.00'
             total_nds_cell.font = Font(bold=True, size=12)
 
-            # Column widths
-            ws.column_dimensions['A'].width = 5
-            ws.column_dimensions['B'].width = 15
-            ws.column_dimensions['C'].width = 40
-            ws.column_dimensions['D'].width = 10
-            ws.column_dimensions['E'].width = 8
-            ws.column_dimensions['F'].width = 12
-            ws.column_dimensions['G'].width = 12
+            # Ширина столбцов (обновлено под новое количество столбцов)
+            ws.column_dimensions['A'].width = 5  # №
+            ws.column_dimensions['B'].width = 40  # Название
+            ws.column_dimensions['C'].width = 10  # Кол-во
+            ws.column_dimensions['D'].width = 15  # Ед. и метки итогов (D)
+            ws.column_dimensions['E'].width = 12  # Цена
+            ws.column_dimensions['F'].width = 12  # Сумма и значения итогов (F)
+            ws.column_dimensions['G'].width = 20  # Примечание # <-- Добавлено
 
-            # Save file
-            filename = f"specification_{spec_id}_{str(spec_data[1]).replace(' ', '_')}.xlsx"
+            # Сохранение
+            filename = f"specification_{spec_id}_{spec_name.replace(' ', '_')}.xlsx"  # <-- Используем переменную
             wb.save(filename)
 
-            print(f"DEBUG: Excel file saved: {filename}")
+            logger.success(f"✅ Excel file saved: {filename}")
             self.errorOccurred.emit(f"Файл сохранён: {filename}")
 
         except Exception as e:
-            self.errorOccurred.emit(f"Ошибка экспорта в Excel: {str(e)}")
+            error_msg = f"Ошибка экспорта в Excel: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
 
     @Slot(int, bool)
     def exportToPDF(self, spec_id, landscape=False):
         """Экспорт спецификации в PDF с выбором ориентации"""
         try:
-            # Get specification data
-            spec_data = self.db.get_specification(spec_id)
-            if not spec_data:
+            # Get specification data (используем self.repository)
+            raw_spec = self.repository.get_by_id(spec_id)  # <-- Получаем кортеж
+            if not raw_spec:
                 self.errorOccurred.emit("Спецификация не найдена")
                 return
 
-            items = self.db.load_specification_items(spec_id)
+            # Распаковываем кортеж (согласно SELECT в get_by_id: id, name, description, created_date, modified_date, status, labor_cost, overhead_percentage, final_price)
+            spec_id_db, spec_name, spec_description, spec_created_date, spec_modified_date, spec_status, spec_labor_cost, spec_overhead_percentage, spec_final_price = raw_spec
+
+            # Get specification items (используем self.repository)
+            items = self.repository.get_items(spec_id)  # <-- Получаем список кортежей
             if not items:
                 self.errorOccurred.emit("В спецификации нет позиций")
                 return
@@ -738,7 +617,7 @@ class SpecificationsModel(QObject):
 
                 # Название спецификации с переносом на следующую строку
                 canvas.drawString(30, pagesize[1] - 30, "СПЕЦИФИКАЦИЯ:")
-                canvas.drawString(30, pagesize[1] - 50, spec_data[1])
+                canvas.drawString(30, pagesize[1] - 50, spec_name)  # <-- Используем переменную
 
                 # Линия под шапкой
                 canvas.setStrokeColor(colors.HexColor('#366092'))
@@ -748,7 +627,7 @@ class SpecificationsModel(QObject):
                 canvas.restoreState()
 
             # Create PDF with custom header/footer
-            filename = f"specification_{spec_id}_{spec_data[1].replace(' ', '_')}.pdf"
+            filename = f"specification_{spec_id}_{spec_name.replace(' ', '_')}.pdf"  # <-- Используем переменную
             doc = SimpleDocTemplate(
                 filename,
                 pagesize=pagesize,
@@ -769,9 +648,11 @@ class SpecificationsModel(QObject):
                 fontSize=10,
                 spaceAfter=6
             )
-            story.append(Paragraph(f"<b>Описание:</b> {spec_data[2] or 'Не указано'}", info_style))
-            story.append(Paragraph(f"<b>Статус:</b> {spec_data[5]}", info_style))
-            story.append(Paragraph(f"<b>Дата создания:</b> {spec_data[3]}", info_style))
+            story.append(Paragraph(f"<b>Описание:</b> {spec_description or 'Не указано'}",
+                                   info_style))  # <-- Используем переменную
+            story.append(Paragraph(f"<b>Статус:</b> {spec_status}", info_style))  # <-- Используем переменную
+            story.append(
+                Paragraph(f"<b>Дата создания:</b> {spec_created_date}", info_style))  # <-- Используем переменную
             story.append(Spacer(1, 15))
 
             # АДАПТИВНЫЕ РАЗМЕРЫ ТАБЛИЦЫ
@@ -840,7 +721,6 @@ class SpecificationsModel(QObject):
                     wordWrap='CJK',
                 )
 
-
                 center_style = ParagraphStyle(
                     'TableCenter',
                     parent=styles['Normal'],
@@ -859,11 +739,11 @@ class SpecificationsModel(QObject):
                     wordWrap='CJK',
                 )
 
-                # ✅ ПРАВИЛЬНЫЕ ИНДЕКСЫ для новой структуры
-                manufacturer = item[11] if len(item) > 11 else ''  # Производитель
-                note = item[10] if len(item) > 10 else ''  # Описание
+                # ✅ ПРАВИЛЬНЫЕ ИНДЕКСЫ для новой структуры (из get_items в specifications_repository.py)
+                manufacturer = item[11] if len(item) > 11 else ''  # Производитель (i.manufacturer)
+                note = item[10] if len(item) > 10 else ''  # Описание (i.description)
 
-                # Можно также использовать si.notes если хотите примечание из спецификации:
+                # Или использовать si.notes если хотите примечание из спецификации:
                 # note = item[4]  # si.notes из specification_items
 
                 table_data.append([
@@ -904,13 +784,13 @@ class SpecificationsModel(QObject):
             story.append(Spacer(1, 20))
 
             # Totals
-            overhead = materials_total * (spec_data[7] / 100)
-            total = materials_total + spec_data[6] + overhead
+            overhead = materials_total * (spec_overhead_percentage / 100)  # <-- Используем переменную
+            total = materials_total + spec_labor_cost + overhead  # <-- Используем переменную
 
             totals_data = [
                 ['Материалы:', f"{materials_total:.2f} руб."],
-                ['Работа:', f"{spec_data[6]:.2f} руб."],
-                [f'Накладные ({spec_data[7]}%):', f"{overhead:.2f} руб."],
+                ['Работа:', f"{spec_labor_cost:.2f} руб."],  # <-- Используем переменную
+                [f'Накладные ({spec_overhead_percentage}%):', f"{overhead:.2f} руб."],  # <-- Используем переменную
                 ['ИТОГО:', f"{total:.2f} руб."]  # ✅ Исправлено: закрывающая кавычка
             ]
 

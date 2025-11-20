@@ -1,15 +1,22 @@
-# item_suppliers_model.py
+"""Модель для отображения поставщиков конкретного товара с Repository Pattern"""
+
 from PySide6.QtCore import QAbstractListModel, Qt, Slot, Signal
-from database import DatabaseManager
+from loguru import logger
+from typing import List
+
+from repositories.suppliers_repository import SuppliersRepository
+from models.dto import Supplier
+
 
 class ItemSuppliersModel(QAbstractListModel):
-    """Модель данных для управления списком поставщиков, связанных с конкретным товаром.
+    """
+    Модель для управления списком поставщиков товара.
 
-    Наследуется от QAbstractListModel. Предоставляет данные о поставщиках для QML-интерфейса,
-    включая их идентификатор, имя, компанию, email, телефон и веб-сайт. Поддерживает загрузку
-    данных из базы данных через DatabaseManager и обновление данных при изменении артикула товара.
+    Предоставляет данные о поставщиках для отображения в QML.
+    Использует Repository Pattern для работы с данными.
     """
 
+    # Роли для QML
     IdRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2
     CompanyRole = Qt.UserRole + 3
@@ -17,53 +24,33 @@ class ItemSuppliersModel(QAbstractListModel):
     PhoneRole = Qt.UserRole + 5
     WebsiteRole = Qt.UserRole + 6
 
-    def __init__(self, article=""):
-        """Инициализация модели поставщиков.
+    # Сигналы
+    dataLoaded = Signal(int)  # Количество загруженных поставщиков
+    errorOccurred = Signal(str)
+
+    def __init__(self, suppliers_repository: SuppliersRepository, article: str = "", parent=None):
+        """
+        Инициализация модели.
 
         Args:
-            article (str, optional): Артикул товара, для которого загружаются поставщики.
-                                    По умолчанию пустая строка.
+            suppliers_repository: Репозиторий для работы с поставщиками.
+            article: Артикул товара (опционально).
+            parent: Родительский объект Qt.
         """
-        super().__init__()
-        self._db = DatabaseManager()  # Менеджер базы данных
-        self._article = article       # Артикул текущего товара
-        self._suppliers = []          # Список данных поставщиков: [(id, name, company, email, phone, website), ...]
+        super().__init__(parent)
+
+        self.repository = suppliers_repository
+        self._article = article
+        self._suppliers: List[Supplier] = []  # Список DTO объектов
+
+        logger.debug(f"ItemSuppliersModel initialized for article: '{article}'")
+
+        # Загружаем данные если артикул указан
         if article:
             self.load()
 
-    def load(self):
-        """Загрузка данных поставщиков для текущего артикула.
-
-        Сбрасывает модель, получает идентификаторы поставщиков для текущего артикула
-        из базы данных и загружает полные данные для соответствующих поставщиков.
-        """
-        self.beginResetModel()
-
-        # Получение идентификаторов поставщиков для текущего артикула
-        supplier_ids = self._db.get_suppliers_for_item(self._article) or []
-
-        # Обработка различных форматов возвращаемых данных
-        if supplier_ids and isinstance(supplier_ids[0], (tuple, list)):
-            supplier_ids = [int(sid[0]) for sid in supplier_ids]
-        else:
-            supplier_ids = [int(sid) for sid in supplier_ids]
-
-        # Загрузка полных данных для каждого идентификатора поставщика
-        self._suppliers = []
-        if supplier_ids:
-            all_suppliers = self._db.load_suppliers()
-            for supplier in all_suppliers:
-                if int(supplier[0]) in supplier_ids:
-                    self._suppliers.append(supplier)
-
-        self.endResetModel()
-
     def roleNames(self):
-        """Возвращает сопоставление ролей и их строковых имен для QML.
-
-        Returns:
-            dict: Словарь вида {роль: b"имя"}, используемый QML для доступа к данным модели.
-        """
+        """Возвращает роли для QML."""
         return {
             self.IdRole: b"id",
             self.NameRole: b"name",
@@ -74,76 +61,163 @@ class ItemSuppliersModel(QAbstractListModel):
         }
 
     def rowCount(self, parent=None):
-        """Возвращает количество строк в модели (число поставщиков).
-
-        Args:
-            parent: Родительский индекс (не используется, по умолчанию None).
-
-        Returns:
-            int: Количество поставщиков в списке.
-        """
+        """Возвращает количество поставщиков."""
         return len(self._suppliers)
 
     def data(self, index, role=Qt.DisplayRole):
-        """Получение данных для указанного индекса и роли.
-
-        Args:
-            index (QModelIndex): Индекс строки в модели.
-            role (int): Роль данных (например, IdRole, NameRole).
-
-        Returns:
-            Значение, соответствующее роли, или None, если индекс или роль недействительны.
-        """
+        """Получение данных для указанного индекса и роли."""
         if not index.isValid() or index.row() >= len(self._suppliers):
             return None
 
         supplier = self._suppliers[index.row()]
 
-        role_map = {
-            self.IdRole: 0,
-            self.NameRole: 1,
-            self.CompanyRole: 2,
-            self.EmailRole: 3,
-            self.PhoneRole: 4,
-            self.WebsiteRole: 5
-        }
+        if role == self.IdRole:
+            return supplier.id
+        elif role == self.NameRole:
+            return supplier.name
+        elif role == self.CompanyRole:
+            return supplier.company
+        elif role == self.EmailRole:
+            return supplier.email
+        elif role == self.PhoneRole:
+            return supplier.phone
+        elif role == self.WebsiteRole:
+            return supplier.website
 
-        col_index = role_map.get(role, -1)
-        if col_index >= 0 and col_index < len(supplier):
-            return supplier[col_index]
         return None
 
+    # ==================== Data Loading ====================
+
+    def load(self):
+        """Загрузка поставщиков для текущего артикула."""
+        try:
+            if not self._article:
+                logger.warning("⚠️ Cannot load suppliers: article is empty")
+                self.beginResetModel()
+                self._suppliers = []
+                self.endResetModel()
+                return
+
+            logger.info(f"Loading suppliers for article: {self._article}")
+
+            self.beginResetModel()
+
+            # Загружаем поставщиков через репозиторий
+            self._suppliers = self.repository.get_suppliers_for_item(self._article)
+
+            self.endResetModel()
+
+            logger.success(
+                f"✅ Loaded {len(self._suppliers)} suppliers for {self._article}"
+            )
+
+            # Логируем список для проверки
+            if self._suppliers:
+                for i, supplier in enumerate(self._suppliers, 1):
+                    logger.debug(
+                        f"  Supplier {i}: ID={supplier.id}, "
+                        f"Company={supplier.company}"
+                    )
+
+            self.dataLoaded.emit(len(self._suppliers))
+
+        except Exception as e:
+            error_msg = f"Ошибка загрузки поставщиков: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+
+            self.beginResetModel()
+            self._suppliers = []
+            self.endResetModel()
+
+            self.errorOccurred.emit(error_msg)
+
     @Slot(str)
-    def setArticle(self, article):
-        """Устанавливает новый артикул и перезагружает данные поставщиков.
+    def setArticle(self, article: str):
+        """
+        Устанавливает новый артикул и перезагружает данные.
 
         Args:
-            article (str): Артикул товара, для которого нужно загрузить поставщиков.
-
-        Вызывает метод load() для обновления списка поставщиков.
+            article: Артикул товара.
         """
+        logger.info(f"Setting article: '{self._article}' → '{article}'")
+
         self._article = article
         self.load()
 
     @Slot(int, result="QVariant")
-    def get(self, index):
-        """Получение данных поставщика по индексу в виде словаря.
+    def get(self, index: int):
+        """
+        Получение данных поставщика по индексу.
 
         Args:
-            index (int): Индекс строки в модели.
+            index: Индекс в списке.
 
         Returns:
-            dict: Словарь с данными поставщика (id, name, company, email, phone, website)
-                  или словарь с пустыми значениями, если индекс недействителен.
+            dict: Словарь с данными поставщика.
         """
         if 0 <= index < len(self._suppliers):
             supplier = self._suppliers[index]
-            return {
-                "id": supplier[0],
-                "name": supplier[1],
-                "company": supplier[2],
-                "email": supplier[3],
-                "phone": supplier[4],
-                "website": supplier[5]
+
+            result = {
+                "id": supplier.id,
+                "name": supplier.name or "",
+                "company": supplier.company or "",
+                "email": supplier.email or "",
+                "phone": supplier.phone or "",
+                "website": supplier.website or ""
             }
-        return {"id": -1, "name": "", "company": "", "email": "", "phone": "", "website": ""}
+
+            logger.trace(f"get({index}): {supplier.company}")
+            return result
+
+        logger.warning(f"⚠️ Invalid index: {index}")
+        return {
+            "id": -1,
+            "name": "",
+            "company": "",
+            "email": "",
+            "phone": "",
+            "website": ""
+        }
+
+    @Slot(result=str)
+    def getArticle(self) -> str:
+        """
+        Возвращает текущий артикул.
+
+        Returns:
+            str: Артикул товара.
+        """
+        return self._article
+
+    @Slot(result=int)
+    def count(self) -> int:
+        """
+        Возвращает количество поставщиков.
+
+        Returns:
+            int: Количество поставщиков.
+        """
+        return len(self._suppliers)
+
+    @Slot(result=bool)
+    def hasSuppliers(self) -> bool:
+        """
+        Проверяет наличие поставщиков.
+
+        Returns:
+            bool: True если есть поставщики.
+        """
+        return len(self._suppliers) > 0
+
+    @Slot()
+    def clear(self):
+        """Очищает модель."""
+        logger.info("Clearing suppliers model")
+
+        self.beginResetModel()
+        self._suppliers = []
+        self._article = ""
+        self.endResetModel()
+
+        logger.debug("Suppliers model cleared")

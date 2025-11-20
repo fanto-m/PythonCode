@@ -193,15 +193,15 @@ ColumnLayout {
                     /*Text {
                         text: {
                             if (!itemDocumentsModel) return ""
-                            var count = itemDocumentsModel.count
+                            var count = itemDocumentsModel.count()
                             if (count === 0) return ""
                             if (count === 1) return "📄 Документ: 1"
                             return "📄 Документов: " + count
                         }
                         font.pointSize: 9
                         color: "#007bff"
-                        font.bold: itemDocumentsModel && itemDocumentsModel.count > 0
-                        visible: itemDocumentsModel && itemDocumentsModel.count > 0
+                        font.bold: itemDocumentsModel && itemDocumentsModel.count() > 0
+                        visible: itemDocumentsModel && itemDocumentsModel.count() > 0
                     }*/
 
                     Text {
@@ -356,7 +356,7 @@ ColumnLayout {
 
                                 // Копируем документы в локальный массив
                                 var docs = []
-                                for (var i = 0; i < itemDocumentsModel.count; i++) {
+                                for (var i = 0; i < itemDocumentsModel.count(); i++) {
                                     var docName = itemDocumentsModel.getDocumentName(i)
                                     var docPath = itemDocumentsModel.getDocumentPath(i)
 
@@ -507,7 +507,7 @@ ColumnLayout {
                                 itemDocumentsModel.loadDocuments(itemArticle)
 
                                 var docs = []
-                                for (var i = 0; i < itemDocumentsModel.count; i++) {
+                                for (var i = 0; i < itemDocumentsModel.count(); i++) {
                                     var docName = itemDocumentsModel.getDocumentName(i)
                                     var docPath = itemDocumentsModel.getDocumentPath(i)
 

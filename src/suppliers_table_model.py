@@ -1,16 +1,20 @@
-# suppliers_table_model.py
+"""Табличная модель для управления поставщиками с Repository Pattern + DEBUG"""
+
 from PySide6.QtCore import QAbstractTableModel, Qt, Slot, Signal
-from database import DatabaseManager
+from loguru import logger
+from typing import List
+
+from repositories.suppliers_repository import SuppliersRepository
+from models.dto import Supplier
 
 
 class SuppliersTableModel(QAbstractTableModel):
-    """Табличная модель данных для управления списком поставщиков в Qt/QML-приложении.
+    """
+    Табличная модель для управления поставщиками.
 
-    Наследуется от QAbstractTableModel. Предоставляет данные о поставщиках для табличного представления
-    в QML, включая идентификатор, имя, компанию, email, телефон и веб-сайт. Поддерживает выбор
-    поставщиков с помощью флажков, загрузку данных, добавление, обновление, удаление и привязку
-    поставщиков к товарам через DatabaseManager. Испускает сигнал errorOccurred при ошибках.
-    Поддерживает фильтрацию по имени, компании и email.
+    Предоставляет табличное представление поставщиков для QML,
+    поддерживает фильтрацию, выбор через чекбоксы и привязку к товарам.
+    Использует Repository Pattern для работы с данными.
     """
 
     # Роли для QML
@@ -21,119 +25,201 @@ class SuppliersTableModel(QAbstractTableModel):
     PhoneRole = Qt.UserRole + 5
     WebsiteRole = Qt.UserRole + 6
 
-    # Сигнал для ошибок
+    # Сигналы
     errorOccurred = Signal(str)
+    dataLoaded = Signal(int)  # Количество загруженных записей
 
-    def __init__(self, parent=None):
-        """Инициализация табличной модели поставщиков.
+    def __init__(self, suppliers_repository: SuppliersRepository, parent=None):
+        """
+        Инициализация модели.
 
         Args:
-            parent (QObject, optional): Родительский объект Qt. По умолчанию None.
+            suppliers_repository: Репозиторий для работы с поставщиками.
+            parent: Родительский объект Qt.
         """
         super().__init__(parent)
-        self._db = DatabaseManager()  # Менеджер базы данных
-        self._suppliers = []  # Список всех данных поставщиков: [(id, name, company, email, phone, website), ...]
-        self._filtered_suppliers = []  # Отфильтрованный список поставщиков
+
+        self.repository = suppliers_repository
+        self._suppliers: List[Supplier] = []  # Все поставщики (DTO)
+        self._filtered_suppliers: List[Supplier] = []  # Отфильтрованные поставщики
         self._checked = set()  # Множество ID выбранных поставщиков
         self._filter_string = ""  # Строка фильтра
+
+        logger.debug("🔧 SuppliersTableModel initialized")
         self.load()
 
-    # ------------------- Filtering -------------------
+    # ==================== Filtering ====================
 
     @Slot(str)
-    def setFilterString(self, filter_string):
-        """Устанавливает строку фильтра и применяет фильтрацию.
+    def setFilterString(self, filter_string: str):
+        """
+        Устанавливает строку фильтра.
 
         Args:
-            filter_string (str): Строка для поиска по имени, компании и email.
-
-        Фильтрует список поставщиков и обновляет модель.
+            filter_string: Строка для поиска по имени, компании, email.
         """
         self._filter_string = filter_string.lower().strip()
-        print(f"DEBUG: setFilterString called with: '{self._filter_string}'")
+        logger.debug(f"🔍 Filter string set to: '{self._filter_string}'")
         self._applyFilter()
 
     def _applyFilter(self):
-        """Применяет фильтр к списку поставщиков и обновляет представление."""
+        """Применяет фильтр к списку поставщиков."""
+        logger.debug("=" * 80)
+        logger.debug("🔍 APPLYING FILTER")
+        logger.debug(f"Filter string: '{self._filter_string}'")
+        logger.debug(f"Total suppliers BEFORE filter: {len(self._suppliers)}")
+        logger.debug(f"Checked IDs BEFORE filter: {self._checked}")
+
         self.beginResetModel()
 
         if not self._filter_string:
-            # Если фильтр пустой, показываем всех
+            # Без фильтра - показываем всех
             self._filtered_suppliers = self._suppliers.copy()
+            logger.debug("✅ No filter - showing all suppliers")
         else:
             # Фильтруем по имени, компании и email
             self._filtered_suppliers = [
                 supplier for supplier in self._suppliers
                 if self._matchesFilter(supplier)
             ]
+            logger.debug(f"✅ Filter applied - showing {len(self._filtered_suppliers)} suppliers")
 
-        print(f"DEBUG: Filter applied. Total: {len(self._suppliers)}, Filtered: {len(self._filtered_suppliers)}")
+        # Проверяем, какие ID в отфильтрованном списке
+        filtered_ids = {s.id for s in self._filtered_suppliers}
+        checked_in_filtered = self._checked & filtered_ids
+        logger.debug(f"Filtered supplier IDs: {filtered_ids}")
+        logger.debug(f"Checked IDs in filtered list: {checked_in_filtered}")
+        logger.debug(f"Checked IDs NOT in filtered list: {self._checked - filtered_ids}")
+
         self.endResetModel()
 
-    def _matchesFilter(self, supplier):
-        """Проверяет, соответствует ли поставщик фильтру.
+        logger.debug("=" * 80)
+
+    def _matchesFilter(self, supplier: Supplier) -> bool:
+        """
+        Проверяет соответствие поставщика фильтру.
 
         Args:
-            supplier (tuple): Кортеж с данными поставщика (id, name, company, email, phone, website).
+            supplier: DTO объект поставщика.
 
         Returns:
-            bool: True, если поставщик соответствует фильтру.
+            bool: True если соответствует фильтру.
         """
-        sid, name, company, email, phone, website = supplier
-
         # Поиск в имени, компании и email
         search_fields = [
-            str(name or "").lower(),
-            str(company or "").lower(),
-            str(email or "").lower(),
+            str(supplier.name or "").lower(),
+            str(supplier.company or "").lower(),
+            str(supplier.email or "").lower(),
         ]
 
         return any(self._filter_string in field for field in search_fields)
 
-    # ------------------- Loading -------------------
+    # ==================== Data Loading ====================
 
     @Slot()
     def load(self):
-        """Загружает всех поставщиков из базы данных для режима управления.
+        """Загружает всех поставщиков (режим управления)."""
+        try:
+            logger.info("=" * 80)
+            logger.info("📥 LOADING SUPPLIERS (Management Mode)")
 
-        Сбрасывает модель, загружает данные поставщиков через DatabaseManager,
-        преобразует идентификаторы в целые числа и очищает множество выбранных поставщиков.
-        """
-        self.beginResetModel()
-        raw_suppliers = self._db.load_suppliers()
-        self._suppliers = [(int(s[0]),) + s[1:] for s in raw_suppliers]
-        self._checked.clear()
-        self._applyFilter()  # Применяем текущий фильтр
-        self.endResetModel()
+            self.beginResetModel()
+
+            # Загружаем через репозиторий
+            self._suppliers = self.repository.get_all()
+            logger.info(f"📊 Loaded {len(self._suppliers)} suppliers from repository")
+
+            # Логируем первых 3 для проверки
+            for i, s in enumerate(self._suppliers[:3]):
+                logger.debug(f"  Supplier {i+1}: ID={s.id}, Company={s.company}")
+
+            self._checked.clear()
+            logger.debug("🔲 Cleared all checkboxes")
+
+            # Применяем текущий фильтр
+            self._applyFilter()
+
+            self.endResetModel()
+
+            logger.success(f"✅ Loaded {len(self._suppliers)} suppliers successfully")
+            logger.info("=" * 80)
+            self.dataLoaded.emit(len(self._suppliers))
+
+        except Exception as e:
+            error_msg = f"Ошибка загрузки поставщиков: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
 
     @Slot(str)
-    def loadForArticle(self, article):
-        """Загружает поставщиков с предварительно отмеченными для режима привязки к товару.
+    def loadForArticle(self, article: str):
+        """
+        Загружает поставщиков для привязки к товару.
 
         Args:
-            article (str): Артикул товара.
-
-        Сбрасывает модель, загружает всех поставщиков и отмечает тех, которые уже привязаны к указанному артикулу.
+            article: Артикул товара.
         """
-        self.beginResetModel()
-        raw_suppliers = self._db.load_suppliers()
-        self._suppliers = [(int(s[0]),) + s[1:] for s in raw_suppliers]
-        checked_ids = self._db.get_suppliers_for_item(article) or []
-        if checked_ids and isinstance(checked_ids[0], (tuple, list)):
-            self._checked = {int(sid[0]) for sid in checked_ids}
-        else:
-            self._checked = {int(sid) for sid in checked_ids}
-        self._applyFilter()  # Применяем текущий фильтр
-        self.endResetModel()
+        try:
+            logger.info("=" * 80)
+            logger.info(f"📥 LOADING SUPPLIERS FOR ARTICLE: {article}")
 
-    # ------------------- Qt Model API -------------------
+            self.beginResetModel()
+
+            # Загружаем всех поставщиков
+            logger.debug("Step 1: Loading ALL suppliers...")
+            self._suppliers = self.repository.get_all()
+            logger.info(f"📊 Loaded {len(self._suppliers)} total suppliers")
+
+            # Логируем первых 3 для проверки
+            for i, s in enumerate(self._suppliers[:3]):
+                logger.debug(f"  Supplier {i+1}: ID={s.id}, Company={s.company}")
+
+            # Загружаем привязанных поставщиков
+            logger.debug(f"Step 2: Loading BOUND suppliers for article {article}...")
+            bound_suppliers = self.repository.get_suppliers_for_item(article)
+            logger.info(f"📌 Found {len(bound_suppliers)} bound suppliers")
+
+            # Логируем привязанных
+            for i, s in enumerate(bound_suppliers):
+                logger.debug(f"  Bound supplier {i+1}: ID={s.id}, Company={s.company}")
+
+            # Извлекаем ID привязанных поставщиков
+            logger.debug("Step 3: Extracting bound supplier IDs...")
+            self._checked = {supplier.id for supplier in bound_suppliers}
+            logger.info(f"✅ Checked IDs set: {self._checked}")
+
+            # Проверяем, что все ID существуют в общем списке
+            all_ids = {s.id for s in self._suppliers}
+            logger.debug(f"All supplier IDs: {all_ids}")
+
+            invalid_checked = self._checked - all_ids
+            if invalid_checked:
+                logger.warning(f"⚠️ WARNING: Some checked IDs don't exist in suppliers list: {invalid_checked}")
+            else:
+                logger.debug("✅ All checked IDs are valid")
+
+            # Применяем текущий фильтр
+            logger.debug("Step 4: Applying current filter...")
+            self._applyFilter()
+
+            self.endResetModel()
+
+            logger.success(
+                f"✅ Loaded {len(self._suppliers)} suppliers, "
+                f"{len(self._checked)} already bound to {article}"
+            )
+            logger.info("=" * 80)
+            self.dataLoaded.emit(len(self._suppliers))
+
+        except Exception as e:
+            error_msg = f"Ошибка загрузки поставщиков: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            logger.info("=" * 80)
+            self.errorOccurred.emit(error_msg)
+
+    # ==================== Qt Model API ====================
 
     def roleNames(self):
-        """Возвращает сопоставление ролей и их строковых имен для QML.
-
-        Returns:
-            dict: Словарь вида {роль: b"имя"}, включая CheckStateRole для флажков.
-        """
+        """Возвращает роли для QML."""
         return {
             self.IdRole: b"id",
             self.NameRole: b"name",
@@ -145,230 +231,238 @@ class SuppliersTableModel(QAbstractTableModel):
         }
 
     def columnCount(self, parent=None):
-        """Возвращает количество столбцов в таблице.
-
-        Args:
-            parent (QModelIndex, optional): Родительский индекс (не используется). По умолчанию None.
-
-        Returns:
-            int: Количество столбцов (7: флажок, ID, ФИО, компания, email, телефон, сайт).
-        """
-        return 7
+        """Количество столбцов."""
+        return 7  # checkbox, ID, name, company, email, phone, website
 
     def rowCount(self, parent=None):
-        """Возвращает количество строк в модели (число отфильтрованных поставщиков).
-
-        Args:
-            parent (QModelIndex, optional): Родительский индекс (не используется). По умолчанию None.
-
-        Returns:
-            int: Количество отфильтрованных поставщиков в списке.
-        """
-        return len(self._filtered_suppliers)
+        """Количество строк (отфильтрованных поставщиков)."""
+        count = len(self._filtered_suppliers)
+        logger.trace(f"rowCount() called: {count}")
+        return count
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-        """Возвращает заголовки столбцов для табличного представления.
-
-        Args:
-            section (int): Индекс столбца.
-            orientation (Qt.Orientation): Ориентация (горизонтальная или вертикальная).
-            role (int): Роль данных. По умолчанию Qt.DisplayRole.
-
-        Returns:
-            str: Заголовок столбца или None, если роль или индекс недействительны.
-        """
+        """Заголовки столбцов."""
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             headers = ["", "ID", "ФИО", "Компания", "Email", "Телефон", "Сайт"]
             return headers[section] if 0 <= section < len(headers) else ""
         return None
 
     def data(self, index, role=Qt.DisplayRole):
-        """Получение данных для указанного индекса и роли.
-
-        Args:
-            index (QModelIndex): Индекс строки и столбца в модели.
-            role (int): Роль данных (например, IdRole, NameRole, CheckStateRole). По умолчанию Qt.DisplayRole.
-
-        Returns:
-            Значение, соответствующее роли, или None, если индекс недействителен.
-        """
+        """Получение данных."""
         if not index.isValid() or index.row() >= len(self._filtered_suppliers):
             return None
 
         supplier = self._filtered_suppliers[index.row()]
-        sid, name, company, email, phone, website = supplier
 
         if role == self.IdRole:
-            return sid
-        if role == self.NameRole:
-            return name
-        if role == self.CompanyRole:
-            return company
-        if role == self.EmailRole:
-            return email
-        if role == self.PhoneRole:
-            return phone
-        if role == self.WebsiteRole:
-            return website
-        if role == Qt.CheckStateRole:
-            is_checked = int(sid) in self._checked
-            return Qt.Checked.value if is_checked else Qt.Unchecked.value
+            return supplier.id
+        elif role == self.NameRole:
+            return supplier.name
+        elif role == self.CompanyRole:
+            return supplier.company
+        elif role == self.EmailRole:
+            return supplier.email
+        elif role == self.PhoneRole:
+            return supplier.phone
+        elif role == self.WebsiteRole:
+            return supplier.website
+        elif role == Qt.CheckStateRole:
+            is_checked = supplier.id in self._checked
+            state = Qt.Checked.value if is_checked else Qt.Unchecked.value
+
+            # Логируем только для первых 5 строк чтобы не захламлять лог
+            if index.row() < 5:
+                logger.trace(
+                    f"data() CheckState: row={index.row()}, "
+                    f"supplier_id={supplier.id}, checked={is_checked}, state={state}"
+                )
+
+            return state
+
         return None
 
     def setData(self, index, value, role=Qt.EditRole):
-        """Устанавливает данные для указанного индекса и роли.
-
-        Args:
-            index (QModelIndex): Индекс строки и столбца в модели.
-            value: Значение для установки (ожидается integer для CheckStateRole).
-            role (int): Роль данных. По умолчанию Qt.EditRole.
-
-        Returns:
-            bool: True, если данные успешно установлены, иначе False.
-
-        Поддерживает только изменение состояния флажка (CheckStateRole).
-        """
+        """Установка данных (для чекбоксов)."""
         if not index.isValid() or role != Qt.CheckStateRole:
             return False
 
-        supplier_id = int(self._filtered_suppliers[index.row()][0])
+        supplier = self._filtered_suppliers[index.row()]
         is_checked = (value == Qt.Checked.value)
 
-        if is_checked:
-            self._checked.add(supplier_id)
-        else:
-            self._checked.discard(supplier_id)
+        logger.debug("=" * 60)
+        logger.debug(f"📌 CHECKBOX CHANGED")
+        logger.debug(f"Row: {index.row()}")
+        logger.debug(f"Supplier ID: {supplier.id}")
+        logger.debug(f"Company: {supplier.company}")
+        logger.debug(f"New state: {'CHECKED' if is_checked else 'UNCHECKED'}")
+        logger.debug(f"Checked IDs BEFORE: {self._checked}")
 
-        print(
-            f"DEBUG setData(): row={index.row()}, supplier_id={supplier_id}, value={value}, is_checked={is_checked}, _checked={self._checked}")
+        if is_checked:
+            self._checked.add(supplier.id)
+        else:
+            self._checked.discard(supplier.id)
+
+        logger.debug(f"Checked IDs AFTER: {self._checked}")
+        logger.debug("=" * 60)
 
         self.dataChanged.emit(index, index, [Qt.CheckStateRole])
         return True
 
     def flags(self, index):
-        """Возвращает флаги для указанного индекса.
-
-        Args:
-            index (QModelIndex): Индекс строки и столбца в модели.
-
-        Returns:
-            Qt.ItemFlags: Флаги, определяющие поведение элемента (выбираемый, включаемый, с флажком для первого столбца).
-        """
+        """Флаги элементов."""
         if not index.isValid():
             return Qt.NoItemFlags
+
         if index.column() == 0:
             return Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
+
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
-    # ------------------- QML Slots -------------------
+    # ==================== QML Slots ====================
 
     @Slot(result="QVariantList")
-    def getSelectedSupplierIds(self):
-        """Возвращает список идентификаторов выбранных поставщиков.
+    def getSelectedSupplierIds(self) -> List[int]:
+        """
+        Возвращает список ID выбранных поставщиков.
 
         Returns:
-            list: Список ID поставщиков, отмеченных флажками.
+            list: Список ID выбранных поставщиков.
         """
-        return list(self._checked)
+        selected = list(self._checked)
+        logger.info(f"📋 getSelectedSupplierIds() called: {selected}")
+        return selected
 
     @Slot(str, "QVariantList")
-    def bindSuppliersToItem(self, article, supplier_ids):
-        """Привязывает список поставщиков к товару.
+    def bindSuppliersToItem(self, article: str, supplier_ids: List[int]):
+        """
+        Привязывает поставщиков к товару.
 
         Args:
-            article (str): Артикул товара.
-            supplier_ids (list): Список идентификаторов поставщиков.
-
-        Вызывает метод DatabaseManager для привязки и обновляет состояние флажков.
-        При ошибке испускает сигнал errorOccurred.
+            article: Артикул товара.
+            supplier_ids: Список ID поставщиков.
         """
         try:
+            # Конвертируем в int на всякий случай
             supplier_ids = [int(sid) for sid in supplier_ids]
-            self._db.set_suppliers_for_item(article, supplier_ids)
+
+            logger.info("=" * 80)
+            logger.info(f"💾 BINDING SUPPLIERS TO ITEM: {article}")
+            logger.info(f"Supplier count: {len(supplier_ids)}")
+            logger.debug(f"Supplier IDs: {supplier_ids}")
+
+            # Сохраняем через репозиторий
+            self.repository.set_suppliers_for_item(article, supplier_ids)
+
+            # Очищаем чекбоксы
+            logger.debug("Clearing checkboxes...")
             self._checked.clear()
+
+            # Обновляем все чекбоксы
             if self.rowCount() > 0:
                 top_left = self.index(0, 0)
                 bottom_right = self.index(self.rowCount() - 1, 0)
                 self.dataChanged.emit(top_left, bottom_right, [Qt.CheckStateRole])
+                logger.debug("Checkboxes updated")
+
+            logger.success(f"✅ Suppliers bound to item {article}")
+            logger.info("=" * 80)
+
         except Exception as e:
-            self.errorOccurred.emit(f"Ошибка привязки поставщиков: {str(e)}")
+            error_msg = f"Ошибка привязки поставщиков: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            logger.info("=" * 80)
+            self.errorOccurred.emit(error_msg)
 
     @Slot(int, result="QVariant")
-    def getSupplierRow(self, row):
-        """Возвращает данные поставщика по указанной строке.
+    def getSupplierRow(self, row: int):
+        """
+        Возвращает данные поставщика по индексу строки.
 
         Args:
-            row (int): Индекс строки в модели (отфильтрованной).
+            row: Индекс строки.
 
         Returns:
-            dict: Словарь с данными поставщика (id, name, company, email, phone, website)
-                  или словарь с id=-1, если строка недействительна.
+            dict: Словарь с данными поставщика.
         """
         if 0 <= row < len(self._filtered_suppliers):
-            sid, name, company, email, phone, website = self._filtered_suppliers[row]
+            supplier = self._filtered_suppliers[row]
             return {
-                "id": sid,
-                "name": name,
-                "company": company,
-                "email": email,
-                "phone": phone,
-                "website": website,
+                "id": supplier.id,
+                "name": supplier.name,
+                "company": supplier.company,
+                "email": supplier.email,
+                "phone": supplier.phone,
+                "website": supplier.website,
             }
+
+        logger.warning(f"⚠️ Invalid row index: {row}")
         return {"id": -1}
 
+    # ==================== CRUD Operations ====================
+
     @Slot(str, str, str, str, str)
-    def addSupplier(self, name, company, email, phone, website):
-        """Добавляет нового поставщика в базу данных.
-
-        Args:
-            name (str): Имя поставщика.
-            company (str): Название компании.
-            email (str): Электронная почта.
-            phone (str): Телефон.
-            website (str): Веб-сайт.
-
-        Вызывает метод DatabaseManager и перезагружает таблицу.
-        При ошибке испускает сигнал errorOccurred.
-        """
+    def addSupplier(self, name: str, company: str, email: str, phone: str, website: str):
+        """Добавляет нового поставщика."""
         try:
-            self._db.add_supplier(name, company, email, phone, website)
+            logger.info(f"Adding supplier: {company}")
+
+            supplier = Supplier(
+                id=None,
+                name=name,
+                company=company,
+                email=email,
+                phone=phone,
+                website=website
+            )
+
+            supplier_id = self.repository.add(supplier)
+            logger.success(f"✅ Supplier added with ID: {supplier_id}")
+
             self.load()
+
         except Exception as e:
-            self.errorOccurred.emit(f"Ошибка добавления поставщика: {str(e)}")
+            error_msg = f"Ошибка добавления поставщика: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
 
     @Slot(int, str, str, str, str, str)
-    def updateSupplier(self, supplier_id, name, company, email, phone, website):
-        """Обновляет данные существующего поставщика.
-
-        Args:
-            supplier_id (int): Идентификатор поставщика.
-            name (str): Имя поставщика.
-            company (str): Название компании.
-            email (str): Электронная почта.
-            phone (str): Телефон.
-            website (str): Веб-сайт.
-
-        Вызывает метод DatabaseManager и перезагружает таблицу.
-        При ошибке испускает сигнал errorOccurred.
-        """
+    def updateSupplier(self, supplier_id: int, name: str, company: str,
+                      email: str, phone: str, website: str):
+        """Обновляет данные поставщика."""
         try:
-            self._db.update_supplier(supplier_id, name, company, email, phone, website)
+            logger.info(f"Updating supplier {supplier_id}: {company}")
+
+            supplier = Supplier(
+                id=supplier_id,
+                name=name,
+                company=company,
+                email=email,
+                phone=phone,
+                website=website
+            )
+
+            self.repository.update(supplier)
+            logger.success(f"✅ Supplier {supplier_id} updated")
+
             self.load()
+
         except Exception as e:
-            self.errorOccurred.emit(f"Ошибка обновления поставщика: {str(e)}")
+            error_msg = f"Ошибка обновления поставщика: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
 
     @Slot(int)
-    def deleteSupplier(self, supplier_id):
-        """Удаляет поставщика из базы данных.
-
-        Args:
-            supplier_id (int): Идентификатор поставщика.
-
-        Вызывает метод DatabaseManager и перезагружает таблицу.
-        При ошибке испускает сигнал errorOccurred.
-        """
+    def deleteSupplier(self, supplier_id: int):
+        """Удаляет поставщика."""
         try:
-            self._db.delete_supplier(supplier_id)
+            logger.info(f"Deleting supplier {supplier_id}")
+
+            self.repository.delete(supplier_id)
+            logger.success(f"✅ Supplier {supplier_id} deleted")
+
             self.load()
+
         except Exception as e:
-            self.errorOccurred.emit(f"Ошибка удаления поставщика: {str(e)}")
+            error_msg = f"Ошибка удаления поставщика: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
