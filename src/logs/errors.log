@@ -1,0 +1,78 @@
+2025-11-20 21:35:35 | ERROR    | specification_models:loadSpecificationItems:543 - ❌ Error loading specification items: 'SpecificationsRepository' object has no attribute 'get_specification_items'
+Traceback (most recent call last):
+
+  File "C:\Users\Visit\PycharmProjects\PythonCode\src\main.py", line 208, in <module>
+    exit_code = main()
+                └ <function main at 0x000001923CE12200>
+
+  File "C:\Users\Visit\PycharmProjects\PythonCode\src\main.py", line 200, in main
+    return app.exec()
+           │   └ <staticmethod(<built-in method exec of Shiboken.ObjectType object at 0x0000019239A20930>)>
+           └ <PySide6.QtGui.QGuiApplication(0x1923a010110) at 0x000001923CE55400>
+
+> File "C:\Users\Visit\PycharmProjects\PythonCode\src\specification_models.py", line 521, in loadSpecificationItems
+    items = self.repository.get_specification_items(spec_id)
+            │    │                                  └ 18
+            │    └ <repositories.specifications_repository.SpecificationsRepository object at 0x000001923CD2BCB0>
+            └ <specification_models.SpecificationsModel(0x1923c6e9ae0) at 0x000001923CE8AC80>
+
+AttributeError: 'SpecificationsRepository' object has no attribute 'get_specification_items'
+2025-11-20 21:35:36 | ERROR    | specification_models:loadSpecificationItems:543 - ❌ Error loading specification items: 'SpecificationsRepository' object has no attribute 'get_specification_items'
+Traceback (most recent call last):
+
+  File "C:\Users\Visit\PycharmProjects\PythonCode\src\main.py", line 208, in <module>
+    exit_code = main()
+                └ <function main at 0x000001923CE12200>
+
+  File "C:\Users\Visit\PycharmProjects\PythonCode\src\main.py", line 200, in main
+    return app.exec()
+           │   └ <staticmethod(<built-in method exec of Shiboken.ObjectType object at 0x0000019239A20930>)>
+           └ <PySide6.QtGui.QGuiApplication(0x1923a010110) at 0x000001923CE55400>
+
+> File "C:\Users\Visit\PycharmProjects\PythonCode\src\specification_models.py", line 521, in loadSpecificationItems
+    items = self.repository.get_specification_items(spec_id)
+            │    │                                  └ 18
+            │    └ <repositories.specifications_repository.SpecificationsRepository object at 0x000001923CD2BCB0>
+            └ <specification_models.SpecificationsModel(0x1923c6e9ae0) at 0x000001923CE8AC80>
+
+AttributeError: 'SpecificationsRepository' object has no attribute 'get_specification_items'
+2025-11-20 21:35:49 | ERROR    | specification_models:loadSpecificationItems:543 - ❌ Error loading specification items: 'SpecificationsRepository' object has no attribute 'get_specification_items'
+Traceback (most recent call last):
+
+  File "C:\Users\Visit\PycharmProjects\PythonCode\src\main.py", line 208, in <module>
+    exit_code = main()
+                └ <function main at 0x000001923CE12200>
+
+  File "C:\Users\Visit\PycharmProjects\PythonCode\src\main.py", line 200, in main
+    return app.exec()
+           │   └ <staticmethod(<built-in method exec of Shiboken.ObjectType object at 0x0000019239A20930>)>
+           └ <PySide6.QtGui.QGuiApplication(0x1923a010110) at 0x000001923CE55400>
+
+> File "C:\Users\Visit\PycharmProjects\PythonCode\src\specification_models.py", line 521, in loadSpecificationItems
+    items = self.repository.get_specification_items(spec_id)
+            │    │                                  └ 18
+            │    └ <repositories.specifications_repository.SpecificationsRepository object at 0x000001923CD2BCB0>
+            └ <specification_models.SpecificationsModel(0x1923c6e9ae0) at 0x000001923CE8AC80>
+
+AttributeError: 'SpecificationsRepository' object has no attribute 'get_specification_items'
+2025-11-20 21:46:02 | ERROR    | __main__:main:207 - 💥 Fatal error
+Traceback (most recent call last):
+
+  File "C:\Users\Visit\PycharmProjects\PythonCode\src\main.py", line 212, in <module>
+    exit_code = main()
+                └ <function main at 0x000002567C52BE20>
+
+> File "C:\Users\Visit\PycharmProjects\PythonCode\src\main.py", line 120, in main
+    categoriesModel = CategoriesModel(uow.categories)
+                      │               │   └ <repositories.categories_repository.CategoriesRepository object at 0x000002567BB442F0>
+                      │               └ UnitOfWork(db_path='items.db')
+                      └ <class 'categories_model.CategoriesModel'>
+
+  File "C:\Users\Visit\PycharmProjects\PythonCode\src\categories_model.py", line 39, in __init__
+    super().__init__(parent)
+                     └ <repositories.categories_repository.CategoriesRepository object at 0x000002567BB442F0>
+
+TypeError: 'PySide6.QtCore.QAbstractListModel.__init__' called with wrong argument types:
+  PySide6.QtCore.QAbstractListModel.__init__(CategoriesRepository)
+Supported signatures:
+  PySide6.QtCore.QAbstractListModel.__init__(parent: PySide6.QtCore.QObject | None = None)
