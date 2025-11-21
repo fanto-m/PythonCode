@@ -93,6 +93,25 @@ class SpecificationsModel(QObject):
 
             logger.debug(f"Got {len(items_data)} items from table model")
 
+            # Вычисляем стоимость материалов
+            materials_cost = 0.0
+            for item_data in items_data:
+                quantity = float(item_data.get('quantity', 0))
+                price = float(item_data.get('price', 0))
+                materials_cost += quantity * price
+
+            logger.debug(f"Materials cost: {materials_cost:.2f}")
+
+            # Вычисляем накладные и итоговую стоимость
+            overhead_cost = materials_cost * (overhead_percentage / 100.0)
+            final_price = materials_cost + labor_cost + overhead_cost
+
+            logger.debug(
+                f"Costs: materials={materials_cost:.2f}, "
+                f"labor={labor_cost:.2f}, overhead={overhead_cost:.2f}, "
+                f"final={final_price:.2f}"
+            )
+
             # Создаем DTO для спецификации
             spec = Specification(
                 id=spec_id if spec_id > 0 else None,
@@ -101,7 +120,7 @@ class SpecificationsModel(QObject):
                 status=status,
                 labor_cost=labor_cost,
                 overhead_percentage=overhead_percentage,
-                final_price=0.0,
+                final_price=final_price,  # Добавляем вычисленную стоимость
                 created_date=None,
                 modified_date=None
             )
@@ -113,7 +132,7 @@ class SpecificationsModel(QObject):
                 logger.info(f"Created new specification with ID: {saved_spec_id}")
             else:
                 # Обновляем существующую
-                self.repository.update(spec)
+                self.repository.update(spec_id, spec)
                 saved_spec_id = spec_id
                 logger.info(f"Updated specification ID: {saved_spec_id}")
 
@@ -194,9 +213,9 @@ class SpecificationsModel(QObject):
                     'status': spec.status or 'черновик',
                     'labor_cost': spec.labor_cost or 0.0,
                     'overhead_percentage': spec.overhead_percentage or 0.0,
+                    'final_price': spec.final_price or 0.0,  # Добавлено
                     'created_date': spec.created_date or '',
-                    'modified_date': spec.modified_date or '',
-                    'final_price': spec.final_price
+                    'modified_date': spec.modified_date or ''
                 })
 
             logger.success(f"✅ Loaded {len(result)} specifications")
@@ -224,21 +243,36 @@ class SpecificationsModel(QObject):
         try:
             logger.info(f"Loading items for specification {spec_id}")
 
-            items = self.repository.get_items(spec_id)
+            items = self.repository.get_specification_items(spec_id)
+
+            # Отладка структуры данных
+            if items and len(items) > 0:
+                logger.debug(f"First item has {len(items[0])} fields")
+                logger.trace(f"First item: {items[0]}")
 
             result = []
-            for row in items:
-                # row: (id, spec_id, article, quantity, notes, name, unit, price, image_path, category)
-                result.append({
-                    'article': row[2] if len(row) > 2 else '',
-                    'name': row[5] if len(row) > 5 else '',
-                    'quantity': float(row[3]) if len(row) > 3 else 1.0,
-                    'unit': row[6] if len(row) > 6 else 'шт.',
-                    'price': float(row[7]) if len(row) > 7 and row[7] is not None else 0.0,
-                    'image_path': row[8] if len(row) > 8 else '',
-                    'category': row[9] if len(row) > 9 else '',
-                    'status': row[10] if len(row) > 10 else ''
-                })
+            for item in items:
+                # Структура из репозитория (13 полей):
+                # 0: id, 1: specification_id, 2: article, 3: quantity, 4: notes,
+                # 5: name, 6: unit, 7: price, 8: image_path, 9: category,
+                # 10: status, 11: manufacturer, 12: description
+
+                quantity = float(item[3]) if len(item) > 3 else 1.0
+                price = float(item[7]) if len(item) > 7 and item[7] is not None else 0.0
+
+                item_dict = {
+                    'article': item[2] if len(item) > 2 else '',
+                    'name': item[5] if len(item) > 5 else '',
+                    'quantity': quantity,
+                    'unit': item[6] if len(item) > 6 else 'шт.',
+                    'price': price,
+                    'total': quantity * price,  # Вычисляем сумму
+                    'image_path': item[8] if len(item) > 8 else '',
+                    'category': item[9] if len(item) > 9 else '',
+                    'status': item[10] if len(item) > 10 else '',
+                    'notes': item[4] if len(item) > 4 else ''  # Добавлено поле notes
+                }
+                result.append(item_dict)
 
             logger.success(
                 f"✅ Loaded {len(result)} items for specification {spec_id}"
@@ -265,18 +299,15 @@ class SpecificationsModel(QObject):
         try:
             logger.info(f"Exporting specification {spec_id} to Excel")
 
-            # Получаем данные спецификации (возвращается кортеж)
-            raw_spec = self.repository.get_by_id(spec_id)
-            if not raw_spec:
+            # Получаем данные спецификации (теперь возвращается DTO)
+            spec = self.repository.get_by_id(spec_id)
+            if not spec:
                 self.errorOccurred.emit("Спецификация не найдена")
                 logger.warning(f"⚠️ Specification {spec_id} not found")
                 return
 
-            # Распаковываем кортеж (согласно SELECT в get_by_id: id, name, description, created_date, modified_date, status, labor_cost, overhead_percentage, final_price)
-            spec_id_db, spec_name, spec_description, spec_created_date, spec_modified_date, spec_status, spec_labor_cost, spec_overhead_percentage, spec_final_price = raw_spec
-
             # Получаем позиции
-            items = self.repository.get_items(spec_id)
+            items = self.repository.get_specification_items(spec_id)
             if not items:
                 self.errorOccurred.emit("В спецификации нет позиций")
                 logger.warning(f"⚠️ No items in specification {spec_id}")
@@ -308,12 +339,12 @@ class SpecificationsModel(QObject):
             )
 
             # Заголовок
-            ws['A1'] = f"СПЕЦИФИКАЦИЯ: {spec_name}"  # <-- Используем переменную
+            ws['A1'] = f"СПЕЦИФИКАЦИЯ: {spec.name}"
             ws['A1'].font = Font(bold=True, size=16)
-            ws.merge_cells('A1:G1')  # <-- Обновлено: 7 столбцов теперь
+            ws.merge_cells('A1:G1')
 
             # Описание
-            description = (spec_description or "").strip()  # <-- Используем переменную
+            description = (spec.description or "").strip()
             description_lines = description.split("\n") if description else [""]
 
             ws['A3'] = "Описание:"
@@ -325,16 +356,14 @@ class SpecificationsModel(QObject):
                 cur_row += 1
 
             # Статус и дата
-            ws.cell(row=cur_row, column=1, value=f"Статус: {spec_status}")  # <-- Используем переменную
+            ws.cell(row=cur_row, column=1, value=f"Статус: {spec.status}")
             cur_row += 1
-            ws.cell(row=cur_row, column=1,
-                    value=f"Дата создания: {spec_created_date or ''}")  # <-- Используем переменную
+            ws.cell(row=cur_row, column=1, value=f"Дата создания: {spec.created_date or ''}")
             cur_row += 2
 
-            # Заголовки таблицы (убран Артикул, добавлено Примечание)
+            # Заголовки таблицы (№, Название, Кол-во, Ед., Цена, Сумма, Примечание)
             header_row = cur_row
-            headers = ['№', 'Название', 'Кол-во', 'Ед.', 'Цена\nбез НДС', 'Сумма\nбез НДС',
-                       'Примечание']  # <-- Новый заголовок
+            headers = ['№', 'Название', 'Кол-во', 'Ед.', 'Цена\nбез НДС', 'Сумма\nбез НДС', 'Примечание']
 
             for col, header in enumerate(headers, 1):
                 cell = ws.cell(row=header_row, column=col, value=header)
@@ -344,84 +373,83 @@ class SpecificationsModel(QObject):
                 cell.border = border
 
             # Данные
+            # Структура items: (id, specification_id, article, quantity, notes,
+            #                   name, unit, price, image_path, category, status, manufacturer, description)
             materials_total = 0.0
 
             for idx, item in enumerate(items, 1):
                 row = header_row + idx
 
-                quantity = float(item[3] or 0)  # <-- Индекс quantity
-                price = float(item[7] or 0)  # <-- Индекс price
+                quantity = float(item[3] or 0)  # quantity
+                price = float(item[7] or 0)      # price
                 line_total = quantity * price
                 materials_total += line_total
 
-                ws.cell(row=row, column=1, value=idx).border = border  # <-- № -> A
-                ws.cell(row=row, column=2, value=item[5]).border = border  # <-- ИЗМЕНЕНО: name -> B (был column 3)
-                ws.cell(row=row, column=3, value=quantity).border = border  # <-- ИЗМЕНЕНО: quantity -> C (был column 4)
-                ws.cell(row=row, column=4, value=item[6]).border = border  # <-- ИЗМЕНЕНО: unit -> D (был column 5)
+                ws.cell(row=row, column=1, value=idx).border = border  # №
+                ws.cell(row=row, column=2, value=item[5]).border = border  # name
+                ws.cell(row=row, column=3, value=quantity).border = border  # quantity
+                ws.cell(row=row, column=4, value=item[6]).border = border  # unit
 
-                price_cell = ws.cell(row=row, column=5, value=price)  # <-- ИЗМЕНЕНО: price -> E (был column 6)
+                price_cell = ws.cell(row=row, column=5, value=price)
                 price_cell.number_format = '0.00'
                 price_cell.border = border
 
-                total_cell = ws.cell(row=row, column=6, value=line_total)  # <-- ИЗМЕНЕНО: total -> F (был column 7)
+                total_cell = ws.cell(row=row, column=6, value=line_total)
                 total_cell.number_format = '0.00'
                 total_cell.border = border
 
-                # Добавляем примечание в последний столбец (G)
-                note_value = item[10] if len(item) > 10 else ''  # <-- Используем item[4] как примечание (si.notes)
-                note_cell = ws.cell(row=row, column=7,
-                                    value=note_value)  # <-- ИЗМЕНЕНО: примечание -> G (новый столбец 7)
+                # Примечание (notes из specification_items)
+                note_value = item[10] if len(item) > 10 else ''  # notes
+                note_cell = ws.cell(row=row, column=7, value=note_value)
                 note_cell.border = border
 
             # Итоги (метки в столбце D, значения в столбце F)
             total_row = header_row + len(items) + 2
 
-            work_cost = float(spec_labor_cost or 0)  # <-- Используем переменную
-            overhead_pct = float(spec_overhead_percentage or 0)  # <-- Используем переменную
+            work_cost = float(spec.labor_cost or 0)
+            overhead_pct = float(spec.overhead_percentage or 0)
             overhead = materials_total * (overhead_pct / 100.0)
             grand_total = materials_total + work_cost + overhead
             total_with_nds = grand_total * 1.20
 
-            # Метки в столбце D (column=4), значения в столбце F (column=6)
-            ws.cell(row=total_row, column=4, value="Материалы:").font = Font(bold=True)  # <-- Столбец D
-            mat_val = ws.cell(row=total_row, column=6, value=round(materials_total, 2))  # <-- Столбец F
+            # Метки в столбце D, значения в столбце F
+            ws.cell(row=total_row, column=4, value="Материалы:").font = Font(bold=True)
+            mat_val = ws.cell(row=total_row, column=6, value=round(materials_total, 2))
             mat_val.number_format = '0.00'
             mat_val.font = Font(bold=True)
 
-            ws.cell(row=total_row + 1, column=4, value="Работа:").font = Font(bold=True)  # <-- Столбец D
-            work_val = ws.cell(row=total_row + 1, column=6, value=round(work_cost, 2))  # <-- Столбец F
+            ws.cell(row=total_row + 1, column=4, value="Работа:").font = Font(bold=True)
+            work_val = ws.cell(row=total_row + 1, column=6, value=round(work_cost, 2))
             work_val.number_format = '0.00'
             work_val.font = Font(bold=True)
 
-            ws.cell(row=total_row + 2, column=4, value=f"Накладные ({overhead_pct}%):").font = Font(
-                bold=True)  # <-- Столбец D
-            overhead_val = ws.cell(row=total_row + 2, column=6, value=round(overhead, 2))  # <-- Столбец F
+            ws.cell(row=total_row + 2, column=4, value=f"Накладные ({overhead_pct}%):").font = Font(bold=True)
+            overhead_val = ws.cell(row=total_row + 2, column=6, value=round(overhead, 2))
             overhead_val.number_format = '0.00'
             overhead_val.font = Font(bold=True)
 
-            ws.cell(row=total_row + 3, column=4, value="ИТОГО:").font = Font(bold=True, size=12)  # <-- Столбец D
-            total_val = ws.cell(row=total_row + 3, column=6, value=round(grand_total, 2))  # <-- Столбец F
+            ws.cell(row=total_row + 3, column=4, value="ИТОГО:").font = Font(bold=True, size=12)
+            total_val = ws.cell(row=total_row + 3, column=6, value=round(grand_total, 2))
             total_val.number_format = '0.00'
             total_val.font = Font(bold=True, size=12)
 
             # НДС
-            ws.cell(row=total_row + 4, column=4, value="ИТОГО с НДС (20%):").font = Font(bold=True,
-                                                                                         size=12)  # <-- Столбец D
-            total_nds_cell = ws.cell(row=total_row + 4, column=6, value=round(total_with_nds, 2))  # <-- Столбец F
+            ws.cell(row=total_row + 4, column=4, value="ИТОГО с НДС (20%):").font = Font(bold=True, size=12)
+            total_nds_cell = ws.cell(row=total_row + 4, column=6, value=round(total_with_nds, 2))
             total_nds_cell.number_format = '0.00'
             total_nds_cell.font = Font(bold=True, size=12)
 
-            # Ширина столбцов (обновлено под новое количество столбцов)
-            ws.column_dimensions['A'].width = 5  # №
+            # Ширина столбцов
+            ws.column_dimensions['A'].width = 5   # №
             ws.column_dimensions['B'].width = 40  # Название
             ws.column_dimensions['C'].width = 10  # Кол-во
-            ws.column_dimensions['D'].width = 15  # Ед. и метки итогов (D)
+            ws.column_dimensions['D'].width = 15  # Ед. и метки итогов
             ws.column_dimensions['E'].width = 12  # Цена
-            ws.column_dimensions['F'].width = 12  # Сумма и значения итогов (F)
-            ws.column_dimensions['G'].width = 20  # Примечание # <-- Добавлено
+            ws.column_dimensions['F'].width = 12  # Сумма и значения итогов
+            ws.column_dimensions['G'].width = 20  # Примечание
 
             # Сохранение
-            filename = f"specification_{spec_id}_{spec_name.replace(' ', '_')}.xlsx"  # <-- Используем переменную
+            filename = f"specification_{spec_id}_{spec.name.replace(' ', '_')}.xlsx"
             wb.save(filename)
 
             logger.success(f"✅ Excel file saved: {filename}")
@@ -433,25 +461,32 @@ class SpecificationsModel(QObject):
             self.errorOccurred.emit(error_msg)
 
     @Slot(int, bool)
-    def exportToPDF(self, spec_id, landscape=False):
-        """Экспорт спецификации в PDF с выбором ориентации"""
+    def exportToPDF(self, spec_id: int, landscape: bool = False):
+        """
+        Экспортирует спецификацию в PDF с выбором ориентации.
+
+        Args:
+            spec_id: ID спецификации.
+            landscape: Альбомная ориентация (по умолчанию False - портретная).
+        """
         try:
-            # Get specification data (используем self.repository)
-            raw_spec = self.repository.get_by_id(spec_id)  # <-- Получаем кортеж
-            if not raw_spec:
+            logger.info(f"Exporting specification {spec_id} to PDF (landscape={landscape})")
+
+            # Получаем данные спецификации (теперь возвращается DTO)
+            spec = self.repository.get_by_id(spec_id)
+            if not spec:
                 self.errorOccurred.emit("Спецификация не найдена")
+                logger.warning(f"⚠️ Specification {spec_id} not found")
                 return
 
-            # Распаковываем кортеж (согласно SELECT в get_by_id: id, name, description, created_date, modified_date, status, labor_cost, overhead_percentage, final_price)
-            spec_id_db, spec_name, spec_description, spec_created_date, spec_modified_date, spec_status, spec_labor_cost, spec_overhead_percentage, spec_final_price = raw_spec
-
-            # Get specification items (используем self.repository)
-            items = self.repository.get_items(spec_id)  # <-- Получаем список кортежей
+            # Получаем позиции
+            items = self.repository.get_specification_items(spec_id)
             if not items:
                 self.errorOccurred.emit("В спецификации нет позиций")
+                logger.warning(f"⚠️ No items in specification {spec_id}")
                 return
 
-            # Import reportlab
+            # Проверяем ReportLab и PIL
             try:
                 from reportlab.lib.pagesizes import A4, landscape as landscape_pagesize
                 from reportlab.lib import colors
@@ -466,9 +501,11 @@ class SpecificationsModel(QObject):
                 from datetime import datetime
             except ImportError as e:
                 if 'PIL' in str(e):
-                    self.errorOccurred.emit("Библиотека Pillow не установлена. Установите: pip install Pillow")
+                    error_msg = "Библиотека Pillow не установлена. Установите: pip install Pillow"
                 else:
-                    self.errorOccurred.emit("Библиотека reportlab не установлена. Установите: pip install reportlab")
+                    error_msg = "Библиотека reportlab не установлена. Установите: pip install reportlab"
+                self.errorOccurred.emit(error_msg)
+                logger.error(f"❌ {error_msg}")
                 return
 
             # Регистрация шрифтов с поддержкой кириллицы
@@ -481,7 +518,7 @@ class SpecificationsModel(QObject):
                 font_name = 'GOST type A'
                 font_name_bold = 'GOST type A Bold'
                 font_registered = True
-                print("DEBUG: Используем шрифт GOST type A")
+                logger.debug("Using GOST type A font")
             except:
                 pass
 
@@ -489,12 +526,11 @@ class SpecificationsModel(QObject):
             if not font_registered:
                 try:
                     pdfmetrics.registerFont(TTFont('FreeSans', '/usr/share/fonts/truetype/freefont/FreeSans.ttf'))
-                    pdfmetrics.registerFont(
-                        TTFont('FreeSans-Bold', '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf'))
+                    pdfmetrics.registerFont(TTFont('FreeSans-Bold', '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf'))
                     font_name = 'FreeSans'
                     font_name_bold = 'FreeSans-Bold'
                     font_registered = True
-                    print("DEBUG: Используем шрифт FreeSans")
+                    logger.debug("Using FreeSans font")
                 except:
                     pass
 
@@ -506,28 +542,27 @@ class SpecificationsModel(QObject):
                     font_name = 'Arial'
                     font_name_bold = 'Arial-Bold'
                     font_registered = True
-                    print("DEBUG: Используем шрифт Arial")
+                    logger.debug("Using Arial font")
                 except:
                     pass
 
             if not font_registered:
-                self.errorOccurred.emit(
-                    "Не удалось найти шрифт с поддержкой кириллицы. "
-                    "Установите: pip install reportlab[rlPyCairo]"
-                )
+                error_msg = "Не удалось найти шрифт с поддержкой кириллицы"
+                self.errorOccurred.emit(error_msg)
+                logger.error(f"❌ {error_msg}")
                 return
 
-            # ВЫБОР ОРИЕНТАЦИИ СТРАНИЦЫ
+            # Выбор ориентации страницы
             if landscape:
                 pagesize = landscape_pagesize(A4)
                 orientation_text = "альбомная"
-                print("DEBUG: Используем альбомную ориентацию")
+                logger.debug("Using landscape orientation")
             else:
                 pagesize = A4
                 orientation_text = "портретная"
-                print("DEBUG: Используем портретную ориентацию")
+                logger.debug("Using portrait orientation")
 
-            # ✅ КЛАСС ДЛЯ НУМЕРАЦИИ СТРАНИЦ С ОБЩИМ КОЛИЧЕСТВОМ
+            # Класс для нумерации страниц с общим количеством
             class NumberedCanvas(canvas.Canvas):
                 def __init__(self, *args, **kwargs):
                     canvas.Canvas.__init__(self, *args, **kwargs)
@@ -554,17 +589,17 @@ class SpecificationsModel(QObject):
 
                     page_num = self._pageNumber
 
-                    # ✅ Номер страницы в формате "1/5"
+                    # Номер страницы в формате "1/5"
                     page_text = f"{page_num}/{page_count}"
                     self.drawRightString(pagesize[0] - 30, 30, page_text)
 
-                    # ✅ Дата под номером страницы
+                    # Дата под номером страницы
                     current_date = datetime.now().strftime("%d.%m.%Y")
                     self.drawRightString(pagesize[0] - 30, 15, current_date)
 
                     self.restoreState()
 
-            # ФУНКЦИЯ ДЛЯ МАСШТАБИРОВАНИЯ ИЗОБРАЖЕНИЙ
+            # Функция для масштабирования изображений
             def scale_image(image_path, max_width_mm=15, max_height_mm=15):
                 """Масштабирует изображение с сохранением пропорций"""
                 import os
@@ -598,15 +633,14 @@ class SpecificationsModel(QObject):
                     img = Image(image_path, width=final_width, height=final_height)
                     img.hAlign = 'CENTER'
 
-                    print(
-                        f"DEBUG: Изображение масштабировано: {orig_width}x{orig_height} -> {final_width:.1f}x{final_height:.1f} pts")
+                    logger.trace(f"Image scaled: {orig_width}x{orig_height} -> {final_width:.1f}x{final_height:.1f} pts")
                     return img
 
                 except Exception as e:
-                    print(f"DEBUG: Ошибка обработки изображения {image_path}: {e}")
+                    logger.warning(f"⚠️ Error processing image {image_path}: {e}")
                     return None
 
-            # ✅ ФУНКЦИЯ ДЛЯ ДОБАВЛЕНИЯ ШАПКИ
+            # Функция для добавления шапки
             def add_header(canvas, doc):
                 """Добавляет шапку на каждую страницу"""
                 canvas.saveState()
@@ -617,7 +651,7 @@ class SpecificationsModel(QObject):
 
                 # Название спецификации с переносом на следующую строку
                 canvas.drawString(30, pagesize[1] - 30, "СПЕЦИФИКАЦИЯ:")
-                canvas.drawString(30, pagesize[1] - 50, spec_name)  # <-- Используем переменную
+                canvas.drawString(30, pagesize[1] - 50, spec.name)
 
                 # Линия под шапкой
                 canvas.setStrokeColor(colors.HexColor('#366092'))
@@ -626,8 +660,8 @@ class SpecificationsModel(QObject):
 
                 canvas.restoreState()
 
-            # Create PDF with custom header/footer
-            filename = f"specification_{spec_id}_{spec_name.replace(' ', '_')}.pdf"  # <-- Используем переменную
+            # Создаем PDF
+            filename = f"specification_{spec_id}_{spec.name.replace(' ', '_')}.pdf"
             doc = SimpleDocTemplate(
                 filename,
                 pagesize=pagesize,
@@ -648,14 +682,12 @@ class SpecificationsModel(QObject):
                 fontSize=10,
                 spaceAfter=6
             )
-            story.append(Paragraph(f"<b>Описание:</b> {spec_description or 'Не указано'}",
-                                   info_style))  # <-- Используем переменную
-            story.append(Paragraph(f"<b>Статус:</b> {spec_status}", info_style))  # <-- Используем переменную
-            story.append(
-                Paragraph(f"<b>Дата создания:</b> {spec_created_date}", info_style))  # <-- Используем переменную
+            story.append(Paragraph(f"<b>Описание:</b> {spec.description or 'Не указано'}", info_style))
+            story.append(Paragraph(f"<b>Статус:</b> {spec.status}", info_style))
+            story.append(Paragraph(f"<b>Дата создания:</b> {spec.created_date or ''}", info_style))
             story.append(Spacer(1, 15))
 
-            # АДАПТИВНЫЕ РАЗМЕРЫ ТАБЛИЦЫ
+            # Адаптивные размеры таблицы
             if landscape:
                 # Альбомная: №, Фото, Название, Производитель, Кол-во, Ед., Цена, Сумма, Примечание
                 col_widths = [20, 60, 150, 80, 35, 30, 50, 50, 100]
@@ -665,7 +697,7 @@ class SpecificationsModel(QObject):
                 col_widths = [15, 50, 110, 70, 30, 25, 45, 45, 80]
                 img_size = 15
 
-            # СОЗДАНИЕ ЗАГОЛОВКА ТАБЛИЦЫ С ПЕРЕНОСОМ СТРОК
+            # Создание заголовка таблицы с переносом строк
             header_style = ParagraphStyle(
                 'TableHeader',
                 parent=styles['Normal'],
@@ -688,15 +720,18 @@ class SpecificationsModel(QObject):
                 Paragraph('Примечание', header_style)
             ]]
 
-            materials_total = 0
+            # Данные
+            # Структура items: (id, specification_id, article, quantity, notes,
+            #                   name, unit, price, image_path, category, status, manufacturer, description)
+            materials_total = 0.0
             for idx, item in enumerate(items, 1):
-                quantity = item[3]
-                price = item[7]
+                quantity = float(item[3])  # quantity
+                price = float(item[7])      # price
                 total = quantity * price
                 materials_total += total
 
-                # ПРАВИЛЬНАЯ ОБРАБОТКА ИЗОБРАЖЕНИЯ
-                image_path = item[8] if len(item) > 8 else ''
+                # Обработка изображения
+                image_path = item[8] if len(item) > 8 else ''  # image_path
                 image_cell = scale_image(image_path, max_width_mm=img_size, max_height_mm=img_size)
 
                 if image_cell is None:
@@ -739,23 +774,20 @@ class SpecificationsModel(QObject):
                     wordWrap='CJK',
                 )
 
-                # ✅ ПРАВИЛЬНЫЕ ИНДЕКСЫ для новой структуры (из get_items в specifications_repository.py)
-                manufacturer = item[11] if len(item) > 11 else ''  # Производитель (i.manufacturer)
-                note = item[10] if len(item) > 10 else ''  # Описание (i.description)
-
-                # Или использовать si.notes если хотите примечание из спецификации:
-                # note = item[4]  # si.notes из specification_items
+                # Данные из кортежа
+                manufacturer = item[11] if len(item) > 11 else ''  # manufacturer
+                note = item[10] if len(item) > 10 else ''            # notes (из specification_items)
 
                 table_data.append([
                     Paragraph(str(idx), center_style),
                     image_cell,
-                    Paragraph(item[5].replace('\n', '<br/>'), name_style),  # i.name
-                    Paragraph(manufacturer, name_style),  # i.manufacturer
+                    Paragraph(item[5].replace('\n', '<br/>'), name_style),  # name
+                    Paragraph(manufacturer, name_style),
                     Paragraph(f"{quantity:.2f}", center_style),
-                    Paragraph(item[6], center_style),  # i.unit
+                    Paragraph(item[6], center_style),  # unit
                     Paragraph(f"{price:.2f}", center_style),
                     Paragraph(f"{total:.2f}", center_style),
-                    Paragraph(note, note_style)  # i.description или si.notes
+                    Paragraph(note, note_style)
                 ])
 
             # Создаем таблицу с адаптивными колонками
@@ -783,15 +815,17 @@ class SpecificationsModel(QObject):
             story.append(table)
             story.append(Spacer(1, 20))
 
-            # Totals
-            overhead = materials_total * (spec_overhead_percentage / 100)  # <-- Используем переменную
-            total = materials_total + spec_labor_cost + overhead  # <-- Используем переменную
+            # Итоги
+            overhead = materials_total * (spec.overhead_percentage / 100)
+            total = materials_total + spec.labor_cost + overhead
+            total_with_nds = total * 1.20
 
             totals_data = [
                 ['Материалы:', f"{materials_total:.2f} руб."],
-                ['Работа:', f"{spec_labor_cost:.2f} руб."],  # <-- Используем переменную
-                [f'Накладные ({spec_overhead_percentage}%):', f"{overhead:.2f} руб."],  # <-- Используем переменную
-                ['ИТОГО:', f"{total:.2f} руб."]  # ✅ Исправлено: закрывающая кавычка
+                ['Работа:', f"{spec.labor_cost:.2f} руб."],
+                [f'Накладные ({spec.overhead_percentage}%):', f"{overhead:.2f} руб."],
+                ['ИТОГО:', f"{total:.2f} руб."],
+                ['ИТОГО с НДС (20%):', f"{total_with_nds:.2f} руб."]
             ]
 
             # Адаптивная ширина таблицы итогов
@@ -800,24 +834,26 @@ class SpecificationsModel(QObject):
             totals_table.setStyle(TableStyle([
                 ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
                 ('FONTNAME', (0, 0), (-1, -1), font_name),
+                ('FONTNAME', (0, -2), (-1, -2), font_name_bold),
                 ('FONTNAME', (0, -1), (-1, -1), font_name_bold),
+                ('FONTSIZE', (0, -2), (-1, -2), 12),
                 ('FONTSIZE', (0, -1), (-1, -1), 12),
-                ('LINEABOVE', (0, -1), (-1, -1), 2, colors.black),
+                ('LINEABOVE', (0, -2), (-1, -2), 2, colors.black),
             ]))
             story.append(totals_table)
 
-            # ✅ Build PDF с кастомным canvas для нумерации страниц
+            # Build PDF с кастомным canvas для нумерации страниц
             doc.build(
                 story,
                 onFirstPage=add_header,
                 onLaterPages=add_header,
-                canvasmaker=NumberedCanvas  # ✅ Используем кастомный canvas
+                canvasmaker=NumberedCanvas
             )
 
-            print(f"DEBUG: PDF file saved: {filename} ({orientation_text})")
+            logger.success(f"✅ PDF file saved: {filename} ({orientation_text})")
             self.errorOccurred.emit(f"Файл сохранён: {filename} ({orientation_text})")
 
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            self.errorOccurred.emit(f"Ошибка экспорта в PDF: {str(e)}")
+            error_msg = f"Ошибка экспорта в PDF: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)

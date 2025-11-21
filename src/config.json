@@ -49,6 +49,10 @@
                     "name": "electrics",
                     "display_name": "Электрика"
                 },
+                "materials": {
+                    "name": "materials",
+                    "display_name": "Материалы"
+                },
                 "connectors": {
                     "name": "connectors",
                     "display_name": "Разъемы"
@@ -60,6 +64,10 @@
                 "furniture": {
                     "name": "furniture",
                     "display_name": "Фурнитура"
+                },
+                "metalware": {
+                    "name": "metalware",
+                    "display_name": "Метизы"
                 },
                 "resistors": {
                     "name": "resistors",

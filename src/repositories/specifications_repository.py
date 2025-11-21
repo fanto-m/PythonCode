@@ -1,12 +1,11 @@
-#specifications_repository.py
 """Репозиторий для управления спецификациями и их позициями"""
 
 from typing import List, Tuple, Dict
 from datetime import datetime
 from loguru import logger
 
-from repositories.base_repository import BaseRepository  # ← ПРАВИЛЬНО
-from models.dto import Specification, SpecificationItem  # ← ПРАВИЛЬНО
+from repositories.base_repository import BaseRepository
+from models.dto import Specification, SpecificationItem
 
 
 class SpecificationsRepository(BaseRepository):
@@ -65,42 +64,44 @@ class SpecificationsRepository(BaseRepository):
         Загружает все спецификации из базы данных.
 
         Returns:
-            List[Specification]: Список всех спецификаций.
+            List[Specification]: Список объектов Specification.
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT id, name, description, created_date, modified_date, 
-                           status, labor_cost, overhead_percentage, final_price
+                cursor.execute("""
+                    SELECT 
+                        id, name, description, created_date, modified_date, 
+                        status, labor_cost, overhead_percentage, final_price
                     FROM specifications
                     ORDER BY modified_date DESC
-                ''')
+                """)
                 rows = cursor.fetchall()
 
-            specifications = [
-                Specification(
-                    id=row[0],
-                    name=row[1],
-                    description=row[2],
-                    created_date=row[3],
-                    modified_date=row[4],
-                    status=row[5],
-                    labor_cost=row[6],
-                    overhead_percentage=row[7],
-                    final_price=row[8]
-                )
-                for row in rows
-            ]
+                # Преобразуем кортежи в DTO
+                specs = [
+                    Specification(
+                        id=row[0],
+                        name=row[1],
+                        description=row[2],
+                        created_date=row[3],
+                        modified_date=row[4],
+                        status=row[5],
+                        labor_cost=row[6],
+                        overhead_percentage=row[7],
+                        final_price=row[8]
+                    )
+                    for row in rows
+                ]
 
-            logger.info(f"📋 Loaded {len(specifications)} specifications")
-            return specifications
+            logger.info(f"📋 Loaded {len(specs)} specification(s)")
+            return specs
 
         except Exception as e:
             logger.error(f"❌ Error loading specifications: {e}")
             return []
 
-    def get_by_id(self, spec_id: int) -> Tuple | None:
+    def get_by_id(self, spec_id: int) -> Specification | None:
         """
         Получает спецификацию по ID.
 
@@ -108,7 +109,7 @@ class SpecificationsRepository(BaseRepository):
             spec_id: ID спецификации.
 
         Returns:
-            Tuple: Данные спецификации или None, если не найдена.
+            Specification: Объект спецификации или None, если не найдена.
         """
         try:
             with self.get_connection() as conn:
@@ -121,14 +122,24 @@ class SpecificationsRepository(BaseRepository):
                     WHERE id = ?
                 """, (spec_id,))
 
-                spec = cursor.fetchone()
+                row = cursor.fetchone()
 
-            if spec:
+            if row:
                 logger.debug(f"✅ Found specification: {spec_id}")
+                return Specification(
+                    id=row[0],
+                    name=row[1],
+                    description=row[2],
+                    created_date=row[3],
+                    modified_date=row[4],
+                    status=row[5],
+                    labor_cost=row[6],
+                    overhead_percentage=row[7],
+                    final_price=row[8]
+                )
             else:
                 logger.warning(f"⚠️ Specification not found: {spec_id}")
-
-            return spec
+                return None
 
         except Exception as e:
             logger.error(f"❌ Error getting specification {spec_id}: {e}")
@@ -155,10 +166,10 @@ class SpecificationsRepository(BaseRepository):
                 cursor.execute("""
                     INSERT INTO specifications
                     (name, description, created_date, modified_date, status, 
-                     labor_cost, overhead_percentage)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                     labor_cost, overhead_percentage, final_price)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (spec.name, spec.description, now, now, spec.status,
-                      spec.labor_cost, spec.overhead_percentage))
+                      spec.labor_cost, spec.overhead_percentage, spec.final_price))
 
                 spec_id = cursor.lastrowid
 
@@ -271,6 +282,18 @@ class SpecificationsRepository(BaseRepository):
             logger.error(f"❌ Error loading items for specification {spec_id}: {e}")
             return []
 
+    def get_specification_items(self, spec_id: int) -> List[Tuple]:
+        """
+        Алиас для get_items (для совместимости).
+
+        Args:
+            spec_id: ID спецификации.
+
+        Returns:
+            List[Tuple]: Список кортежей с данными позиций.
+        """
+        return self.get_items(spec_id)
+
     def add_item(self, spec_item: SpecificationItem) -> int:
         """
         Добавляет новую позицию в спецификацию.
@@ -305,6 +328,18 @@ class SpecificationsRepository(BaseRepository):
         except Exception as e:
             logger.error(f"❌ Error adding specification item: {e}")
             raise
+
+    def add_specification_item(self, spec_item: SpecificationItem) -> int:
+        """
+        Алиас для add_item (для совместимости).
+
+        Args:
+            spec_item: Объект позиции спецификации.
+
+        Returns:
+            int: ID созданной позиции.
+        """
+        return self.add_item(spec_item)
 
     def update_item(self, item_id: int, quantity: int, notes: str = None) -> bool:
         """
@@ -381,6 +416,18 @@ class SpecificationsRepository(BaseRepository):
         except Exception as e:
             logger.error(f"❌ Error clearing specification items: {e}")
             return False
+
+    def delete_specification_items(self, spec_id: int) -> bool:
+        """
+        Алиас для clear_items (для совместимости).
+
+        Args:
+            spec_id: ID спецификации.
+
+        Returns:
+            bool: True если удаление успешно.
+        """
+        return self.clear_items(spec_id)
 
     def save_with_items(
             self,
