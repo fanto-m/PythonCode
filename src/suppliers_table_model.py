@@ -441,7 +441,8 @@ class SuppliersTableModel(QAbstractTableModel):
                 website=website
             )
 
-            self.repository.update(supplier)
+            # ✅ ИСПРАВЛЕНО: передаем оба аргумента
+            self.repository.update(supplier_id, supplier)
             logger.success(f"✅ Supplier {supplier_id} updated")
 
             self.load()
