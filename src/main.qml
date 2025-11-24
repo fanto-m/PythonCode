@@ -4,6 +4,9 @@ import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 import "components" as Components
+import "qml/styles"                           // ← Theme
+import "qml/components/common"                // ← Типовые компоненты
+import "qml/components/dialogs/categories"    // ← Диалог
 
 ApplicationWindow {
     id: mainWindow
@@ -643,7 +646,7 @@ ApplicationWindow {
         }
     }
 
-    Components.AddCategoryDialog {
+    AddCategoryDialog {
         id: addCategoryDialog
         onCategoryAdded: (name, sku_prefix, sku_digits) => categoryModel.addCategory(name, sku_prefix, sku_digits)
     }
