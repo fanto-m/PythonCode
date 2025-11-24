@@ -5,7 +5,7 @@ import QtQuick
 
 QtObject {
     // --- ОСНОВНЫЕ ЦВЕТА (адаптированы под AddCategoryDialog) ---
-    property color primaryColor: "#6200EE"              // Фиолетовый (оставляем для кнопок)
+    property color primaryColor: "#3498db"              // Фиолетовый (оставляем для кнопок)
     property color accentColor: "#4682b4"               // 🔵 Steel Blue (было #03DAC6)
     property color backgroundColor: "#F5F5F5"           // Светло-серый фон
 

@@ -651,13 +651,13 @@ ApplicationWindow {
         onCategoryAdded: (name, sku_prefix, sku_digits) => categoryModel.addCategory(name, sku_prefix, sku_digits)
     }
 
-    Components.EditCategoryDialog {
+    EditCategoryDialog {
         id: editCategoryDialog
         onCategoryEdited: (id, name, prefix, digits) =>
             categoryModel.updateCategory(id, name, prefix, digits)
     }
 
-    Components.DeleteCategoryDialog {
+    DeleteCategoryDialog {
         id: deleteCategoryDialog
         onCategoryDeleted: (id) => categoryModel.deleteCategory(id)
     }

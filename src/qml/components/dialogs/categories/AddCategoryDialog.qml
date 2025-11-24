@@ -168,6 +168,7 @@ Dialog {
                     id: skuPrefixField
                     placeholderText: "P"
                     Layout.preferredWidth: 80
+                    Layout.preferredHeight: 40
                     enterDelay: 200
 
                     property int maximumLength: 5
@@ -196,6 +197,7 @@ Dialog {
                     to: 8
                     value: 4
                     Layout.preferredWidth: 120
+                    Layout.preferredHeight: 40
                     onValueChanged: updatePreview()
 
                     contentItem: TextInput {
