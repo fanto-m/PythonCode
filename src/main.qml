@@ -7,6 +7,7 @@ import "components" as Components
 import "qml/styles"                           // ← Theme
 import "qml/components/common"                // ← Типовые компоненты
 import "qml/components/dialogs/categories"    // ← Диалог
+import "qml/components/dialogs/suppliers"
 
 ApplicationWindow {
     id: mainWindow
@@ -651,13 +652,13 @@ ApplicationWindow {
         onCategoryAdded: (name, sku_prefix, sku_digits) => categoryModel.addCategory(name, sku_prefix, sku_digits)
     }
 
-    Components.EditCategoryDialog {
+    EditCategoryDialog {
         id: editCategoryDialog
         onCategoryEdited: (id, name, prefix, digits) =>
             categoryModel.updateCategory(id, name, prefix, digits)
     }
 
-    Components.DeleteCategoryDialog {
+    DeleteCategoryDialog {
         id: deleteCategoryDialog
         onCategoryDeleted: (id) => categoryModel.deleteCategory(id)
     }
@@ -698,21 +699,21 @@ ApplicationWindow {
         id: suppliersManagerDialog
     }
 
-    Components.AddSupplierDialog {
+    AddSupplierDialog {
         id: addSupplierDialog
         onSupplierAdded: (name, company, email, phone, website) => {
             suppliersTableModel.addSupplier(name, company, email, phone, website)
         }
     }
 
-    Components.EditSupplierDialog {
+    EditSupplierDialog {
         id: editSupplierDialog
         onSupplierEdited: (id, name, company, email, phone, website) => {
             suppliersTableModel.updateSupplier(id, name, company, email, phone, website)
         }
     }
 
-    Components.DeleteSupplierDialog {
+    DeleteSupplierDialog {
         id: deleteSupplierDialog
         onSupplierDeleted: (id) => {
             suppliersTableModel.deleteSupplier(id)
