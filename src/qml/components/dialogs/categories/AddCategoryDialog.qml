@@ -168,10 +168,8 @@ Dialog {
                     id: skuPrefixField
                     placeholderText: "P"
                     Layout.preferredWidth: 80
-<<<<<<< HEAD
                     Layout.preferredHeight: 40
-=======
->>>>>>> 5f6bd7f (AddCategoryDialog.qml теперь работает через стандартные компоненты и файл темы)
+
                     enterDelay: 200
 
                     property int maximumLength: 5
@@ -200,10 +198,9 @@ Dialog {
                     to: 8
                     value: 4
                     Layout.preferredWidth: 120
-<<<<<<< HEAD
+
                     Layout.preferredHeight: 40
-=======
->>>>>>> 5f6bd7f (AddCategoryDialog.qml теперь работает через стандартные компоненты и файл темы)
+
                     onValueChanged: updatePreview()
 
                     contentItem: TextInput {
