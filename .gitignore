@@ -13,3 +13,4 @@ docs_out/
 *.zip
 logs/
 src_old/
+src/items.db

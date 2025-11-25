@@ -5,7 +5,11 @@ import QtQuick
 
 QtObject {
     // --- ОСНОВНЫЕ ЦВЕТА (адаптированы под AddCategoryDialog) ---
+<<<<<<< HEAD
     property color primaryColor: "#007bff"              // Фиолетовый (оставляем для кнопок)
+=======
+    property color primaryColor: "#6200EE"              // Фиолетовый (оставляем для кнопок)
+>>>>>>> 5f6bd7f (AddCategoryDialog.qml теперь работает через стандартные компоненты и файл темы)
     property color accentColor: "#4682b4"               // 🔵 Steel Blue (было #03DAC6)
     property color backgroundColor: "#F5F5F5"           // Светло-серый фон
 
@@ -27,8 +31,13 @@ QtObject {
     // --- РАЗМЕРЫ ШРИФТОВ ---
     property int sizeH1: 32
     property int sizeH2: 24
+<<<<<<< HEAD
     property int sizeH3: 16
     property int sizeBody: 18
+=======
+    property int sizeH3: 20
+    property int sizeBody: 16
+>>>>>>> 5f6bd7f (AddCategoryDialog.qml теперь работает через стандартные компоненты и файл темы)
     property int sizeCaption: 12
     property int sizeSmall: 9
 
