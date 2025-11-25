@@ -7,6 +7,10 @@ import "components" as Components
 import "qml/styles"                           // ← Theme
 import "qml/components/common"                // ← Типовые компоненты
 import "qml/components/dialogs/categories"    // ← Диалог
+<<<<<<< HEAD
+import "qml/components/dialogs/suppliers"
+=======
+>>>>>>> 5f6bd7f (AddCategoryDialog.qml теперь работает через стандартные компоненты и файл темы)
 
 ApplicationWindow {
     id: mainWindow
@@ -698,21 +702,21 @@ ApplicationWindow {
         id: suppliersManagerDialog
     }
 
-    Components.AddSupplierDialog {
+    AddSupplierDialog {
         id: addSupplierDialog
         onSupplierAdded: (name, company, email, phone, website) => {
             suppliersTableModel.addSupplier(name, company, email, phone, website)
         }
     }
 
-    Components.EditSupplierDialog {
+    EditSupplierDialog {
         id: editSupplierDialog
         onSupplierEdited: (id, name, company, email, phone, website) => {
             suppliersTableModel.updateSupplier(id, name, company, email, phone, website)
         }
     }
 
-    Components.DeleteSupplierDialog {
+    DeleteSupplierDialog {
         id: deleteSupplierDialog
         onSupplierDeleted: (id) => {
             suppliersTableModel.deleteSupplier(id)

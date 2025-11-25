@@ -4,3 +4,13 @@
 /images/
 src/__pycache__/
 /src/files/
+.idea/
+__pycache__/
+*.pyc
+.venv/
+docs_out/
+*.pdf
+*.zip
+logs/
+src_old/
+src/items.db

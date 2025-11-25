@@ -1,5 +1,4 @@
-// qml/components/dialogs/categories/AddCategoryDialog.qml
-// ВЕРСИЯ С ВОЗМОЖНОСТЬЮ ПЕРЕМЕЩЕНИЯ (Drag & Drop)
+// qml/components/dialogs/categories/EditCategoryDialog.qml
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -7,27 +6,24 @@ import "../../../styles"
 import "../../common"
 
 Dialog {
-    id: addCategoryDialogInternal
-    title: "Новая категория"
+    id: editCategoryDialogInternal
+    title: "Редактирование категории"
     modal: true
     width: 500
     height: 400
-
-    // 🎯 ВАЖНО: Убираем стандартные кнопки из footer
-    // Добавим их вручную в content
     standardButtons: Dialog.NoButton
 
-    signal categoryAdded(string name, string skuPrefix, int skuDigits)
+    property int categoryId: -1
 
-    // 🎨 Кастомный header для перетаскивания
+    signal categoryEdited(int id, string name, string skuPrefix, int skuDigits)
+
+    // 🎨 Header с перемещением
     header: Rectangle {
-        id: dialogHeader
         width: parent.width
         height: 50
         color: Theme.primaryColor
         radius: Theme.defaultRadius
 
-        // Закругление только сверху
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
@@ -41,12 +37,10 @@ Dialog {
             anchors.rightMargin: 10
             spacing: 10
 
-            // 🎯 Область для перетаскивания
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
-                // Иконка перемещения (опционально)
                 Text {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
@@ -56,21 +50,16 @@ Dialog {
                     opacity: 0.7
                 }
 
-                // Заголовок
                 Text {
                     anchors.centerIn: parent
-                    text: addCategoryDialogInternal.title
+                    text: editCategoryDialogInternal.title
                     font: Theme.boldFont
-                    //font.pixelSize: 18
                     color: Theme.textOnPrimary
                 }
 
-                // 🖱️ MouseArea для перетаскивания
                 MouseArea {
-                    id: dragArea
                     anchors.fill: parent
-                    cursorShape: Qt.SizeAllCursor  // Курсор "перемещение"
-
+                    cursorShape: Qt.SizeAllCursor
                     property point clickPos: Qt.point(0, 0)
 
                     onPressed: function(mouse) {
@@ -79,22 +68,17 @@ Dialog {
 
                     onPositionChanged: function(mouse) {
                         if (pressed) {
-                            // Вычисляем новую позицию
                             var delta = Qt.point(mouse.x - clickPos.x, mouse.y - clickPos.y)
-
-                            // Перемещаем диалог
-                            addCategoryDialogInternal.x += delta.x
-                            addCategoryDialogInternal.y += delta.y
+                            editCategoryDialogInternal.x += delta.x
+                            editCategoryDialogInternal.y += delta.y
                         }
                     }
                 }
             }
 
-            // Кнопка закрытия
             ToolButton {
                 Layout.preferredWidth: 30
                 Layout.preferredHeight: 30
-
                 text: "✕"
                 font.pixelSize: 16
                 font.bold: true
@@ -110,50 +94,44 @@ Dialog {
                 background: Rectangle {
                     color: parent.hovered ? Qt.lighter(Theme.primaryColor, 1.2) : "transparent"
                     radius: Theme.smallRadius
-
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
 
-                onClicked: addCategoryDialogInternal.reject()
+                onClicked: editCategoryDialogInternal.reject()
             }
         }
     }
 
-    // Основной контент
     contentItem: Item {
         implicitWidth: 500
-        implicitHeight: 350
+        implicitHeight: 400
 
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 20
-            anchors.topMargin: 10  // Уменьшили, т.к. header уже есть
+            anchors.topMargin: 10
             spacing: 15
 
-            // ==================== НАЗВАНИЕ КАТЕГОРИИ ====================
+            // Название
             AppTextField {
-                id: newCategoryField
-                placeholderText: "Новая категория"
-                text: ""
+                id: editCategoryField
+                placeholderText: "Название категории"
                 Layout.fillWidth: true
                 enterDelay: 0
             }
 
-            // ==================== РАЗДЕЛИТЕЛЬ ====================
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
                 color: Theme.dividerColor
             }
 
-            // ==================== ЗАГОЛОВОК СЕКЦИИ SKU ====================
             AppLabel {
                 text: "Шаблон артикула (SKU):"
                 level: "h3"
                 enterDelay: 100
             }
 
-            // ==================== ПОЛЯ SKU ====================
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 10
@@ -168,23 +146,19 @@ Dialog {
                     id: skuPrefixField
                     placeholderText: "P"
                     Layout.preferredWidth: 80
-<<<<<<< HEAD
                     Layout.preferredHeight: 40
-=======
->>>>>>> 5f6bd7f (AddCategoryDialog.qml теперь работает через стандартные компоненты и файл темы)
                     enterDelay: 200
 
                     property int maximumLength: 5
+                    validator: RegularExpressionValidator {
+                        regularExpression: /[A-ZА-ЯЁ0-9-]*/
+                    }
                     onTextChanged: {
                         if (text.length > maximumLength) {
                             text = text.substring(0, maximumLength)
                         }
                         text = text.toUpperCase()
                         updatePreview()
-                    }
-
-                    validator: RegularExpressionValidator {
-                        regularExpression: /[A-ZА-ЯЁ0-9-]*/
                     }
                 }
 
@@ -200,10 +174,7 @@ Dialog {
                     to: 8
                     value: 4
                     Layout.preferredWidth: 120
-<<<<<<< HEAD
                     Layout.preferredHeight: 40
-=======
->>>>>>> 5f6bd7f (AddCategoryDialog.qml теперь работает через стандартные компоненты и файл темы)
                     onValueChanged: updatePreview()
 
                     contentItem: TextInput {
@@ -224,13 +195,11 @@ Dialog {
                             : (skuDigitsSpinBox.hovered ? Theme.inputBorderHover : Theme.inputBorder)
                         border.width: skuDigitsSpinBox.activeFocus ? 2 : 1
                         radius: Theme.smallRadius
-
                         Behavior on border.color { ColorAnimation { duration: 150 } }
                     }
                 }
             }
 
-            // ==================== PREVIEW ====================
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 10
@@ -251,9 +220,8 @@ Dialog {
                 }
             }
 
-            // ==================== ОПИСАНИЕ ====================
             AppLabel {
-                text: "Артикулы для товаров этой категории будут иметь вид: " +
+                text: "Артикулы будут иметь вид: " +
                       (skuPrefixField.text || "P") + "-" + "X".repeat(skuDigitsSpinBox.value)
                 level: "caption"
                 wrapMode: Text.WordWrap
@@ -261,25 +229,21 @@ Dialog {
                 enterDelay: 400
             }
 
-            // ==================== SPACER ====================
-            Item {
-                Layout.fillHeight: true
-            }
+            Item { Layout.fillHeight: true }
 
-            // ==================== КНОПКИ (вручную) ====================
+            // Кнопки
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 10
 
-                Item { Layout.fillWidth: true }  // Spacer
+                Item { Layout.fillWidth: true }
 
                 AppButton {
                     text: "Отмена"
                     btnColor: "#666666"
                     Layout.preferredWidth: 100
                     enterDelay: 450
-
-                    onClicked: addCategoryDialogInternal.reject()
+                    onClicked: editCategoryDialogInternal.reject()
                 }
 
                 AppButton {
@@ -287,25 +251,20 @@ Dialog {
                     btnColor: Theme.primaryColor
                     Layout.preferredWidth: 100
                     enterDelay: 500
-
-                    onClicked: addCategoryDialogInternal.accept()
+                    onClicked: editCategoryDialogInternal.accept()
                 }
             }
         }
     }
 
-    // ==================== ФУНКЦИИ ====================
-
     function generatePreview() {
         var prefix = skuPrefixField.text || "P"
         var digits = skuDigitsSpinBox.value
         var examples = []
-
         for (var i = 1; i <= 3; i++) {
             var number = String(i).padStart(digits, '0')
             examples.push(prefix + "-" + number)
         }
-
         return examples.join(", ") + ", ..."
     }
 
@@ -313,25 +272,24 @@ Dialog {
         previewLabel.text = generatePreview()
     }
 
-    // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
-
-    onOpened: {
-        console.log("DEBUG: AddCategoryDialog opened")
-
-        newCategoryField.text = ""
-        skuPrefixField.text = ""
-        skuDigitsSpinBox.value = 4
-
-        newCategoryField.forceActiveFocus()
+    // Открыть для редактирования существующей категории
+    function openFor(category) {
+        categoryId = category.id
+        editCategoryField.text = category.name
+        skuPrefixField.text = category.sku_prefix
+        skuDigitsSpinBox.value = category.sku_digits
+        open()
         updatePreview()
     }
 
     onAccepted: {
-        if (newCategoryField.text.trim() !== "") {
-            var prefix = skuPrefixField.text.trim() || "ITEM"
-            var digits = skuDigitsSpinBox.value
-
-            categoryAdded(newCategoryField.text.trim(), prefix, digits)
+        if (editCategoryField.text !== "" && categoryId >= 0) {
+            categoryEdited(
+                categoryId,
+                editCategoryField.text,
+                skuPrefixField.text.trim() || "ITEM",
+                skuDigitsSpinBox.value
+            )
         }
     }
 }
