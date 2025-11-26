@@ -1,8 +1,10 @@
-// components/FilterPanel.qml
+// qml/components/FilterPanel.qml
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQml
+import "../../styles"
+import "../common"
 
 Rectangle {
     id: filterPanel
@@ -12,30 +14,31 @@ Rectangle {
     Layout.leftMargin: 5
     Layout.rightMargin: 5
 
-    color: "#f8f9fa"
-    border.color: "#dee2e6"
+    color: Theme.backgroundColor
+    border.color: Theme.dividerColor
     border.width: 1
-    radius: 4
+    radius: Theme.smallRadius
 
     RowLayout {
         anchors.fill: parent
         anchors.margins: 10
         spacing: 10
 
+        // Часы
         Rectangle {
             Layout.preferredWidth: 180
             Layout.fillHeight: true
             color: "white"
-            border.color: "#ccc"
-            radius: 3
+            border.color: Theme.dividerColor
+            radius: Theme.smallRadius
 
-            Text {
+            AppLabel {
                 id: dateTimeText
                 anchors.centerIn: parent
                 text: Qt.formatDateTime(new Date(), "dd.MM.yyyy HH:mm:ss")
-                font.pixelSize: 13
+                level: "body"
                 font.bold: true
-                color: "#495057"
+                color: Theme.textSecondary
             }
 
             Timer {
@@ -48,19 +51,12 @@ Rectangle {
             }
         }
 
-        TextField {
+        // Поле поиска
+        AppTextField {
             id: filterField
             placeholderText: "Введите запрос для фильтрации..."
             Layout.fillWidth: true
             Layout.fillHeight: true
-            font.pixelSize: 12
-
-            background: Rectangle {
-                color: "white"
-                border.color: filterField.activeFocus ? "#007bff" : "#ced4da"
-                border.width: filterField.activeFocus ? 2 : 1
-                radius: 4
-            }
 
             onTextChanged: {
                 consoleHandler.log("Filter text changed to: " + text)
@@ -72,28 +68,35 @@ Rectangle {
             }
         }
 
+        // Выбор поля фильтрации
         ComboBox {
             id: filterComboBox
-            Layout.preferredWidth: 180
+            Layout.preferredWidth: 150
             Layout.fillHeight: true
             textRole: "display"
             valueRole: "value"
-            font.pixelSize: 12
 
             model: [
                 { display: "Название", value: "name" },
                 { display: "Артикул", value: "article" },
                 { display: "Описание", value: "description" },
                 { display: "Категория", value: "category" },
-                { display: "Цена", value: "price" },
-                { display: "Остаток", value: "stock" }
+                { display: "Производитель", value: "manufacturer" }
             ]
 
             background: Rectangle {
                 color: "white"
-                border.color: filterComboBox.pressed ? "#007bff" : "#ced4da"
+                border.color: filterComboBox.pressed ? Theme.accentColor : Theme.dividerColor
                 border.width: 1
-                radius: 4
+                radius: Theme.smallRadius
+            }
+
+            contentItem: Text {
+                text: filterComboBox.displayText
+                font: Theme.defaultFont
+                color: Theme.textColor
+                verticalAlignment: Text.AlignVCenter
+                leftPadding: 10
             }
 
             onCurrentValueChanged: {
@@ -115,11 +118,42 @@ Rectangle {
             }
         }
 
-        Button {
+        // Выбор статуса товара
+        ComboBox {
+            id: statusComboBox
+            Layout.preferredWidth: 180
+            Layout.fillHeight: true
+
+            model: ["Все", "в наличии", "под заказ", "нет в наличии", "снят с производства"]
+
+            background: Rectangle {
+                color: "white"
+                border.color: statusComboBox.pressed ? Theme.accentColor : Theme.dividerColor
+                border.width: 1
+                radius: Theme.smallRadius
+            }
+
+            contentItem: Text {
+                text: statusComboBox.displayText
+                font: Theme.defaultFont
+                color: Theme.textColor
+                verticalAlignment: Text.AlignVCenter
+                leftPadding: 10
+            }
+
+            onCurrentTextChanged: {
+                itemsModel.setStatusFilter(currentText)
+            }
+        }
+
+        // Кнопка сортировки
+        AppButton {
             id: sortButton
             text: sortAscending ? "↑ Сортировать" : "↓ Сортировать"
-            Layout.preferredWidth: 200
+            btnColor: "white"
+            Layout.preferredWidth: 150
             Layout.fillHeight: true
+
             property bool sortAscending: true
 
             onClicked: {
@@ -127,39 +161,50 @@ Rectangle {
                 let order = sortAscending ? "ascending" : "descending"
                 consoleHandler.log("Sorting by " + field + " (" + order + ")")
                 itemsModel.setSort(field, order)
-                sortAscending = !sortAscending // Toggle sort order
+                sortAscending = !sortAscending
             }
 
             background: Rectangle {
                 color: parent.pressed ? "#e9ecef" : (parent.hovered ? "#f8f9fa" : "white")
-                border.color: "#ced4da"
+                border.color: Theme.dividerColor
                 border.width: 1
-                radius: 4
-            }
-        }
-
-        Button {
-            text: "Очистить"
-            Layout.preferredWidth: 100
-            Layout.fillHeight: true
-            enabled: filterField.text !== ""
-
-            onClicked: {
-                filterField.text = ""
-                filterComboBox.currentIndex = 0
-            }
-
-            background: Rectangle {
-                color: parent.enabled ? (parent.pressed ? "#e9ecef" : (parent.hovered ? "#f8f9fa" : "white")) : "#e9ecef"
-                border.color: "#ced4da"
-                border.width: 1
-                radius: 4
+                radius: Theme.smallRadius
             }
 
             contentItem: Text {
                 text: parent.text
-                font.pixelSize: 12
-                color: parent.enabled ? "#495057" : "#adb5bd"
+                font: Theme.defaultFont
+                color: Theme.textSecondary
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
+        // Кнопка очистки
+        AppButton {
+            text: "Очистить"
+            btnColor: "white"
+            Layout.preferredWidth: 100
+            Layout.fillHeight: true
+            enabled: filterField.text !== "" || statusComboBox.currentIndex !== 0
+
+            onClicked: {
+                filterField.text = ""
+                filterComboBox.currentIndex = 0
+                statusComboBox.currentIndex = 0  // Сбросить статус
+            }
+
+            background: Rectangle {
+                color: parent.enabled ? (parent.pressed ? "#e9ecef" : (parent.hovered ? "#f8f9fa" : "white")) : "#e9ecef"
+                border.color: Theme.dividerColor
+                border.width: 1
+                radius: Theme.smallRadius
+            }
+
+            contentItem: Text {
+                text: parent.text
+                font: Theme.defaultFont
+                color: parent.enabled ? Theme.textSecondary : "#adb5bd"
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }

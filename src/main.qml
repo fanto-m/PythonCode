@@ -8,6 +8,9 @@ import "qml/styles"                           // ← Theme
 import "qml/components/common"                // ← Типовые компоненты
 import "qml/components/dialogs/categories"    // ← Диалог
 import "qml/components/dialogs/suppliers"
+import "qml/components/dialogs/system"
+import "qml/components/panels"
+
 
 ApplicationWindow {
     id: mainWindow
@@ -358,7 +361,7 @@ ApplicationWindow {
                 }
 
                 // Filter Panel
-                Components.FilterPanel {}
+                FilterPanel {}
 
                 // Main content
                 RowLayout {

@@ -26,6 +26,7 @@ class FilterProxyModel(QSortFilterProxyModel):
 
         self._filter_field = "name"  # Поле для фильтрации по умолчанию
         self._filter_string = ""     # Строка фильтра по умолчанию
+        self._status_filter = "Все"
         self._settings = QSettings("ООО ОЗТМ", "Склад-0.1")
 
         # Загрузка сохраненных настроек
@@ -107,6 +108,15 @@ class FilterProxyModel(QSortFilterProxyModel):
 
         logger.debug(f"Filter field set to: {self._filter_field}")
 
+    @Slot(str)
+    def setStatusFilter(self, status: str):
+        """Установка фильтра по статусу."""
+        self._status_filter = status
+        logger.info(f"🔍 Status filter SET TO: '{status}'")  # ← ДОБАВИТЬ
+        self.invalidateFilter()
+        self._saveSettings()
+        logger.debug(f"Status filter: '{status}'")
+
     @Slot(str, str)
     def setSort(self, role_name: str, order: str = "ascending"):
         """
@@ -149,12 +159,16 @@ class FilterProxyModel(QSortFilterProxyModel):
         """
         Проверка, проходит ли строка фильтр.
 
+        Фильтрует по:
+        1. Текстовому полю (_filter_field: name, article, description, etc.)
+        2. Статусу (_status_filter: "Все", "в наличии", "под заказ", etc.)
+
         Args:
             sourceRow: Индекс строки в исходной модели.
             sourceParent: Родительский индекс.
 
         Returns:
-            bool: True если строка проходит фильтр.
+            bool: True если строка проходит ВСЕ фильтры.
         """
         if not self.sourceModel():
             return False
@@ -163,34 +177,51 @@ class FilterProxyModel(QSortFilterProxyModel):
         if not index.isValid():
             return False
 
-        # Без фильтра - показываем все
-        if not self._filter_string:
-            return True
+        # 1. Фильтр по текстовому полю
+        if self._filter_string:
+            # Маппинг полей на роли
+            role_map = {
+                "article": ItemsModel.ArticleRole,
+                "name": ItemsModel.NameRole,
+                "description": ItemsModel.DescriptionRole,
+                "category": ItemsModel.CategoryRole,
+                "manufacturer": ItemsModel.ManufacturerRole,
+                "price": ItemsModel.PriceRole,
+                "stock": ItemsModel.StockRole
+            }
 
-        # Маппинг полей на роли
-        role_map = {
-            "article": ItemsModel.ArticleRole,
-            "name": ItemsModel.NameRole,
-            "description": ItemsModel.DescriptionRole,
-            "category": ItemsModel.CategoryRole,
-            "price": ItemsModel.PriceRole,
-            "stock": ItemsModel.StockRole
-        }
+            role = role_map.get(self._filter_field, ItemsModel.NameRole)
+            value = self.sourceModel().data(index, role)
+            value_str = "" if value is None else str(value).lower()
 
-        role = role_map.get(self._filter_field, ItemsModel.NameRole)
-        value = self.sourceModel().data(index, role)
-        value_str = "" if value is None else str(value).lower()
+            if self._filter_string not in value_str:
+                return False  # Не прошел текстовый фильтр
 
-        result = self._filter_string in value_str
-
-        # Логируем только если TRACE включен
-        if result and logger.level("TRACE").no >= logger._core.min_level:
-            logger.trace(
-                f"Row {sourceRow} PASSED filter: "
-                f"field={self._filter_field}, value='{value_str}'"
+        # 2. Фильтр по статусу
+        if self._status_filter and self._status_filter != "Все":
+            status_value = self.sourceModel().data(index, ItemsModel.StatusRole)
+            if status_value != self._status_filter:
+                return False  # Не прошел фильтр по статусу
+            # ← ДОБАВИТЬ ЛОГИРОВАНИЕ
+            logger.debug(
+                f"Row {sourceRow}: comparing status_value='{status_value}' "
+                f"with filter='{self._status_filter}'"
             )
 
-        return result
+            if status_value != self._status_filter:
+                logger.debug(f"Row {sourceRow}: REJECTED by status filter")
+                return False
+
+            logger.debug(f"Row {sourceRow}: PASSED status filter")
+        # Прошел все фильтры
+        if logger.level("TRACE").no >= logger._core.min_level:
+            logger.trace(
+                f"Row {sourceRow} PASSED filters: "
+                f"field={self._filter_field}, filter='{self._filter_string}', "
+                f"status='{self._status_filter}'"
+            )
+
+        return True
 
     # ==================== CRUD Operations (delegated to source model) ====================
 
