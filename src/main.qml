@@ -666,7 +666,7 @@ ApplicationWindow {
         onCategoryDeleted: (id) => categoryModel.deleteCategory(id)
     }
 
-    Components.ImageFileDialog {
+    ImageFileDialog {
         id: fileDialogInternal
         onImageSelected: (path) => {
             var fileName = path.split("/").pop()
@@ -677,7 +677,7 @@ ApplicationWindow {
         }
     }
 
-    Components.DocumentFileDialog {
+    DocumentFileDialog {
         id: documentDialog
         onDocumentSelected: (path) => {
             // Сохраняем только имя файла из полного пути

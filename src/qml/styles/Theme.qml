@@ -15,6 +15,7 @@ QtObject {
     property color textSecondary: "#666666"             // Серый для описаний
     property color textOnPrimary: "#FFFFFF"             // Белый на цветном фоне
     property color errorColor: "#B00020"                // Красный для ошибок
+    property color successColor: "#4caf50"              // ✅ Зелёный для успеха
 
     // --- ЦВЕТА ДЛЯ ФОРМ И ДИАЛОГОВ ---
     property color inputBackground: "#e0e0e0"           // 💡 Светло-серый фон для input

@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import "../qml/components/dialogs/system"
 
 Dialog {
     id: productDialog

@@ -31,7 +31,82 @@ PythonCode
 	|-files
 		|-images/
 		|-documents/
-	|
+	|-fonts
+	|-models
+	    |-__init__.py
+	    |-dto.py //лассы представляют структуру данных из базы данных
+                    и используются для передачи данных между слоями приложения
+    |-qml
+        |-assets
+            |-icons
+            |-images
+        |-components
+            |-common
+                |-AppButton.qml
+                |-AppCheckBox.qml
+                |-AppComboBox.qml
+                |-AppLabel.qml
+                |-AppTextArea.qml
+                |-AppTextField.qml
+            |-dialogs
+                |-categories
+                    |-AddCategoriyDialog.qml
+                    |-DeleteCategoryDialog.qml
+                    |-EditCategoryDialog.qml
+                |-items
+                |-specification
+                |-suppliers
+                    |-AddSupplierDialog.qml
+                    |-DeleteSupplierDialog.qml
+                    |-EditSupplierDialog.qml
+                |-system
+            |-managers
+            |-panels
+                |-FilterPanel.qml
+            |-tables
+	    |-styles
+	        |-qmldir
+	        |-Theme.qml
+	|-repositories
+	    |-__init__.py
+	    |-base_repository.py Абстрактный базовый класс для всех репозиториев.
+	                            Предоставляет общую функциональность для работы с SQLite:
+	    |-categories_repository.py Предоставляет методы для:
+                                                     - Создания и загрузки категорий
+                                                     - Обновления и удаления категорий
+                                                     - Генерации артикулов (SKU) для товаров
+	    |-documents_repository.py  Предоставляет методы для:
+                                                    - Добавления документов к товарам
+                                                    - Загрузки документов товара
+                                                    - Удаления и переименования документов
+                                                    - Миграции старых документов
+	    |-items_repository.py Предоставляет методы для:
+                                                    - Создания и загрузки товаров
+                                                    - Обновления и удаления товаров
+                                                    - Поиска и фильтрации товаров
+	    |-specifications_repository.py  Предоставляет методы для:
+                                                    - Создания и загрузки спецификаций
+                                                    - Обновления и удаления спецификаций
+                                                    - Управления позициями в спецификациях
+                                                    - Расчета стоимости спецификаций
+	    |-suppliers_repository.py  Предоставляет методы для:
+                                                    - Создания и загрузки поставщиков
+                                                    - Обновления и удаления поставщиков
+                                                    - Управления связями товар-поставщик
+	    |-unit_of_work.py Предоставляет:
+                                                    - Единую точку доступа ко всем репозиториям
+                                                    - Автоматическую инициализацию всех таблиц БД
+                                                    - Координацию работы между репозиториями
+	|-utils
+	    |-__init__.py
+	    |-logger_config.py Настраивает логирование для приложения.
+
+                                                    Args:
+                                                        log_level: Уровень логирования (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL).
+                                                        log_dir: Директория для логов.
+                                                        rotation: Когда создавать новый файл (размер или время).
+                                                        retention: Как долго хранить старые логи.
+                                                        compression: Сжимать ли старые логи.
 	|-__init__.py
 	|-categories_model.py - Модель данных для управления категориями
 	|-config_manager.py - Сохраняет настройки в JSON-файл и предоставляет привязки к свойствам Qt 				для QML
