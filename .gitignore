@@ -1,7 +1,7 @@
 /docs_old/
-/models/
-/documents/
-/images/
+models/
+documents/
+images/
 src/__pycache__/
 /src/files/
 .idea/

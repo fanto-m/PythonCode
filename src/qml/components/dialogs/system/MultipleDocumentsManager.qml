@@ -16,19 +16,13 @@ GroupBox {
     property var documentsModel: null
     property string currentArticle: ""
     property var parentDialog: null
+    property bool canDelete: false  // Явное свойство для кнопки удаления
 
     // === СИГНАЛЫ ===
     signal documentOpened(string documentPath)
 
     Layout.fillWidth: true
-    Layout.preferredHeight: 220
-
-    Component.onCompleted: {
-        console.log("=== MultipleDocumentsManager CREATED ===")
-        console.log("documentsModel:", documentsModel ? "exists" : "null")
-        console.log("currentArticle:", currentArticle)
-        console.log("============================================")
-    }
+    Layout.preferredHeight: 440  // Увеличено в 2 раза для большего списка файлов
 
     // === СТИЛЬ GROUPBOX ===
     background: Rectangle {
@@ -56,25 +50,20 @@ GroupBox {
         function onDocumentsLoaded(count) {
             console.log("=== onDocumentsLoaded ===")
             console.log("count:", count)
-            console.log("documentsComboBox.currentIndex BEFORE:", documentsComboBox.currentIndex)
-
-            if (count > 0 && documentsComboBox.currentIndex < 0) {
-                documentsComboBox.currentIndex = 0
-                console.log("Auto-selected first document, currentIndex AFTER:", documentsComboBox.currentIndex)
-            } else if (count === 0) {
-                documentsComboBox.currentIndex = -1
-            }
+            // НЕ выбираем автоматически - пользователь сам выберет что удалять
+            // currentIndex остаётся -1, кнопка удалить заблокирована
+            canDelete = false
+            console.log("Documents loaded, waiting for user selection")
             console.log("======================")
         }
 
         // Сигнал после добавления документа
         function onDocumentAdded() {
             console.log("=== onDocumentAdded ===")
-            console.log("documentsModel.count():", documentsModel ? documentsModel.count() : "null")
-            // После добавления выбираем последний добавленный (или первый если был пустой)
+            // После добавления выбираем добавленный документ
             if (documentsModel && documentsModel.count() > 0) {
                 documentsComboBox.currentIndex = documentsModel.count() - 1
-                console.log("Selected last document, currentIndex:", documentsComboBox.currentIndex)
+                // canDelete установится автоматически в onCurrentIndexChanged
             }
             console.log("======================")
         }
@@ -82,29 +71,13 @@ GroupBox {
         // Сигнал после удаления документа
         function onDocumentDeleted() {
             console.log("=== onDocumentDeleted ===")
-            console.log("documentsModel.count():", documentsModel ? documentsModel.count() : "null")
-            // После удаления корректируем индекс
-            if (documentsModel && documentsModel.count() > 0) {
-                if (documentsComboBox.currentIndex >= documentsModel.count()) {
-                    documentsComboBox.currentIndex = documentsModel.count() - 1
-                } else if (documentsComboBox.currentIndex < 0) {
-                    documentsComboBox.currentIndex = 0
-                }
-            } else {
-                documentsComboBox.currentIndex = -1
-            }
-            console.log("currentIndex AFTER:", documentsComboBox.currentIndex)
-            console.log("======================")
-        }
-    }
+            var count = documentsModel ? documentsModel.count() : 0
+            console.log("Remaining documents:", count)
 
-    // Отладка изменения currentIndex
-    Connections {
-        target: documentsComboBox
-        function onCurrentIndexChanged() {
-            console.log(">>> ComboBox currentIndex changed to:", documentsComboBox.currentIndex)
-            console.log(">>> Delete button should be enabled:",
-                documentsModel && documentsModel.count() > 0 && documentsComboBox.currentIndex >= 0)
+            // После удаления сбрасываем выбор - пользователь должен выбрать снова
+            documentsComboBox.currentIndex = -1
+            // canDelete установится автоматически в onCurrentIndexChanged (= false)
+            console.log("======================")
         }
     }
 
@@ -142,16 +115,16 @@ GroupBox {
         ColumnLayout {
             spacing: 10
 
-            Text {
+            AppLabel {
                 text: "Вы уверены, что хотите удалить этот документ?"
-                font: Theme.defaultFont
-                color: Theme.textColor
+                level: "body"
+                enterDelay: 0
             }
 
-            Text {
+            AppLabel {
                 text: "Файл будет удален из списка документов товара."
-                font: Theme.smallFont
-                color: Theme.textSecondary
+                level: "caption"
+                enterDelay: 0
             }
         }
 
@@ -224,15 +197,17 @@ GroupBox {
                 model: documentsModel
                 textRole: "name"
 
-                displayText: currentIndex >= 0 ? currentText : "Нет документов"
+                displayText: currentIndex >= 0 ? currentText : "Выберите документ..."
                 enabled: documentsModel && documentsModel.count() > 0
 
-                Component.onCompleted: {
-                    console.log(">>> AppComboBox CREATED, currentIndex:", currentIndex)
-                }
-
-                onModelChanged: {
-                    console.log(">>> AppComboBox model changed, currentIndex:", currentIndex)
+                // Когда пользователь выбирает документ - разблокируем кнопку удаления
+                onCurrentIndexChanged: {
+                    console.log(">>> ComboBox onCurrentIndexChanged:", currentIndex)
+                    if (currentIndex >= 0) {
+                        canDelete = true
+                    } else {
+                        canDelete = false
+                    }
                 }
 
                 delegate: ItemDelegate {
@@ -253,10 +228,13 @@ GroupBox {
             }
 
             // Кнопка добавления документа
-            Button {
+            AppButton {
                 text: "➕"
                 Layout.preferredWidth: 40
                 Layout.preferredHeight: 40
+                btnColor: Theme.successColor
+                enterDelay: 0
+
                 ToolTip.visible: hovered
                 ToolTip.text: "Добавить документ"
 
@@ -278,42 +256,22 @@ GroupBox {
 
                     documentDialog.open()
                 }
-
-                background: Rectangle {
-                    color: parent.down ? Qt.darker(Theme.successColor, 1.3)
-                         : (parent.hovered ? Qt.lighter(Theme.successColor, 1.1) : "#e8f5e9")
-                    border.color: Theme.successColor
-                    border.width: 1
-                    radius: Theme.smallRadius
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    font.pixelSize: 14
-                    color: Theme.successColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
             }
 
             // Кнопка удаления документа
-            Button {
+            AppButton {
                 id: deleteBtn
                 text: "🗑️"
                 Layout.preferredWidth: 40
                 Layout.preferredHeight: 40
+                btnColor: Theme.errorColor
+                enterDelay: 0
+
+                enabled: canDelete
+                opacity: enabled ? 1.0 : 0.5
+
                 ToolTip.visible: hovered
                 ToolTip.text: "Удалить документ"
-
-                enabled: documentsModel && documentsModel.count() > 0 && documentsComboBox.currentIndex >= 0
-
-                // Отладка состояния кнопки
-                onEnabledChanged: {
-                    console.log(">>> DELETE BUTTON enabled changed to:", enabled)
-                    console.log("    documentsModel:", documentsModel ? "exists" : "null")
-                    console.log("    count:", documentsModel ? documentsModel.count() : "N/A")
-                    console.log("    currentIndex:", documentsComboBox.currentIndex)
-                }
 
                 onClicked: {
                     console.log("Delete clicked, currentIndex:", documentsComboBox.currentIndex)
@@ -321,22 +279,11 @@ GroupBox {
                     deleteConfirmDialog.open()
                 }
 
-                background: Rectangle {
-                    color: {
-                        if (!parent.enabled) return "#f5f5f5"
-                        if (parent.down) return Qt.darker(Theme.errorColor, 1.3)
-                        if (parent.hovered) return Qt.lighter(Theme.errorColor, 1.1)
-                        return "#ffebee"
-                    }
-                    border.color: parent.enabled ? Theme.errorColor : Theme.inputBorder
-                    border.width: 1
-                    radius: Theme.smallRadius
-                }
-
+                // Явно задаём белый цвет текста для видимости на красном фоне
                 contentItem: Text {
                     text: parent.text
-                    font.pixelSize: 14
-                    color: parent.enabled ? Theme.errorColor : Theme.textSecondary
+                    font: parent.font
+                    color: "white"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -364,10 +311,13 @@ GroupBox {
 
                     delegate: Rectangle {
                         width: documentsListView.width
-                        height: 40
-                        color: mouseArea.containsMouse ? Qt.lighter(Theme.accentColor, 1.8) : "white"
-                        border.color: Theme.inputBorder
-                        border.width: 1
+                        height: 32  // Уменьшенная высота для одной строки
+                        // Выделяем выбранный элемент
+                        color: documentsComboBox.currentIndex === index
+                               ? Qt.lighter(Theme.accentColor, 1.5)
+                               : (mouseArea.containsMouse ? Qt.lighter(Theme.accentColor, 1.8) : "white")
+                        border.color: documentsComboBox.currentIndex === index ? Theme.accentColor : Theme.inputBorder
+                        border.width: documentsComboBox.currentIndex === index ? 2 : 1
                         radius: Theme.smallRadius
 
                         Behavior on color {
@@ -380,6 +330,12 @@ GroupBox {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
 
+                            onClicked: {
+                                // Выбираем этот документ в ComboBox
+                                documentsComboBox.currentIndex = index
+                                console.log("ListView item clicked, set currentIndex:", index)
+                            }
+
                             onDoubleClicked: {
                                 if (fileManager) {
                                     fileManager.open_file_externally(model.path)
@@ -389,31 +345,31 @@ GroupBox {
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 8
+                            anchors.margins: 6
+                            spacing: 6
 
                             Text {
                                 text: "📄"
-                                font.pixelSize: 14
+                                font.pixelSize: 12
                             }
 
-                            ColumnLayout {
+                            // Название файла
+                            Text {
+                                text: model.name || "Без названия"
+                                font.family: Theme.defaultFont.family
+                                font.pixelSize: Theme.sizeCaption
+                                font.bold: true
+                                color: Theme.textColor
+                                elide: Text.ElideRight
                                 Layout.fillWidth: true
-                                spacing: 2
+                            }
 
-                                Text {
-                                    text: model.name || "Без названия"
-                                    font: Theme.boldFont
-                                    color: Theme.textColor
-                                    elide: Text.ElideRight
-                                    Layout.fillWidth: true
-                                }
-
-                                Text {
-                                    text: "Добавлено: " + (model.date || "")
-                                    font: Theme.smallFont
-                                    color: Theme.textSecondary
-                                }
+                            // Дата добавления справа
+                            Text {
+                                text: model.date || ""
+                                font: Theme.smallFont
+                                color: Theme.textSecondary
+                                Layout.alignment: Qt.AlignRight
                             }
                         }
                     }
@@ -443,24 +399,23 @@ GroupBox {
 
     // === ФУНКЦИИ ===
     function loadDocuments(article) {
-        console.log("=== loadDocuments START ===")
+        console.log("=== loadDocuments ===")
         console.log("article:", article)
 
         currentArticle = article
-        if (documentsModel) {
-            // Сбрасываем индекс перед загрузкой
-            documentsComboBox.currentIndex = -1
+        canDelete = false
 
+        if (documentsModel) {
             documentsModel.loadDocuments(article)
-            // Сигнал onDocumentsLoaded автоматически установит правильный индекс
         }
-        console.log("=== loadDocuments END ===")
+        console.log("=====================")
     }
 
     function clearDocuments() {
         console.log("clearDocuments called")
         currentArticle = ""
         documentsComboBox.currentIndex = -1
+        canDelete = false
         if (documentsModel) {
             documentsModel.clear()
         }
