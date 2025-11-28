@@ -31,7 +31,7 @@ ApplicationWindow {
     property string selectedImagePath: ""
     property string selectedDocumentPath: ""
 
-    onVisibilityChanged: {
+    onVisibilityChanged: function(visibility) {
         if (visibility === Window.Windowed) {
             width = defaultWidth
             height = defaultHeight

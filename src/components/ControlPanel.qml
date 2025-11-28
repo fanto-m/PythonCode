@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../qml/components/dialogs/items"
 
 Rectangle {
     id: root
@@ -46,13 +47,17 @@ Rectangle {
     property Component productCardDialogComponent: null
     property var currentProductDialog: null
 
+    // === ПУТЬ К ProductCardDialog ===
+    // Относительно ControlPanel.qml (src/components/)
+    readonly property string productCardDialogPath: "../qml/components/dialogs/items/ProductCardDialog.qml"
+
     // Public functions for dialog management
     function openProductCardDialog() {
         console.log("openProductCardDialog called")
 
         if (!productCardDialogComponent) {
-            console.log("Creating component from ProductCardDialog.qml")
-            productCardDialogComponent = Qt.createComponent("ProductCardDialog.qml")
+            console.log("Creating component from:", productCardDialogPath)
+            productCardDialogComponent = Qt.createComponent(productCardDialogPath)
         }
 
         console.log("Component status: " + productCardDialogComponent.status)
@@ -111,7 +116,7 @@ Rectangle {
         console.log("openProductCardDialogForEdit called with itemData:", JSON.stringify(itemData))
 
         if (!productCardDialogComponent) {
-            productCardDialogComponent = Qt.createComponent("ProductCardDialog.qml")
+            productCardDialogComponent = Qt.createComponent(productCardDialogPath)
         }
 
         if (productCardDialogComponent.status === Component.Ready) {

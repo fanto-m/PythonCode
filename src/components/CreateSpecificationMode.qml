@@ -4,7 +4,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "./" as Local
 import "./"
-
+import "../qml/components/common" as Common
 Rectangle {
     id: root
 
@@ -658,14 +658,14 @@ Rectangle {
     // ========================================
 
     // Universal notification dialog
-    Local.NotificationDialog {
+    Common.NotificationDialog {
         id: notificationDialog
         onAccepted: {}
         onRejected: {}
     }
 
     // Confirm exit dialog
-    Local.NotificationDialog {
+    Common.NotificationDialog {
         id: confirmExitDialog
         dialogType: "warning"
         message: "У вас есть несохраненные изменения. \n Выйти без сохранения?"
@@ -677,7 +677,7 @@ Rectangle {
     }
 
     // Confirm clear dialog
-    Local.NotificationDialog {
+    Common.NotificationDialog {
         id: confirmClearDialog
         dialogType: "warning"
         message: "Вы уверены, что хотите очистить форму? \n Все несохраненные данные будут потеряны."

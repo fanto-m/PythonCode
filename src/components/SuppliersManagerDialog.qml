@@ -41,6 +41,19 @@ Dialog {
         anchors.margins: baseSpacing
         spacing: baseSpacing
 
+        Keys.onPressed: function(event) {
+            if (currentArticle !== "" || suppliersTable.rows === 0)
+                return
+
+            if (event.key === Qt.Key_Up && selectedRow > 0) {
+                selectedRow--
+                event.accepted = true
+            } else if (event.key === Qt.Key_Down && selectedRow < suppliersTable.rows - 1) {
+                selectedRow++
+                event.accepted = true
+            }
+        }
+
         // Search/Filter bar
         RowLayout {
             Layout.fillWidth: true
@@ -495,7 +508,7 @@ Dialog {
     }
 
     // Keyboard navigation
-    Keys.onPressed: function(event) {
+    /*Keys.onPressed: function(event) {
         if (currentArticle !== "" || suppliersTable.rows === 0) return
 
         if (event.key === Qt.Key_Up && selectedRow > 0) {
@@ -505,5 +518,5 @@ Dialog {
             selectedRow++
             event.accepted = true
         }
-    }
+    }*/
 }

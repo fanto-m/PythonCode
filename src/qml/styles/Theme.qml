@@ -6,8 +6,8 @@ import QtQuick
 QtObject {
     // --- ОСНОВНЫЕ ЦВЕТА (адаптированы под AddCategoryDialog) ---
 
-    property color primaryColor: "#007bff"              // Фиолетовый (оставляем для кнопок)
-    property color accentColor: "#4682b4"               // 🔵 Steel Blue (было #03DAC6)
+    property color primaryColor: "#007bff"              // Синий (для кнопок)
+    property color accentColor: "#4682b4"               // 🔵 Steel Blue
     property color backgroundColor: "#F5F5F5"           // Светло-серый фон
 
     // --- ЦВЕТА ТЕКСТА ---
@@ -15,7 +15,11 @@ QtObject {
     property color textSecondary: "#666666"             // Серый для описаний
     property color textOnPrimary: "#FFFFFF"             // Белый на цветном фоне
     property color errorColor: "#B00020"                // Красный для ошибок
-    property color successColor: "#4caf50"              // ✅ Зелёный для успеха
+
+    // --- ЦВЕТА СТАТУСОВ (для NotificationDialog и др.) ---
+    property color successColor: "#4CAF50"              // 🟢 Зелёный - успех
+    property color warningColor: "#FF9800"              // 🟠 Оранжевый - предупреждение
+    property color infoColor: "#2196F3"                 // 🔵 Синий - информация
 
     // --- ЦВЕТА ДЛЯ ФОРМ И ДИАЛОГОВ ---
     property color inputBackground: "#e0e0e0"           // 💡 Светло-серый фон для input

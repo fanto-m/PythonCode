@@ -9,7 +9,8 @@ ComboBox {
     delegate: ItemDelegate {
         width: control.width
         contentItem: Text {
-            text: modelData
+            // Поддержка как простых массивов (modelData), так и моделей с textRole
+            text: control.textRole ? model[control.textRole] : (modelData ?? "")
             color: Theme.textColor
             font: Theme.defaultFont
             elide: Text.ElideRight

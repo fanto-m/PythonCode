@@ -173,15 +173,12 @@ def main():
 
         # Console handler
         engine.loadData(b"""
-            import QtQuick
-            QtObject {
-                Component.onCompleted: {
-                    var customConsole = {
-                        log: function(msg) { consoleHandler.log(msg) },
-                    }
-                    console = customConsole
-                }
+        import QtQuick
+        QtObject {
+            function qmlLog(msg) {
+                consoleHandler.log(msg)
             }
+        }
         """)
 
         # Обработчик предупреждений
