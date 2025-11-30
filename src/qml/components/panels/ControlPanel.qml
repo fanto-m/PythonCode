@@ -1,35 +1,23 @@
-// ControlPanel.qml - Исправленная версия с полными данными товара
+// ControlPanel.qml - Панель управления товарами
+// Расположение: qml/components/panels/
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../qml/components/dialogs/items"
+import "../../styles"
+import "../common"
+import "../dialogs/items"
 
 Rectangle {
     id: root
     Layout.preferredWidth: 416
     Layout.fillHeight: true
 
-    color: "#ffffff"
+    color: "white"
     border.width: 1
-    border.color: "#d0d0d0"
-    radius: 6
+    border.color: Theme.inputBorder
+    radius: Theme.defaultRadius
 
-    // Theme constants
-    readonly property color primaryColor: "#2196F3"
-    readonly property color errorColor: "#f44336"
-    readonly property color successColor: "#4caf50"
-    readonly property color borderColor: "#d0d0d0"
-    readonly property color focusBorderColor: primaryColor
-    readonly property int baseSpacing: 10
-    readonly property int baseFontSize: 10
-
-    // Content padding
-    property int contentLeftPadding: 12
-    property int contentRightPadding: 12
-    property int contentTopPadding: 12
-    property int contentBottomPadding: 12
-
-    // Signals
+    // === СИГНАЛЫ ===
     signal addItemClicked(var itemData)
     signal saveItemClicked(int itemIndex, var itemData)
     signal addCategoryClicked()
@@ -37,21 +25,24 @@ Rectangle {
     signal deleteCategoryClicked(var categoryData)
     signal copyItemClicked(var itemData)
 
-    // Properties
+    // === СВОЙСТВА ===
     property int currentItemId: -1
     property string currentArticle: ""
     property var currentItemData: ({})
     property bool isEditMode: currentItemId !== -1
 
-    // Product Card Dialog properties
+    // Отступы контента
+    property int contentPadding: 12
+
+    // Product Card Dialog
     property Component productCardDialogComponent: null
     property var currentProductDialog: null
 
-    // === ПУТЬ К ProductCardDialog ===
-    // Относительно ControlPanel.qml (src/components/)
-    readonly property string productCardDialogPath: "../qml/components/dialogs/items/ProductCardDialog.qml"
+    // Путь к ProductCardDialog (относительно panels/)
+    readonly property string productCardDialogPath: "../dialogs/items/ProductCardDialog.qml"
 
-    // Public functions for dialog management
+    // === ФУНКЦИИ ===
+
     function openProductCardDialog() {
         console.log("openProductCardDialog called")
 
@@ -81,27 +72,23 @@ Rectangle {
 
             console.log("Dialog object created, connecting signals...")
 
-            // Обработчик добавления товара
             currentProductDialog.addItemClicked.connect(function(itemData) {
                 console.log("addItemClicked signal received")
                 root.addItemClicked(itemData)
                 currentProductDialog.close()
             })
 
-            // Обработчик сохранения товара
             currentProductDialog.saveItemClicked.connect(function(itemIndex, itemData) {
                 console.log("saveItemClicked signal received")
                 root.saveItemClicked(itemIndex, itemData)
                 currentProductDialog.close()
             })
 
-            // Очищаем модель документов для нового товара
             console.log("Clearing documents model for new item")
             if (itemDocumentsModel) {
                 itemDocumentsModel.clear()
             }
 
-            // Очищаем поля диалога
             console.log("Clearing dialog fields")
             currentProductDialog.clearFields()
 
@@ -129,23 +116,19 @@ Rectangle {
                 "itemDocumentsModel": itemDocumentsModel
             })
 
-            // Обработчик добавления (не используется в режиме редактирования, но нужен)
             currentProductDialog.addItemClicked.connect(function(itemData) {
                 console.log("addItemClicked signal received")
                 root.addItemClicked(itemData)
                 currentProductDialog.close()
             })
 
-            // Обработчик сохранения изменений
             currentProductDialog.saveItemClicked.connect(function(itemIndex, itemData) {
                 console.log("saveItemClicked signal received")
                 root.saveItemClicked(itemIndex, itemData)
                 currentProductDialog.close()
             })
 
-            // Заполняем поля данными товара
             currentProductDialog.populateFields(itemData)
-
             currentProductDialog.open()
         } else if (productCardDialogComponent.status === Component.Error) {
             console.error("Error loading ProductCardDialog: " + productCardDialogComponent.errorString())
@@ -156,11 +139,9 @@ Rectangle {
         currentItemId = -1
         currentArticle = ""
         currentItemData = {}
-        //vatIncluded.checked = false
-
     }
 
-    // Main content wrapper
+    // === ОСНОВНОЙ КОНТЕНТ ===
     ScrollView {
         id: scrollView
         anchors.fill: parent
@@ -170,60 +151,32 @@ Rectangle {
 
         ColumnLayout {
             id: mainColumn
-            width: scrollView.width - (root.contentLeftPadding + root.contentRightPadding)
+            width: scrollView.width - (contentPadding * 2)
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: baseSpacing
+            spacing: 10
 
-            // Top spacer
-            Item { Layout.preferredHeight: root.contentTopPadding }
+            // Верхний отступ
+            Item { Layout.preferredHeight: contentPadding }
 
-            // Кнопка "Добавить товар" - ЗЕЛЁНАЯ
-            Button {
+            // --- Кнопка "Добавить товар" ---
+            AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 text: "➕ Добавить товар"
-                font.pointSize: baseFontSize + 1
-
-                background: Rectangle {
-                    color: parent.hovered ? "#66BB6A" : "#4CAF50"
-                    radius: 4
-                    border.color: "#388E3C"
-                    border.width: 2
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    font: parent.font
-                    color: "#FFFFFF"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
+                btnColor: Theme.successColor
+                enterDelay: 0
 
                 onClicked: root.openProductCardDialog()
             }
 
-            // Кнопка "Редактировать товар" - СИНЯЯ
-            Button {
+            // --- Кнопка "Редактировать товар" ---
+            AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 text: "✏️ Редактировать товар"
-                font.pointSize: baseFontSize + 1
+                btnColor: Theme.primaryColor
                 enabled: currentItemId !== -1
-
-                background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? "#42A5F5" : "#2196F3") : "#CCCCCC"
-                    radius: 4
-                    border.color: parent.enabled ? "#1976D2" : "#999999"
-                    border.width: 2
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    font: parent.font
-                    color: "#FFFFFF"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
+                enterDelay: 0
 
                 onClicked: {
                     if (currentItemId !== -1 && Object.keys(currentItemData).length > 0) {
@@ -238,28 +191,14 @@ Rectangle {
                 }
             }
 
-            // Кнопка "Копировать товар" - ФИОЛЕТОВАЯ
-            Button {
+            // --- Кнопка "Копировать товар" ---
+            AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 text: "📋 Копировать товар"
-                font.pointSize: baseFontSize + 1
+                btnColor: "#9C27B0"  // Фиолетовый
                 enabled: currentItemId !== -1
-
-                background: Rectangle {
-                    color: parent.enabled ? (parent.hovered ? "#AB47BC" : "#9C27B0") : "#CCCCCC"
-                    radius: 4
-                    border.color: parent.enabled ? "#7B1FA2" : "#999999"
-                    border.width: 2
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    font: parent.font
-                    color: "#FFFFFF"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
+                enterDelay: 0
 
                 onClicked: {
                     if (currentItemId !== -1) {
@@ -268,17 +207,22 @@ Rectangle {
                 }
             }
 
-            // Category section
+            // --- Секция "Категория" ---
             GroupBox {
                 Layout.fillWidth: true
                 title: "Категория"
-                font.pointSize: baseFontSize
-                font.bold: true
+
+                label: AppLabel {
+                    text: parent.title
+                    level: "body"
+                    font.bold: true
+                    enterDelay: 0
+                }
 
                 background: Rectangle {
-                    color: "#fafafa"
-                    border.color: borderColor
-                    radius: 4
+                    color: Theme.backgroundColor
+                    border.color: Theme.inputBorder
+                    radius: Theme.smallRadius
                     y: parent.topPadding - parent.bottomPadding
                 }
 
@@ -286,41 +230,40 @@ Rectangle {
                     anchors.fill: parent
                     spacing: 6
 
-                    ComboBox {
+                    AppComboBox {
                         id: categoryComboBox
                         Layout.fillWidth: true
+                        Layout.preferredHeight: 40
                         model: categoryModel
                         textRole: "name"
-                        font.pointSize: baseFontSize
-
-                        background: Rectangle {
-                            color: "white"
-                            border.color: categoryComboBox.activeFocus ? focusBorderColor : borderColor
-                            border.width: categoryComboBox.activeFocus ? 2 : 1
-                            radius: 4
-                        }
                     }
 
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 6
 
-                        Button {
+                        AppButton {
                             text: "➕"
                             Layout.fillWidth: true
-                            font.pointSize: baseFontSize + 2
+                            Layout.preferredHeight: 36
+                            btnColor: Theme.successColor
+                            enterDelay: 0
                             ToolTip.visible: hovered
                             ToolTip.text: "Добавить категорию"
+
                             onClicked: addCategoryClicked()
                         }
 
-                        Button {
+                        AppButton {
                             text: "✏️"
                             Layout.fillWidth: true
+                            Layout.preferredHeight: 36
+                            btnColor: Theme.primaryColor
                             enabled: categoryComboBox.currentIndex >= 0
-                            font.pointSize: baseFontSize + 2
+                            enterDelay: 0
                             ToolTip.visible: hovered
                             ToolTip.text: "Редактировать категорию"
+
                             onClicked: {
                                 if (categoryComboBox.currentIndex >= 0) {
                                     let cat = categoryModel.get(categoryComboBox.currentIndex)
@@ -329,12 +272,16 @@ Rectangle {
                             }
                         }
 
-                        Button {
+                        AppButton {
                             text: "🗑️"
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 36
+                            btnColor: Theme.errorColor
                             enabled: categoryComboBox.currentIndex >= 0
-                            font.pointSize: baseFontSize + 2
+                            enterDelay: 0
                             ToolTip.visible: hovered
                             ToolTip.text: "Удалить категорию"
+
                             onClicked: {
                                 if (categoryComboBox.currentIndex >= 0) {
                                     deleteCategoryClicked({
@@ -348,17 +295,22 @@ Rectangle {
                 }
             }
 
-            // Suppliers section
+            // --- Секция "Поставщики" ---
             GroupBox {
                 Layout.fillWidth: true
                 title: "Поставщики"
-                font.pointSize: baseFontSize
-                font.bold: true
+
+                label: AppLabel {
+                    text: parent.title
+                    level: "body"
+                    font.bold: true
+                    enterDelay: 0
+                }
 
                 background: Rectangle {
-                    color: "#fafafa"
-                    border.color: borderColor
-                    radius: 4
+                    color: Theme.backgroundColor
+                    border.color: Theme.inputBorder
+                    radius: Theme.smallRadius
                     y: parent.topPadding - parent.bottomPadding
                 }
 
@@ -366,20 +318,26 @@ Rectangle {
                     anchors.fill: parent
                     spacing: 6
 
-                    Button {
+                    AppButton {
                         text: "📋 Список"
                         Layout.fillWidth: true
-                        font.pointSize: baseFontSize - 1
+                        Layout.preferredHeight: 36
+                        btnColor: Theme.accentColor
+                        enterDelay: 0
+
                         onClicked: {
                             suppliersManagerDialog.openForManagement()
                         }
                     }
 
-                    Button {
+                    AppButton {
                         text: "🔗 Привязать"
                         Layout.fillWidth: true
+                        Layout.preferredHeight: 36
+                        btnColor: Theme.primaryColor
                         enabled: currentArticle !== ""
-                        font.pointSize: baseFontSize - 1
+                        enterDelay: 0
+
                         onClicked: {
                             suppliersManagerDialog.openForBinding(currentArticle)
                         }
@@ -390,8 +348,8 @@ Rectangle {
             // Spacer
             Item { Layout.fillHeight: true }
 
-            // Bottom spacer
-            Item { Layout.preferredHeight: root.contentBottomPadding }
+            // Нижний отступ
+            Item { Layout.preferredHeight: contentPadding }
         }
     }
 }
