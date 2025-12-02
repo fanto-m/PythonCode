@@ -2,44 +2,7 @@
 PythonCode
 |
 |-src
-	|-componrnts
-		|-AddCategoryDialog.qml - диалог для создания новой категории
-		|-AddItemDialog.qml - Компонент для выбора товара из склада
-		|-AddSupplierDialog.qml - диалог добавления нового поставщика
-		|-ControlPanel.qml - панель для элементов управления добавление/редактирование 						товаров; добавление/редактирование/удаление категорий
-		|-CreateSpecificationMode.qml - диалог создания спецификаций
-		|-DeleteCategoryDialog.qml - диалог удаления категорий
-		|-DeleteConfirmationDialog.qml - диалог удаления товара
-		|-DeleteSupplierDialog.qml - диалог удаления поставщика
-		|-DocumentFileDialog.qml - диалог выбора документа для привязки
-		|-EditCategoryDialog.qml - диалог редактирования категории
-		|-EditSupplierDialog.qml - диалог редактирования поставщика
-		|-ErrorDialog.qml - диалог для ошибок
-		|-FilterPanel.qml - фильтр для товаров / сортировка
-		|-ImageFileDialog.qml - диалог выбора изображения для привязки
-		|-ItemList.qml - отображение товаров с полной информацией из базы
-		|-ItemSuppliersDialog.qml - диалог для отображения поставщиков, привязянных к 							конкретной карточке
-		|-MultipleDocumentsManager.qml - управление документами товара
-		|-NotificationDialog.qml - стандартный диалог для подтверждения/ предупреждения/ошибки
-		|-ProductCardDialog.qml - Диалог карточки товара с Grid Layout для редактирования или 						занесения нового товара
-		|-qmldir - Singlton для таблицы стилей
-		|-SettingsDialog.qml - диалог для настроек приложения пока не подключен
-		|-SpecificationItemsTable.qml - таблица используется для создания спецификаций
-		|-SuppliersManagerDialog.qml - диалог привязки поставщиков к артикулу
-		|-Theme_CSM.qml - файл всех цветов для приложения, пока применен к некоторым диалогам
-		|-ViewSpecificationsMode.qml - форма для создания/редактирования спецификаций 
-	|-files
-		|-images/
-		|-documents/
-	|-fonts
-	|-models
-	    |-__init__.py
-	    |-dto.py //лассы представляют структуру данных из базы данных
-                    и используются для передачи данных между слоями приложения
     |-qml
-        |-assets
-            |-icons
-            |-images
         |-components
             |-common
                 |-AppButton.qml
@@ -48,70 +11,70 @@ PythonCode
                 |-AppLabel.qml
                 |-AppTextArea.qml
                 |-AppTextField.qml
+                |-NotificationDialog.qml- стандартный диалог для подтверждения/ предупреждения/ошибки
             |-dialogs
                 |-categories
-                    |-AddCategoriyDialog.qml
-                    |-DeleteCategoryDialog.qml
-                    |-EditCategoryDialog.qml
+                    |-AddCategoryDialog.qml- диалог для создания новой категории
+                    |-DeleteCategoryDialog.qml- диалог удаления категорий
+                    |-EditCategoryDialog.qml- диалог редактирования категории
                 |-items
-                |-specification
+                    |-DeleteConfirmationDialog.qml- диалог удаления товара
+                    |-ItemSuppliersDialog.qml- диалог для отображения поставщиков, привязянных к конкретной карточке
+                    |-ProductCardDialog.qml- Диалог карточки товара с Grid Layout для редактирования или занесения нового товара
                 |-suppliers
-                    |-AddSupplierDialog.qml
-                    |-DeleteSupplierDialog.qml
-                    |-EditSupplierDialog.qml
+                    |-AddSupplierDialog.qml- диалог добавления нового поставщика
+                    |-DeleteSupplierDialog.qml- диалог удаления поставщика
+                    |-EditSupplierDialog.qml- диалог редактирования поставщика
+                    |-SuppliersManagerDialog.qml- диалог привязки поставщиков к артикулу
                 |-system
-            |-managers
+                    |-DocumentFileDialog.qml- диалог выбора документа для привязки
+                    |-ImageFileDialog.qml- диалог выбора изображения для привязки
+                    |-MultipleDocumentsManager.qml- управление документами товара
             |-panels
-                |-FilterPanel.qml
-            |-tables
-	    |-styles
-	        |-qmldir
-	        |-Theme.qml
-	|-repositories
-	    |-__init__.py
-	    |-base_repository.py Абстрактный базовый класс для всех репозиториев.
-	                            Предоставляет общую функциональность для работы с SQLite:
-	    |-categories_repository.py Предоставляет методы для:
-                                                     - Создания и загрузки категорий
-                                                     - Обновления и удаления категорий
-                                                     - Генерации артикулов (SKU) для товаров
-	    |-documents_repository.py  Предоставляет методы для:
-                                                    - Добавления документов к товарам
-                                                    - Загрузки документов товара
-                                                    - Удаления и переименования документов
-                                                    - Миграции старых документов
-	    |-items_repository.py Предоставляет методы для:
-                                                    - Создания и загрузки товаров
-                                                    - Обновления и удаления товаров
-                                                    - Поиска и фильтрации товаров
-	    |-specifications_repository.py  Предоставляет методы для:
-                                                    - Создания и загрузки спецификаций
-                                                    - Обновления и удаления спецификаций
-                                                    - Управления позициями в спецификациях
-                                                    - Расчета стоимости спецификаций
-	    |-suppliers_repository.py  Предоставляет методы для:
-                                                    - Создания и загрузки поставщиков
-                                                    - Обновления и удаления поставщиков
-                                                    - Управления связями товар-поставщик
-	    |-unit_of_work.py Предоставляет:
-                                                    - Единую точку доступа ко всем репозиториям
-                                                    - Автоматическую инициализацию всех таблиц БД
-                                                    - Координацию работы между репозиториями
-	|-utils
-	    |-__init__.py
-	    |-logger_config.py Настраивает логирование для приложения.
+                |-ControlPanel.qml- панель для элементов управления добавление/редактирование товаров; добавление/редактирование/удаление категорий
+                |-FilterPanel.qml- фильтр для товаров / сортировка
+            |-specifications
+                |-CreateSpecificationMode.qml- диалог создания спецификаций
+        |-styles
+            |-qmldir- Singlton для таблицы стилей
+            |-Theme.qml - файл всех цветов для приложения, пока применен к некоторым диалогам
+        |-tables
+            |-ItemList.qml- отображение товаров с полной информацией из базы
 
-                                                    Args:
-                                                        log_level: Уровень логирования (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL).
-                                                        log_dir: Директория для логов.
-                                                        rotation: Когда создавать новый файл (размер или время).
-                                                        retention: Как долго хранить старые логи.
-                                                        compression: Сжимать ли старые логи.
+
+	|-components
+		|-AddItemDialog.qml - Компонент для выбора товара из склада
+		|-ErrorDialog.qml - диалог для ошибок
+		|-qmldir - Singlton для таблицы стилей
+		|-SettingsDialog.qml - диалог для настроек приложения пока не подключен
+		|-SpecificationItemsTable.qml - таблица используется для создания спецификаций
+		|-Theme_CSM.qml - файл всех цветов для приложения, пока применен к некоторым диалогам
+		|-ViewSpecificationsMode.qml - форма для создания/редактирования спецификаций 
+	|-files
+		|-images/
+		|-documents/
+        |-repositories
+                |-__init__.py
+                |-base_repository.py - Предоставляет общую функциональность для работы с SQLite(Абстрактный базовый класс для всех репозиториев)
+                |-categories_repository.py - Репозиторий для управления категориями товаров
+                |-document_repository.py - епозиторий для управления документами товаров
+                |-items_repository.py- репозиторий для управления товарами
+                |-specifications_repository.py -Репозиторий для управления спецификациями и их позициями
+                |-suppliers_repository.py - Репозиторий для управления поставщиками
+                |-unit_of_work.py - координатор всех репозиториев
+	|-utils
+                |-__init__.py
+                |-logger_config.py-Централизованная настройка логирования с Loguru 
+        |-models
+                |-__init__.py
+                |-dto.py - Эти классы представляют структуру данных из базы данных
+и используются для передачи данных между слоями приложения.
+        |-logs
+        |fonts
 	|-__init__.py
 	|-categories_model.py - Модель данных для управления категориями
 	|-config_manager.py - Сохраняет настройки в JSON-файл и предоставляет привязки к свойствам Qt 				для QML
 	|-config.json
-	|-database.py - Класс для управления базой данных SQLite
 	|-file_manager.py - Централизованный менеджер для работы с файлами работает с config.json
 	|-filter_proxy_model.py - Прокси-модель для фильтрации и сортировки данных из ItemsModel
 	|-item_suppliers_model.py - Модель данных для управления списком поставщиков, связанных с к					онкретным товаром

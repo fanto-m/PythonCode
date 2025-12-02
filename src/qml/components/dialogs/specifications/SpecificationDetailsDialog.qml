@@ -5,7 +5,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../../../styles"
 import "../../common" as Common
-import "../../../../components" as Legacy  // Доступ к SpecificationItemsTable
+import "../../../tables" as Tables
 
 Dialog {
     id: detailsDialog
@@ -241,7 +241,7 @@ Dialog {
                     }
 
                     // Таблица материалов
-                    Legacy.SpecificationItemsTable {
+                    Tables.SpecificationItemsTable {
                         id: itemsTable
                         Layout.fillWidth: true
                         Layout.preferredHeight: 500

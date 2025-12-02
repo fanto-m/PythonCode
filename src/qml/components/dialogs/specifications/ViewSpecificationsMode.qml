@@ -5,7 +5,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../../../styles"
 import "../../common" as Common
-import "../../../../components" as Legacy  // Доступ к AddItemDialog, SpecificationItemsTable
+import "../items" as ItemDialogs  // Для AddItemDialog
+import "../../../tables" as Tables  // Для SpecificationItemsTable
 
 Rectangle {
     id: root
@@ -21,8 +22,8 @@ Rectangle {
         id: specificationsListModel
     }
 
-    // Диалог добавления товара (Legacy компонент)
-    Legacy.AddItemDialog {
+    // Диалог добавления товара
+    ItemDialogs.AddItemDialog {
         id: addItemDialog
 
         onItemSelected: function(article, name, quantity, unit, price, imagePath, category, status) {
@@ -134,7 +135,7 @@ Rectangle {
         // === SEARCH BAR ===
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 50
+            Layout.preferredHeight: 70
             color: "white"
             border.color: Theme.inputBorder
             border.width: 1

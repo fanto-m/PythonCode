@@ -5,7 +5,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../../../styles"
 import "../../common" as Common
-import "../../../../components" as Legacy  // Доступ к SpecificationItemsTable
+import "../items" as ItemDialogs  // Для AddItemDialog
+import "../../../tables" as Tables  // Для SpecificationItemsTable
 
 Dialog {
     id: editDialog
@@ -310,16 +311,31 @@ Dialog {
                     }
 
                     // Кнопка добавления
-                    Common.AppButton {
+                    // Кнопка добавления
+                    Button {
                         text: "➕ Добавить позицию из склада"
                         Layout.fillWidth: true
-                        btnColor: Theme.successColor
-                        animateEntry: false
+                        Layout.preferredHeight: 40
                         onClicked: addItemDialog.open()
+
+                        background: Rectangle {
+                            color: parent.down ? Qt.darker(Theme.successColor, 1.1)
+                                 : (parent.hovered ? Qt.lighter(Theme.successColor, 1.1) : Theme.successColor)
+                            radius: Theme.defaultRadius
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            font: Theme.defaultFont
+                            color: Theme.textOnPrimary
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
                     }
 
                     // Таблица
-                    Legacy.SpecificationItemsTable {
+                    Tables.SpecificationItemsTable {
                         id: editItemsTable
                         Layout.fillWidth: true
                         Layout.preferredHeight: 400

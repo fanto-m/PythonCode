@@ -110,7 +110,7 @@ Dialog {
 
                 AppButton {
                     text: "Очистить"
-                    implicitWidth: 100
+                    implicitWidth: 150
                     implicitHeight: 40
                     btnColor: Theme.backgroundColor
                     enabled: searchField.text.length > 0
@@ -463,7 +463,7 @@ Dialog {
                     text: "✏️ Редактировать"
                     visible: currentArticle === ""
                     enabled: selectedRow >= 0
-                    implicitWidth: 140
+                    implicitWidth: 200
                     implicitHeight: 40
                     btnColor: Theme.primaryColor
                     enterDelay: 0
@@ -480,7 +480,7 @@ Dialog {
                     text: "🗑️ Удалить"
                     visible: currentArticle === ""
                     enabled: selectedRow >= 0
-                    implicitWidth: 110
+                    implicitWidth: 150
                     implicitHeight: 40
                     btnColor: Theme.errorColor
                     enterDelay: 0
@@ -496,7 +496,7 @@ Dialog {
                 AppButton {
                     text: "➕ Добавить"
                     visible: currentArticle === ""
-                    implicitWidth: 120
+                    implicitWidth: 150
                     implicitHeight: 40
                     btnColor: Theme.successColor
                     enterDelay: 0
@@ -510,7 +510,7 @@ Dialog {
                 AppButton {
                     text: "💾 Сохранить привязку"
                     visible: currentArticle !== ""
-                    implicitWidth: 180
+                    implicitWidth: 200
                     implicitHeight: 40
                     btnColor: Theme.successColor
                     enterDelay: 0

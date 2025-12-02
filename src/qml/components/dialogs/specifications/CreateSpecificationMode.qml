@@ -5,7 +5,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../../../styles"
 import "../../common"
-import "../../../../components" as Legacy  // Для AddItemDialog и SpecificationItemsTable
+import "../../../tables" as Tables
+import "../items" as ItemDialogs  // Для AddItemDialog
 import "../../common" as Common
 
 Rectangle {
@@ -13,7 +14,7 @@ Rectangle {
     color: Theme.backgroundColor
 
     // === ДИАЛОГИ ===
-    Legacy.AddItemDialog {
+    ItemDialogs.AddItemDialog {
         id: addItemDialog
 
         onItemSelected: function(article, name, quantity, unit, price, imagePath, category, status) {
@@ -295,20 +296,33 @@ Rectangle {
                             }
                         }
 
-                        AppButton {
+                        Button {
                             text: "➕ Добавить позицию из склада"
                             Layout.fillWidth: true
                             Layout.preferredHeight: 40
-                            btnColor: Theme.successColor
-                            animateEntry: false  // Отключаем анимацию
 
                             onClicked: {
                                 addItemDialog.open()
                             }
+
+                            background: Rectangle {
+                                color: parent.down ? Qt.darker(Theme.successColor, 1.1)
+                                     : (parent.hovered ? Qt.lighter(Theme.successColor, 1.1) : Theme.successColor)
+                                radius: Theme.defaultRadius
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                            }
+
+                            contentItem: Text {
+                                text: parent.text
+                                font: Theme.defaultFont
+                                color: Theme.textOnPrimary
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
 
                         // Таблица спецификаций
-                        Legacy.SpecificationItemsTable {
+                        Tables.SpecificationItemsTable {
                             id: itemsTable
                             Layout.fillWidth: true
                             Layout.preferredHeight: 500

@@ -16,21 +16,20 @@ Button {
     // Свойство для отключения анимации появления
     property bool animateEntry: true
 
-    // --- НАЧАЛЬНОЕ СОСТОЯНИЕ ---
-    opacity: 1
+    // --- НАЧАЛЬНОЕ СОСТОЯНИЕ (скрыто по умолчанию) ---
+    opacity: 0
     transform: Translate {
         id: slideTrans
-        y: 0
+        y: 30
     }
 
     // --- ВНУТРЕННЯЯ АНИМАЦИЯ ПОЯВЛЕНИЯ ---
     SequentialAnimation {
         id: entryAnimation
+        running: false
 
-        // 1. Ждем (если задана задержка)
         PauseAnimation { duration: control.enterDelay }
 
-        // 2. Параллельно проявляем и поднимаем
         ParallelAnimation {
             NumberAnimation {
                 target: control
@@ -49,17 +48,24 @@ Button {
         }
     }
 
-    // Запускаем анимацию после полной инициализации компонента
-    Component.onCompleted: {
-        if (animateEntry) {
-            opacity = 0
-            slideTrans.y = 30
-            entryAnimation.start()
+    // Таймер для отложенной инициализации (даёт время на установку свойств)
+    Timer {
+        id: initTimer
+        interval: 0
+        running: true
+        repeat: false
+        onTriggered: {
+            if (control.animateEntry) {
+                entryAnimation.start()
+            } else {
+                // Без анимации - сразу показываем
+                control.opacity = 1
+                slideTrans.y = 0
+            }
         }
     }
 
     // --- ОСТАЛЬНОЙ КОД (Поведение при наведении/нажатии) ---
-    // Отключаем эффекты масштабирования когда кнопка неактивна
     scale: control.enabled ? (control.down ? 0.95 : (control.hovered ? 1.05 : 1.0)) : 1.0
     Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
@@ -70,7 +76,6 @@ Button {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
-        // Полупрозрачный текст когда кнопка неактивна
         opacity: control.enabled ? 1.0 : 0.6
     }
 
@@ -79,7 +84,6 @@ Button {
         implicitHeight: 40
         radius: Theme.defaultRadius
 
-        // Серый цвет когда кнопка неактивна
         color: {
             if (!control.enabled) {
                 return "#CCCCCC"
