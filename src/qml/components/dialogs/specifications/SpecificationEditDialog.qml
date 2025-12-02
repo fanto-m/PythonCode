@@ -1,10 +1,11 @@
 // SpecificationEditDialog.qml - Диалог редактирования спецификации
-// Расположение: src/qml/components/specifications/
-// NOTE: Скопируйте полный код из оригинального файла (строки 687-1160)
+// Расположение: src/qml/components/dialogs/specifications/
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../../../components" as Local  // Доступ к старым компонентам (временно)
+import "../../../styles"
+import "../../common" as Common
+import "../../../../components" as Legacy  // Доступ к SpecificationItemsTable
 
 Dialog {
     id: editDialog
@@ -90,6 +91,79 @@ Dialog {
         specificationItemsModel.clear()
     }
 
+    // === ФОН ДИАЛОГА ===
+    background: Rectangle {
+        color: "white"
+        border.color: Theme.accentColor
+        border.width: 2
+        radius: Theme.defaultRadius
+    }
+
+    // === ЗАГОЛОВОК С ПЕРЕТАСКИВАНИЕМ ===
+    header: Rectangle {
+        width: parent.width
+        height: 50
+        color: "#9b59b6"  // Фиолетовый для спецификаций
+        radius: Theme.defaultRadius
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: Theme.defaultRadius
+            color: "#9b59b6"
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+
+            Text {
+                text: "✏️ Редактирование: " + editNameField.text
+                font.pixelSize: Theme.sizeH3
+                font.bold: true
+                font.family: Theme.defaultFont.family
+                color: Theme.textOnPrimary
+                Layout.fillWidth: true
+            }
+
+            // Индикатор изменений
+            Rectangle {
+                visible: editDialog.hasChanges
+                width: unsavedLabel.width + 16
+                height: 24
+                radius: 12
+                color: Theme.warningColor
+
+                Text {
+                    id: unsavedLabel
+                    anchors.centerIn: parent
+                    text: "● Несохранено"
+                    font.pixelSize: Theme.sizeCaption
+                    font.bold: true
+                    font.family: Theme.defaultFont.family
+                    color: Theme.textOnPrimary
+                }
+            }
+        }
+
+        // Область для перетаскивания
+        MouseArea {
+            anchors.fill: parent
+            property point clickPos: Qt.point(0, 0)
+            onPressed: function(mouse) {
+                clickPos = Qt.point(mouse.x, mouse.y)
+            }
+            onPositionChanged: function(mouse) {
+                if (pressed) {
+                    var delta = Qt.point(mouse.x - clickPos.x, mouse.y - clickPos.y)
+                    editDialog.x += delta.x
+                    editDialog.y += delta.y
+                }
+            }
+        }
+    }
+
     contentItem: ScrollView {
         clip: true
         contentWidth: availableWidth
@@ -98,16 +172,24 @@ Dialog {
             width: parent.width
             spacing: 15
 
+            // === ОСНОВНАЯ ИНФОРМАЦИЯ ===
             GroupBox {
                 Layout.fillWidth: true
                 title: "Основная информация"
-                font.pointSize: 11
-                font.bold: true
+
+                label: Text {
+                    text: parent.title
+                    font.pixelSize: Theme.sizeBody
+                    font.bold: true
+                    font.family: Theme.defaultFont.family
+                    color: Theme.textColor
+                    padding: 5
+                }
 
                 background: Rectangle {
                     color: "white"
-                    border.color: "#d0d0d0"
-                    radius: 6
+                    border.color: Theme.inputBorder
+                    radius: Theme.smallRadius
                     y: parent.topPadding - parent.bottomPadding
                 }
 
@@ -117,8 +199,9 @@ Dialog {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 10
+                        spacing: 15
 
+                        // Название
                         ColumnLayout {
                             Layout.preferredWidth: 500
                             Layout.minimumWidth: 500
@@ -127,100 +210,82 @@ Dialog {
 
                             Text {
                                 text: "Название изделия *"
-                                font.pointSize: 10
-                                font.bold: true
+                                font: Theme.boldFont
+                                color: Theme.textColor
                             }
 
-                            TextField {
+                            Common.AppTextField {
                                 id: editNameField
                                 Layout.fillWidth: true
                                 placeholderText: "Например: Изделие А-123"
-                                font.pointSize: 10
-                                onTextChanged: editSpecificationDialog.hasChanges = true
-
-                                background: Rectangle {
-                                    color: "white"
-                                    border.color: editNameField.activeFocus ? "#9b59b6" : "#d0d0d0"
-                                    border.width: editNameField.activeFocus ? 2 : 1
-                                    radius: 4
-                                }
+                                enterDelay: 0
+                                onTextChanged: editDialog.hasChanges = true
                             }
                         }
 
+                        // Статус
                         ColumnLayout {
-                             Layout.preferredWidth: 200
-                             Layout.minimumWidth: 200
-                             Layout.maximumWidth: 200
+                            Layout.preferredWidth: 200
+                            Layout.minimumWidth: 200
+                            Layout.maximumWidth: 200
                             spacing: 4
 
                             Text {
                                 text: "Статус"
-                                font.pointSize: 10
-                                font.bold: true
+                                font: Theme.boldFont
+                                color: Theme.textColor
                             }
 
-                            ComboBox {
+                            Common.AppComboBox {
                                 id: editStatusComboBox
                                 Layout.fillWidth: true
                                 model: ["черновик", "утверждена", "архив"]
-                                font.pointSize: 10
-                                onCurrentIndexChanged: editSpecificationDialog.hasChanges = true
-
-                                background: Rectangle {
-                                    color: "white"
-                                    border.color: editStatusComboBox.activeFocus ? "#9b59b6" : "#d0d0d0"
-                                    border.width: editStatusComboBox.activeFocus ? 2 : 1
-                                    radius: 4
-                                }
+                                onCurrentIndexChanged: editDialog.hasChanges = true
                             }
                         }
                     }
 
+                    // Описание
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 4
 
                         Text {
                             text: "Описание"
-                            font.pointSize: 10
-                            font.bold: true
+                            font: Theme.boldFont
+                            color: Theme.textColor
                         }
 
-                        ScrollView {
+                        Common.AppTextArea {
+                            id: editDescriptionField
                             Layout.fillWidth: true
                             Layout.preferredHeight: 80
-                            clip: true
-
-                            TextArea {
-                                id: editDescriptionField
-                                placeholderText: "Подробное описание изделия..."
-                                wrapMode: TextEdit.Wrap
-                                font.pointSize: 10
-                                selectByMouse: true
-                                onTextChanged: editSpecificationDialog.hasChanges = true
-
-                                background: Rectangle {
-                                    color: "white"
-                                    border.color: editDescriptionField.activeFocus ? "#9b59b6" : "#d0d0d0"
-                                    border.width: editDescriptionField.activeFocus ? 2 : 1
-                                    radius: 4
-                                }
-                            }
+                            placeholderText: "Подробное описание изделия..."
+                            enterDelay: 0
+                            onTextChanged: editDialog.hasChanges = true
                         }
                     }
                 }
             }
 
+            // === МАТЕРИАЛЫ И КОМПЛЕКТУЮЩИЕ ===
             GroupBox {
                 Layout.fillWidth: true
                 title: "Материалы и комплектующие"
-                font.pointSize: 11
-                font.bold: true
+
+                label: Text {
+                    text: parent.title
+                    font.pixelSize: Theme.sizeBody
+                    font.bold: true
+                    font.family: Theme.defaultFont.family
+                    color: Theme.textColor
+                    padding: 5
+                }
 
                 background: Rectangle {
                     color: "white"
-                    border.color: "#d0d0d0"
-                    radius: 6
+                    border.color: Theme.inputBorder
+                    radius: Theme.smallRadius
                     y: parent.topPadding - parent.bottomPadding
                 }
 
@@ -228,44 +293,33 @@ Dialog {
                     anchors.fill: parent
                     spacing: 10
 
+                    // Строка итогов
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 30
-                        color: "#e3f2fd"
-                        radius: 4
+                        color: Qt.rgba(Theme.infoColor.r, Theme.infoColor.g, Theme.infoColor.b, 0.1)
+                        radius: Theme.smallRadius
                         visible: editItemsTable.rowCount > 0
 
                         Text {
                             anchors.centerIn: parent
-                            text: "📦 Позиций: " + editItemsTable.rowCount + " | Стоимость материалов: " + editSpecificationDialog.materialsCost.toFixed(2) + " ₽"
-                            font.pointSize: 10
-                            font.bold: true
-                            color: "#2196F3"
+                            text: "📦 Позиций: " + editItemsTable.rowCount + " | Стоимость материалов: " + editDialog.materialsCost.toFixed(2) + " ₽"
+                            font: Theme.boldFont
+                            color: Theme.infoColor
                         }
                     }
 
-                    Button {
+                    // Кнопка добавления
+                    Common.AppButton {
                         text: "➕ Добавить позицию из склада"
                         Layout.fillWidth: true
-                        font.pointSize: 10
-
-                        background: Rectangle {
-                            color: parent.down ? "#218838" : (parent.hovered ? "#1e7e34" : "#28a745")
-                            radius: 4
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: "white"
-                            font: parent.font
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
+                        btnColor: Theme.successColor
+                        animateEntry: false
                         onClicked: addItemDialog.open()
                     }
 
-                    Local.SpecificationItemsTable {
+                    // Таблица
+                    Legacy.SpecificationItemsTable {
                         id: editItemsTable
                         Layout.fillWidth: true
                         Layout.preferredHeight: 400
@@ -274,29 +328,37 @@ Dialog {
 
                         onItemQuantityChanged: function(row, newQuantity) {
                             specificationItemsModel.updateQuantity(row, newQuantity)
-                            editSpecificationDialog.hasChanges = true
-                            editSpecificationDialog.calculateEditCosts()
+                            editDialog.hasChanges = true
+                            editDialog.calculateEditCosts()
                         }
 
                         onItemRemoved: function(row) {
                             specificationItemsModel.removeItem(row)
-                            editSpecificationDialog.hasChanges = true
-                            editSpecificationDialog.calculateEditCosts()
+                            editDialog.hasChanges = true
+                            editDialog.calculateEditCosts()
                         }
                     }
                 }
             }
 
+            // === КАЛЬКУЛЯЦИЯ СТОИМОСТИ ===
             GroupBox {
                 Layout.fillWidth: true
                 title: "Калькуляция стоимости"
-                font.pointSize: 11
-                font.bold: true
+
+                label: Text {
+                    text: parent.title
+                    font.pixelSize: Theme.sizeBody
+                    font.bold: true
+                    font.family: Theme.defaultFont.family
+                    color: Theme.textColor
+                    padding: 5
+                }
 
                 background: Rectangle {
                     color: "white"
-                    border.color: "#d0d0d0"
-                    radius: 6
+                    border.color: Theme.inputBorder
+                    radius: Theme.smallRadius
                     y: parent.topPadding - parent.bottomPadding
                 }
 
@@ -306,123 +368,116 @@ Dialog {
                     rowSpacing: 10
                     columnSpacing: 15
 
+                    // Стоимость работы
                     Text {
                         text: "Стоимость работы (₽):"
-                        font.pointSize: 10
+                        font: Theme.defaultFont
+                        color: Theme.textColor
                     }
-                    TextField {
+                    Common.AppTextField {
                         id: editLaborCostField
                         Layout.fillWidth: true
                         text: "0"
-                        font.pointSize: 10
                         horizontalAlignment: Text.AlignRight
                         validator: DoubleValidator { bottom: 0; decimals: 2 }
+                        enterDelay: 0
                         onTextChanged: {
-                            editSpecificationDialog.hasChanges = true
-                            editSpecificationDialog.calculateEditCosts()
-                        }
-
-                        background: Rectangle {
-                            color: "white"
-                            border.color: editLaborCostField.activeFocus ? "#9b59b6" : "#d0d0d0"
-                            border.width: editLaborCostField.activeFocus ? 2 : 1
-                            radius: 4
+                            editDialog.hasChanges = true
+                            editDialog.calculateEditCosts()
                         }
                     }
 
+                    // Накладные расходы
                     Text {
                         text: "Накладные расходы (%):"
-                        font.pointSize: 10
+                        font: Theme.defaultFont
+                        color: Theme.textColor
                     }
-                    TextField {
+                    Common.AppTextField {
                         id: editOverheadField
                         Layout.fillWidth: true
                         text: "0"
-                        font.pointSize: 10
                         horizontalAlignment: Text.AlignRight
                         validator: DoubleValidator { bottom: 0; top: 100; decimals: 2 }
+                        enterDelay: 0
                         onTextChanged: {
-                            editSpecificationDialog.hasChanges = true
-                            editSpecificationDialog.calculateEditCosts()
-                        }
-
-                        background: Rectangle {
-                            color: "white"
-                            border.color: editOverheadField.activeFocus ? "#9b59b6" : "#d0d0d0"
-                            border.width: editOverheadField.activeFocus ? 2 : 1
-                            radius: 4
+                            editDialog.hasChanges = true
+                            editDialog.calculateEditCosts()
                         }
                     }
 
+                    // Разделитель
                     Rectangle {
                         Layout.columnSpan: 2
                         Layout.fillWidth: true
                         height: 2
-                        color: "#e0e0e0"
+                        color: Theme.dividerColor
                     }
 
+                    // Итоги (только для чтения)
                     Text {
                         text: "Материалы:"
-                        font.pointSize: 10
-                        color: "#666"
+                        font: Theme.defaultFont
+                        color: Theme.textSecondary
                     }
                     Text {
-                        text: editSpecificationDialog.materialsCost.toFixed(2) + " ₽"
-                        font.pointSize: 10
-                        font.bold: true
+                        text: editDialog.materialsCost.toFixed(2) + " ₽"
+                        font: Theme.boldFont
                         horizontalAlignment: Text.AlignRight
                         Layout.fillWidth: true
-                        color: "#2c3e50"
+                        color: Theme.textColor
                     }
 
                     Text {
                         text: "Работа:"
-                        font.pointSize: 10
-                        color: "#666"
+                        font: Theme.defaultFont
+                        color: Theme.textSecondary
                     }
                     Text {
-                        text: editSpecificationDialog.laborCost.toFixed(2) + " ₽"
-                        font.pointSize: 10
-                        font.bold: true
+                        text: editDialog.laborCost.toFixed(2) + " ₽"
+                        font: Theme.boldFont
                         horizontalAlignment: Text.AlignRight
                         Layout.fillWidth: true
-                        color: "#2c3e50"
+                        color: Theme.textColor
                     }
 
                     Text {
                         text: "Накладные:"
-                        font.pointSize: 10
-                        color: "#666"
+                        font: Theme.defaultFont
+                        color: Theme.textSecondary
                     }
                     Text {
-                        text: editSpecificationDialog.overheadCost.toFixed(2) + " ₽"
-                        font.pointSize: 10
-                        font.bold: true
+                        text: editDialog.overheadCost.toFixed(2) + " ₽"
+                        font: Theme.boldFont
                         horizontalAlignment: Text.AlignRight
                         Layout.fillWidth: true
-                        color: "#2c3e50"
+                        color: Theme.textColor
                     }
 
+                    // Финальный разделитель
                     Rectangle {
                         Layout.columnSpan: 2
                         Layout.fillWidth: true
                         height: 2
-                        color: "#28a745"
+                        color: Theme.successColor
                     }
 
+                    // ИТОГО
                     Text {
                         text: "ИТОГО:"
-                        font.pointSize: 12
+                        font.pixelSize: Theme.sizeH3
                         font.bold: true
-                        color: "#28a745"
+                        font.family: Theme.defaultFont.family
+                        color: Theme.successColor
                     }
                     Text {
-                        text: editSpecificationDialog.totalCost.toFixed(2) + " ₽"
-                        font.pointSize: 14
+                        text: editDialog.totalCost.toFixed(2) + " ₽"
+                        font.pixelSize: Theme.sizeH2
                         font.bold: true
+                        font.family: Theme.defaultFont.family
                         horizontalAlignment: Text.AlignRight
                         Layout.fillWidth: true
-                        color: "#28a745"
+                        color: Theme.successColor
                     }
                 }
             }
@@ -430,62 +485,113 @@ Dialog {
     }
 
     footer: DialogButtonBox {
-            Button {
-                text: "💾 Сохранить изменения"
-                enabled: editNameField.text.trim().length > 0 && editItemsTable.rowCount > 0
+        alignment: Qt.AlignRight
+        spacing: 10
+        padding: 12
 
-                background: Rectangle {
-                    color: {
-                        if (!parent.enabled) return "#cccccc"
-                        if (parent.down) return "#218838"
-                        if (parent.hovered) return "#1e7e34"
-                        return "#28a745"
-                    }
-                    radius: 4
-                }
+        background: Rectangle {
+            color: Theme.backgroundColor
+            radius: Theme.smallRadius
+        }
 
-                contentItem: Text {
-                    text: parent.text
-                    color: parent.enabled ? "white" : "#999"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
+        Common.AppButton {
+            text: "💾 Сохранить изменения"
+            btnColor: Theme.successColor
+            enabled: editNameField.text.trim().length > 0 && editItemsTable.rowCount > 0
+            animateEntry: false
+            onClicked: editDialog.saveChanges()
+        }
 
-                onClicked: editSpecificationDialog.saveChanges()
-            }
-
-            Button {
-                text: "❌ Отмена"
-
-                background: Rectangle {
-                    color: parent.down ? "#5a6268" : (parent.hovered ? "#545b62" : "#6c757d")
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                onClicked: {
-                    if (editSpecificationDialog.hasChanges) {
-                        confirmCancelEditDialog.open()
-                    } else {
-                        editSpecificationDialog.close()
-                    }
+        Common.AppButton {
+            text: "❌ Отмена"
+            btnColor: Theme.textSecondary
+            animateEntry: false
+            onClicked: {
+                if (editDialog.hasChanges) {
+                    confirmCancelEditDialog.open()
+                } else {
+                    editDialog.close()
                 }
             }
         }
     }
 
-    // Заглушки для полей
-    property var editNameField: QtObject { property string text: "" }
-    property var editDescriptionField: QtObject { property string text: "" }
-    property var editLaborCostField: QtObject { property string text: "0" }
-    property var editOverheadField: QtObject { property string text: "0" }
-    property var editStatusComboBox: QtObject { property int currentIndex: 0; property string currentText: "черновик" }
+    // === ДИАЛОГ ПОДТВЕРЖДЕНИЯ ОТМЕНЫ ===
+    Dialog {
+        id: confirmCancelEditDialog
+        title: "Подтверждение"
+        modal: true
+        width: 400
+        anchors.centerIn: parent
+
+        background: Rectangle {
+            color: "white"
+            border.color: Theme.warningColor
+            border.width: 2
+            radius: Theme.defaultRadius
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 15
+            anchors.margins: 20
+
+            Text {
+                text: "⚠️"
+                font.pixelSize: 32
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            Text {
+                text: "У вас есть несохраненные изменения.\nВыйти без сохранения?"
+                font: Theme.defaultFont
+                color: Theme.textColor
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+                Layout.fillWidth: true
+            }
+        }
+
+        footer: DialogButtonBox {
+            alignment: Qt.AlignCenter
+            spacing: 10
+            padding: 12
+
+            background: Rectangle {
+                color: Theme.backgroundColor
+                radius: Theme.smallRadius
+            }
+
+            Common.AppButton {
+                text: "Да, выйти"
+                btnColor: Theme.errorColor
+                animateEntry: false
+                onClicked: {
+                    confirmCancelEditDialog.close()
+                    editDialog.close()
+                }
+            }
+
+            Common.AppButton {
+                text: "Отмена"
+                btnColor: Theme.textSecondary
+                animateEntry: false
+                onClicked: confirmCancelEditDialog.close()
+            }
+        }
+    }
+
+    // === АНИМАЦИИ ===
+    enter: Transition {
+        ParallelAnimation {
+            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 250; easing.type: Easing.OutCubic }
+            NumberAnimation { property: "scale"; from: 0.9; to: 1; duration: 250; easing.type: Easing.OutBack }
+        }
+    }
+
+    exit: Transition {
+        ParallelAnimation {
+            NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 150; easing.type: Easing.InCubic }
+            NumberAnimation { property: "scale"; from: 1; to: 0.95; duration: 150; easing.type: Easing.InCubic }
+        }
+    }
 }

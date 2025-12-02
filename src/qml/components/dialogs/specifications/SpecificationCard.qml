@@ -1,22 +1,24 @@
 // SpecificationCard.qml - Карточка спецификации в списке
+// Расположение: src/qml/components/dialogs/specifications/
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../../../styles"
 
 Rectangle {
     id: card
 
-    // Свойства для передачи данных
-    required property int specId
-    required property string specName
-    required property string specDescription
-    required property string specStatus
-    required property real laborCost
-    required property real overheadPercentage
-    required property real finalPrice
-    required property string createdDate
-    required property string modifiedDate
-    required property bool useLandscapeOrientation
+    // Свойства для передачи данных (без required для совместимости с ListModel)
+    property int specId: 0
+    property string specName: ""
+    property string specDescription: ""
+    property string specStatus: ""
+    property real laborCost: 0
+    property real overheadPercentage: 0
+    property real finalPrice: 0
+    property string createdDate: ""
+    property string modifiedDate: ""
+    property bool useLandscapeOrientation: false
 
     // Сигналы
     signal viewDetails()
@@ -25,17 +27,18 @@ Rectangle {
     signal exportPDF()
     signal deleteClicked()
 
-    width: parent.width - 30
+    width: parent ? parent.width - 30 : 400
     height: 180
-    color: "white"
-    radius: 8
-    border.color: "#d0d0d0"
+    color: Theme.backgroundColor
+    radius: Theme.defaultRadius
+    border.color: Theme.inputBorder
     border.width: 1
 
+    // Эффект при наведении
     Rectangle {
         anchors.fill: parent
-        color: mouseArea.containsMouse ? "#f8f9fa" : "transparent"
-        radius: 8
+        color: mouseArea.containsMouse ? Qt.rgba(0, 0, 0, 0.03) : "transparent"
+        radius: Theme.defaultRadius
     }
 
     MouseArea {
@@ -56,36 +59,41 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 8
 
+            // Название
             Text {
                 text: card.specName
-                font.pointSize: 14
+                font.pixelSize: Theme.sizeH3
                 font.bold: true
-                color: "#2c3e50"
+                font.family: Theme.defaultFont.family
+                color: Theme.textColor
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }
 
+            // Описание
             Text {
                 text: card.specDescription || "Нет описания"
-                font.pointSize: 9
-                color: card.specDescription ? "#555" : "#999"
+                font.family: Theme.defaultFont.family
+                font.pixelSize: Theme.sizeBody
                 font.italic: !card.specDescription
+                color: card.specDescription ? Theme.textSecondary : Theme.inputBorder
                 wrapMode: Text.WordWrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }
 
+            // Статус (Badge)
             Rectangle {
                 Layout.preferredWidth: statusText.width + 20
                 Layout.preferredHeight: 25
                 radius: 12
                 color: {
                     switch(card.specStatus) {
-                        case "черновик": return "#ffc107"
-                        case "утверждена": return "#28a745"
-                        case "архив": return "#6c757d"
-                        default: return "#6c757d"
+                        case "черновик": return Theme.warningColor
+                        case "утверждена": return Theme.successColor
+                        case "архив": return Theme.textSecondary
+                        default: return Theme.textSecondary
                     }
                 }
 
@@ -93,24 +101,28 @@ Rectangle {
                     id: statusText
                     anchors.centerIn: parent
                     text: card.specStatus
-                    color: "white"
-                    font.pointSize: 9
+                    color: Theme.textOnPrimary
+                    font.pixelSize: Theme.sizeCaption
                     font.bold: true
+                    font.family: Theme.defaultFont.family
                 }
             }
 
+            // Даты
             RowLayout {
                 spacing: 15
 
                 Text {
                     text: "Создана: " + card.createdDate.split(" ")[0]
-                    font.pointSize: 8
-                    color: "#999"
+                    font.pixelSize: Theme.sizeSmall
+                    font.family: Theme.defaultFont.family
+                    color: Theme.inputBorder
                 }
                 Text {
                     text: "Изменена: " + card.modifiedDate.split(" ")[0]
-                    font.pointSize: 8
-                    color: "#999"
+                    font.pixelSize: Theme.sizeSmall
+                    font.family: Theme.defaultFont.family
+                    color: Theme.inputBorder
                 }
             }
         }
@@ -129,10 +141,10 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 60
-                color: "#e8f5e9"
-                border.color: "#28a745"
+                color: Qt.rgba(Theme.successColor.r, Theme.successColor.g, Theme.successColor.b, 0.1)
+                border.color: Theme.successColor
                 border.width: 2
-                radius: 6
+                radius: Theme.smallRadius
 
                 ColumnLayout {
                     anchors.centerIn: parent
@@ -141,17 +153,19 @@ Rectangle {
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: "Итоговая цена"
-                        font.pointSize: 8
-                        color: "#666"
+                        font.pixelSize: Theme.sizeSmall
+                        font.family: Theme.defaultFont.family
+                        color: Theme.textSecondary
                     }
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: (card.finalPrice !== undefined && card.finalPrice !== null)
                             ? Number(card.finalPrice).toFixed(2) + " ₽"
                             : "0 ₽"
-                        font.pointSize: 14
+                        font.pixelSize: Theme.sizeH3
                         font.bold: true
-                        color: "#28a745"
+                        font.family: Theme.defaultFont.family
+                        color: Theme.successColor
                     }
                 }
             }
@@ -161,79 +175,85 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 5
 
+                // Редактировать
                 Button {
                     text: "✏️"
                     Layout.fillWidth: true
                     Layout.preferredHeight: 35
-                    font.pointSize: 12
+                    font.pixelSize: 12
                     ToolTip.visible: hovered
                     ToolTip.text: "Редактировать"
                     onClicked: card.editClicked()
 
                     background: Rectangle {
                         color: parent.down ? "#1E2D44" : (parent.hovered ? "#3B5278" : "#2D4262")
-                        radius: 4
+                        radius: Theme.smallRadius
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
                     contentItem: Text {
                         text: parent.text
                         font: parent.font
-                        color: "white"
+                        color: Theme.textOnPrimary
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                 }
 
+                // Экспорт Excel
                 Button {
-                    text: "📄"
+                    text: "📊"
                     Layout.fillWidth: true
                     Layout.preferredHeight: 35
-                    font.pointSize: 12
+                    font.pixelSize: 12
                     ToolTip.visible: hovered
                     ToolTip.text: "Экспорт Excel"
                     onClicked: card.exportExcel()
 
                     background: Rectangle {
                         color: parent.down ? "#4D6F6E" : (parent.hovered ? "#78A5A3" : "#66908F")
-                        radius: 4
+                        radius: Theme.smallRadius
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
                     contentItem: Text {
                         text: parent.text
                         font: parent.font
-                        color: "white"
+                        color: Theme.textOnPrimary
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                 }
 
+                // Экспорт PDF
                 Button {
                     text: "📄"
                     Layout.fillWidth: true
                     Layout.preferredHeight: 35
-                    font.pointSize: 12
+                    font.pixelSize: 12
                     ToolTip.visible: hovered
                     ToolTip.text: "Экспорт PDF"
                     onClicked: card.exportPDF()
 
                     background: Rectangle {
                         color: parent.down ? "#CC5A1A" : (parent.hovered ? "#FA812F" : "#E66F20")
-                        radius: 4
+                        radius: Theme.smallRadius
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
                     contentItem: Text {
                         text: parent.text
                         font: parent.font
-                        color: "white"
+                        color: Theme.textOnPrimary
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                 }
 
+                // Удалить
                 Button {
                     text: "🗑️"
-                    font.pointSize: 12
-                    font.family: "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji"
+                    font.pixelSize: 12
                     Layout.preferredWidth: 35
                     Layout.preferredHeight: 35
                     ToolTip.visible: hovered
@@ -243,14 +263,15 @@ Rectangle {
                     contentItem: Text {
                         text: parent.text
                         font: parent.font
-                        color: "white"
+                        color: Theme.textOnPrimary
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
 
                     background: Rectangle {
-                        color: parent.down ? "#C41C1C" : (parent.hovered ? "#E63535" : "#F34A4A")
-                        radius: 8
+                        color: parent.down ? "#C41C1C" : (parent.hovered ? "#E63535" : Theme.errorColor)
+                        radius: Theme.defaultRadius
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
                 }
             }

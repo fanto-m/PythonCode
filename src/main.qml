@@ -9,7 +9,10 @@ import "qml/components/common"                // ← Типовые компон
 import "qml/components/dialogs/categories"    // ← Диалог
 import "qml/components/dialogs/suppliers"
 import "qml/components/dialogs/system"
+import "qml/components/dialogs/items"
 import "qml/components/panels"
+import "qml/components/dialogs/specifications"
+import "qml/components/tables"
 
 
 ApplicationWindow {
@@ -369,7 +372,7 @@ ApplicationWindow {
                     Layout.fillHeight: true
                     spacing: 5
 
-                    Components.ItemList {
+                    ItemList {
                         id: itemList
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -389,7 +392,7 @@ ApplicationWindow {
                         }
                     }
 
-                    Components.ControlPanel {
+                    ControlPanel {
                         id: controlPanel
                         Layout.preferredWidth: 416
 
@@ -605,7 +608,7 @@ ApplicationWindow {
                 }
 
                 // View-only items list
-                Components.ItemList {
+                ItemList {
                     id: viewItemList
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -620,7 +623,7 @@ ApplicationWindow {
         // 3: CREATE SPECIFICATION MODE
         // ========================================
         Item {
-            Components.CreateSpecificationMode {
+            CreateSpecificationMode {
                 anchors.fill: parent
                 onBackToMain: currentMode = "main"
             }
@@ -630,7 +633,7 @@ ApplicationWindow {
         // 4: VIEW SPECIFICATIONS MODE
         // ========================================
         Item {
-            Components.ViewSpecificationsMode {
+            ViewSpecificationsMode {
                 anchors.fill: parent
                 onBackToMain: currentMode = "main"
             }
@@ -640,7 +643,7 @@ ApplicationWindow {
     // ========================================
     // SHARED DIALOGS
     // ========================================
-    Components.DeleteConfirmationDialog {
+    DeleteConfirmationDialog {
         id: deleteDialog
         onConfirmed: (itemIndex) => {
             if (itemIndex >= 0) {
@@ -694,11 +697,11 @@ ApplicationWindow {
         id: errorDialog
     }
 
-    Components.ItemSuppliersDialog {
+    ItemSuppliersDialog {
         id: itemSuppliersDialog
     }
 
-    Components.SuppliersManagerDialog {
+    SuppliersManagerDialog {
         id: suppliersManagerDialog
     }
 

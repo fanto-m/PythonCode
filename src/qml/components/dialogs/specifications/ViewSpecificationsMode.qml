@@ -1,13 +1,15 @@
-// ViewSpecificationsMode.qml - Главный файл (рефакторинг с разделением на компоненты)
-// Расположение: src/qml/components/specifications/
+// ViewSpecificationsMode.qml - Главный файл режима просмотра спецификаций
+// Расположение: src/qml/components/dialogs/specifications/
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../../../components" as Local  // Доступ к старым компонентам (AddItemDialog, SpecificationItemsTable)
+import "../../../styles"
+import "../../common" as Common
+import "../../../../components" as Legacy  // Доступ к AddItemDialog, SpecificationItemsTable
 
 Rectangle {
     id: root
-    color: "#f5f5f5"
+    color: Theme.backgroundColor
 
     signal backToMain()
     signal editSpecification(int specId)
@@ -19,7 +21,8 @@ Rectangle {
         id: specificationsListModel
     }
 
-    Local.AddItemDialog {
+    // Диалог добавления товара (Legacy компонент)
+    Legacy.AddItemDialog {
         id: addItemDialog
 
         onItemSelected: function(article, name, quantity, unit, price, imagePath, category, status) {
@@ -67,78 +70,73 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        // HEADER
+        // === HEADER ===
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 60
-            color: "#9b59b6"
+            color: "#9b59b6"  // Фиолетовый для спецификаций
 
             RowLayout {
                 anchors.fill: parent
                 anchors.margins: 10
                 spacing: 15
 
-                Button {
+                // Кнопка "Назад"
+                Common.AppButton {
                     text: "← Главное меню"
+                    btnColor: "transparent"
+                    animateEntry: false
                     onClicked: backToMain()
 
                     background: Rectangle {
                         color: parent.down ? "#8e44ad" : (parent.hovered ? "#2c3e50" : "transparent")
-                        radius: 4
-                        border.color: "white"
+                        radius: Theme.smallRadius
+                        border.color: Theme.textOnPrimary
                         border.width: 2
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pointSize: 11
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
                 }
 
+                // Заголовок
                 Text {
                     text: "Просмотр спецификаций"
-                    font.pointSize: 18
+                    font.pixelSize: Theme.sizeH2
                     font.bold: true
-                    color: "white"
+                    font.family: Theme.defaultFont.family
+                    color: Theme.textOnPrimary
                     Layout.fillWidth: true
                 }
 
-                Button {
+                // Кнопка обновления
+                Common.AppButton {
                     text: "🔄 Обновить"
+                    btnColor: "transparent"
+                    animateEntry: false
                     onClicked: loadSpecifications()
 
                     background: Rectangle {
                         color: parent.down ? "#8e44ad" : (parent.hovered ? "#2c3e50" : "transparent")
-                        radius: 4
-                        border.color: "white"
+                        radius: Theme.smallRadius
+                        border.color: Theme.textOnPrimary
                         border.width: 2
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pointSize: 10
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
                 }
 
+                // Иконка
                 Text {
                     text: "📋"
-                    font.pointSize: 24
+                    font.pixelSize: 24
                 }
             }
         }
 
-        // SEARCH BAR
+        // === SEARCH BAR ===
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 50
             color: "white"
-            border.color: "#d0d0d0"
+            border.color: Theme.inputBorder
             border.width: 1
 
             RowLayout {
@@ -148,54 +146,50 @@ Rectangle {
 
                 Text {
                     text: "Поиск:"
-                    font.pointSize: 10
+                    font: Theme.defaultFont
+                    color: Theme.textColor
                 }
 
-                TextField {
+                Common.AppTextField {
                     id: searchField
                     Layout.fillWidth: true
                     placeholderText: "Введите название спецификации..."
-                    font.pointSize: 10
+                    enterDelay: 0
                     onTextChanged: filterSpecifications()
-
-                    background: Rectangle {
-                        color: "white"
-                        border.color: searchField.activeFocus ? "#9b59b6" : "#d0d0d0"
-                        border.width: searchField.activeFocus ? 2 : 1
-                        radius: 4
-                    }
                 }
 
-                ComboBox {
+                Common.AppComboBox {
                     id: statusFilterCombo
                     model: ["Все", "черновик", "утверждена", "архив"]
                     Layout.preferredWidth: 150
-                    font.pointSize: 10
+                    Layout.preferredHeight: 40
                     currentIndex: 0
                     onCurrentIndexChanged: filterSpecifications()
                 }
 
+                // Разделитель
                 Rectangle {
                     Layout.preferredWidth: 2
                     Layout.fillHeight: true
                     Layout.topMargin: 5
                     Layout.bottomMargin: 5
-                    color: "#d0d0d0"
+                    color: Theme.dividerColor
                 }
 
+                // Настройка PDF
                 RowLayout {
                     spacing: 5
 
                     Text {
                         text: "📄 PDF:"
-                        font.pointSize: 9
-                        color: "#666"
+                        font.pixelSize: Theme.sizeSmall
+                        font.family: Theme.defaultFont.family
+                        color: Theme.textSecondary
                     }
 
-                    CheckBox {
+                    Common.AppCheckBox {
                         id: landscapeCheckBox
                         text: "Альбомная"
-                        font.pointSize: 9
                         checked: root.useLandscapeOrientation
 
                         onCheckedChanged: {
@@ -208,15 +202,16 @@ Rectangle {
                     }
                 }
 
+                // Счётчик
                 Text {
                     text: "Всего: " + specificationsListView.count
-                    font.pointSize: 10
-                    color: "#666"
+                    font: Theme.defaultFont
+                    color: Theme.textSecondary
                 }
             }
         }
 
-        // LIST
+        // === LIST ===
         ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -230,54 +225,65 @@ Rectangle {
                 model: specificationsListModel
 
                 delegate: SpecificationCard {
-                    specId: model.id
-                    specName: model.name
-                    specDescription: model.description
-                    specStatus: model.status
-                    laborCost: model.labor_cost
-                    overheadPercentage: model.overhead_percentage
-                    finalPrice: model.final_price
-                    createdDate: model.created_date
-                    modifiedDate: model.modified_date
+                    id: cardDelegate
+
+                    // Передаём данные из модели
+                    specId: model.id ?? 0
+                    specName: model.name ?? ""
+                    specDescription: model.description ?? ""
+                    specStatus: model.status ?? ""
+                    laborCost: model.labor_cost ?? 0
+                    overheadPercentage: model.overhead_percentage ?? 0
+                    finalPrice: model.final_price ?? 0
+                    createdDate: model.created_date ?? ""
+                    modifiedDate: model.modified_date ?? ""
                     useLandscapeOrientation: root.useLandscapeOrientation
 
                     onViewDetails: {
                         detailsDialog.openFor(
-                            model.id, model.name, model.description, model.status,
-                            model.labor_cost, model.overhead_percentage, model.final_price,
-                            model.created_date, model.modified_date
+                            cardDelegate.specId,
+                            cardDelegate.specName,
+                            cardDelegate.specDescription,
+                            cardDelegate.specStatus,
+                            cardDelegate.laborCost,
+                            cardDelegate.overheadPercentage,
+                            cardDelegate.finalPrice,
+                            cardDelegate.createdDate,
+                            cardDelegate.modifiedDate
                         )
                     }
 
                     onEditClicked: {
-                        editDialog.openFor(model.id)
+                        editDialog.openFor(cardDelegate.specId)
                     }
 
                     onExportExcel: {
-                        specificationsModel.exportToExcel(model.id)
+                        specificationsModel.exportToExcel(cardDelegate.specId)
                     }
 
                     onExportPDF: {
-                        specificationsModel.exportToPDF(model.id, root.useLandscapeOrientation)
+                        specificationsModel.exportToPDF(cardDelegate.specId, root.useLandscapeOrientation)
                     }
 
                     onDeleteClicked: {
-                        deleteConfirmDialog.openFor(model.id, model.name)
+                        deleteConfirmDialog.openFor(cardDelegate.specId, cardDelegate.specName)
                     }
                 }
 
-                Label {
+                // Пустой список
+                Text {
                     anchors.centerIn: parent
                     text: "Нет спецификаций"
-                    font.pointSize: 14
-                    color: "#999"
+                    font.pixelSize: Theme.sizeH3
+                    font.family: Theme.defaultFont.family
+                    color: Theme.inputBorder
                     visible: specificationsListView.count === 0
                 }
             }
         }
     }
 
-    // DIALOGS
+    // === DIALOGS ===
     SpecificationDetailsDialog {
         id: detailsDialog
     }
@@ -286,82 +292,19 @@ Rectangle {
         id: editDialog
         onSpecificationSaved: {
             loadSpecifications()
-            successMessage.text = "Спецификация успешно обновлена!"
-            successMessage.open()
+            notificationDialog.showSuccess("Спецификация успешно обновлена!")
         }
         onSaveError: function(errorText) {
-            errorMessage.text = errorText
-            errorMessage.open()
+            notificationDialog.showError(errorText)
         }
     }
 
-    // ========================================
-    // CONFIRMATION DIALOGS
-    // ========================================
-    Dialog {
-        id: confirmCancelEditDialog
-        title: "Подтверждение"
-        modal: true
-        width: 400
-        height: 150
-        anchors.centerIn: parent
-
-        contentItem: Text {
-            text: "У вас есть несохраненные изменения.\nВыйти без сохранения?"
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Text.AlignHCenter
-            anchors.centerIn: parent
-            padding: 20
-        }
-
-        footer: DialogButtonBox {
-            Button {
-                text: "Да, выйти"
-                onClicked: {
-                    confirmCancelEditDialog.close()
-                    editSpecificationDialog.close()
-                }
-
-                background: Rectangle {
-                    color: parent.down ? "#c82333" : (parent.hovered ? "#bd2130" : "#dc3545")
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-
-            Button {
-                text: "Отмена"
-                onClicked: confirmCancelEditDialog.close()
-
-                background: Rectangle {
-                    color: parent.down ? "#5a6268" : (parent.hovered ? "#6c757d" : "#6c757d")
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-        }
-    }
-
+    // === ДИАЛОГ УДАЛЕНИЯ ===
     Dialog {
         id: deleteConfirmDialog
         title: "Подтверждение удаления"
         modal: true
         width: 400
-        height: 150
         anchors.centerIn: parent
 
         property int specId: -1
@@ -373,215 +316,84 @@ Rectangle {
             open()
         }
 
-        contentItem: Text {
-            text: "Вы уверены, что хотите удалить спецификацию\n\"" + deleteConfirmDialog.specName + "\"?\n\nЭто действие нельзя отменить."
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Text.AlignHCenter
-            anchors.centerIn: parent
-            padding: 20
+        background: Rectangle {
+            color: "white"
+            border.color: Theme.errorColor
+            border.width: 2
+            radius: Theme.defaultRadius
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 15
+            anchors.margins: 20
+
+            Text {
+                text: "🗑️"
+                font.pixelSize: 32
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            Text {
+                text: "Вы уверены, что хотите удалить спецификацию\n\"" + deleteConfirmDialog.specName + "\"?\n\nЭто действие нельзя отменить."
+                font: Theme.defaultFont
+                color: Theme.textColor
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+                Layout.fillWidth: true
+            }
         }
 
         footer: DialogButtonBox {
-            Button {
+            alignment: Qt.AlignCenter
+            spacing: 10
+            padding: 12
+
+            background: Rectangle {
+                color: Theme.backgroundColor
+                radius: Theme.smallRadius
+            }
+
+            Common.AppButton {
                 text: "Да, удалить"
+                btnColor: Theme.errorColor
+                animateEntry: false
                 onClicked: {
                     if (specificationsModel.deleteSpecification(deleteConfirmDialog.specId)) {
                         loadSpecifications()
-                        successMessage.text = "Спецификация успешно удалена"
-                        successMessage.open()
+                        notificationDialog.showSuccess("Спецификация успешно удалена")
+                    } else {
+                        notificationDialog.showError("Ошибка при удалении спецификации")
                     }
                     deleteConfirmDialog.close()
                 }
-
-                background: Rectangle {
-                    color: parent.down ? "#c82333" : (parent.hovered ? "#bd2130" : "#dc3545")
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
             }
 
-            Button {
+            Common.AppButton {
                 text: "Отмена"
+                btnColor: Theme.textSecondary
+                animateEntry: false
                 onClicked: deleteConfirmDialog.close()
+            }
+        }
 
-                background: Rectangle {
-                    color: parent.down ? "#5a6268" : (parent.hovered ? "#6c757d" : "#6c757d")
-                    radius: 4
-                }
+        // Анимации
+        enter: Transition {
+            ParallelAnimation {
+                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 200; easing.type: Easing.OutCubic }
+                NumberAnimation { property: "scale"; from: 0.9; to: 1; duration: 200; easing.type: Easing.OutCubic }
+            }
+        }
 
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
+        exit: Transition {
+            ParallelAnimation {
+                NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 150; easing.type: Easing.InCubic }
+                NumberAnimation { property: "scale"; from: 1; to: 0.9; duration: 150; easing.type: Easing.InCubic }
             }
         }
     }
 
-    Dialog {
-        id: deleteConfirmDialog
-        title: "Подтверждение удаления"
-        modal: true
-        width: 400
-        height: 150
-        anchors.centerIn: parent
-
-        property int specId: -1
-        property string specName: ""
-
-        function openFor(id, name) {
-            specId = id
-            specName = name
-            open()
-        }
-
-        contentItem: Text {
-            text: "Вы уверены, что хотите удалить спецификацию\n\"" + deleteConfirmDialog.specName + "\"?\n\nЭто действие нельзя отменить."
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Text.AlignHCenter
-            anchors.centerIn: parent
-            padding: 20
-        }
-
-        footer: DialogButtonBox {
-            Button {
-                text: "Да, удалить"
-                onClicked: {
-                    if (specificationsModel.deleteSpecification(deleteConfirmDialog.specId)) {
-                        loadSpecifications()
-                        successMessage.text = "Спецификация успешно удалена"
-                        successMessage.open()
-                    }
-                    deleteConfirmDialog.close()
-                }
-
-                background: Rectangle {
-                    color: parent.down ? "#c82333" : (parent.hovered ? "#bd2130" : "#dc3545")
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-
-            Button {
-                text: "Отмена"
-                onClicked: deleteConfirmDialog.close()
-
-                background: Rectangle {
-                    color: parent.down ? "#5a6268" : (parent.hovered ? "#6c757d" : "#6c757d")
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-        }
+    // === NOTIFICATION DIALOG ===
+    Common.NotificationDialog {
+        id: notificationDialog
     }
-
-    // ========================================
-    // MESSAGE DIALOGS
-    // ========================================
-    Dialog {
-        id: successMessage
-        title: "✅ Успех"
-        modal: true
-        width: 350
-        height: 200
-        anchors.centerIn: parent
-
-        property alias text: messageText.text
-
-        contentItem: Text {
-            id: messageText
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            anchors.centerIn: parent
-            font.pointSize: 10
-        }
-
-        footer: DialogButtonBox {
-            Button {
-                text: "OK"
-                onClicked: successMessage.close()
-
-                background: Rectangle {
-                    color: parent.down ? "#218838" : (parent.hovered ? "#1e7e34" : "#28a745")
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-        }
-    }
-
-    Dialog {
-        id: errorMessage
-        title: "❌ Ошибка"
-        modal: true
-        width: 350
-        height: 120
-        anchors.centerIn: parent
-
-        property alias text: errorMessageText.text
-
-        contentItem: Text {
-            id: errorMessageText
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            anchors.centerIn: parent
-            font.pointSize: 10
-            color: "#dc3545"
-        }
-
-        footer: DialogButtonBox {
-            Button {
-                text: "OK"
-                onClicked: errorMessage.close()
-
-                background: Rectangle {
-                    color: parent.down ? "#c82333" : (parent.hovered ? "#bd2130" : "#dc3545")
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font: parent.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-        }
-    }
-
-    // TODO: Добавить остальные диалоги из оригинала
-    // (из-за ограничения размера файла создайте их отдельно)
 }
