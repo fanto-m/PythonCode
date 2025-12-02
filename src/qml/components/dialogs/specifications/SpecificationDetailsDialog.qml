@@ -1,8 +1,9 @@
 // SpecificationDetailsDialog.qml - Диалог просмотра деталей спецификации
+// Расположение: src/qml/components/specifications/
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../../components" as Local
+import "../../../components" as Local  // Доступ к старым компонентам (временно)
 
 Dialog {
     id: detailsDialog
