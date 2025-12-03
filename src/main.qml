@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
-import "components" as Components
+//import "components" as Components
 import "qml/styles"                           // ← Theme
 import "qml/components/common"                // ← Типовые компоненты
 import "qml/components/dialogs/categories"    // ← Диалог
@@ -327,6 +327,8 @@ ApplicationWindow {
 
                         Button {
                             text: "← Главное меню"
+                            Layout.preferredWidth: 180   // ← Ширина
+                            Layout.preferredHeight: 40   // ← Высота
                             onClicked: {
                                 controlPanel.clearFields()
                                 currentMode = "main"
@@ -692,10 +694,10 @@ ApplicationWindow {
         }
     }
 
-
+    /*
     Components.ErrorDialog {
         id: errorDialog
-    }
+    }*/
 
     ItemSuppliersDialog {
         id: itemSuppliersDialog

@@ -179,20 +179,10 @@ Dialog {
                             AppCheckBox {
                                 id: vatIncluded
                                 text: "НДС"
-
-                                Component.onCompleted: {
-                                    if (configManager) checked = configManager.vatIncluded
-                                }
+                                checked: false
 
                                 onCheckedChanged: {
                                     if (configManager) configManager.vatIncluded = checked
-                                }
-
-                                Connections {
-                                    target: configManager
-                                    function onVatIncludedChanged() {
-                                        vatIncluded.checked = configManager.vatIncluded
-                                    }
                                 }
                             }
                         }

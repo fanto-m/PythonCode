@@ -8,9 +8,19 @@ ComboBox {
     // --- Модель данных ---
     delegate: ItemDelegate {
         width: control.width
+        required property var model
+        required property int index
+
         contentItem: Text {
-            // Поддержка как простых массивов (modelData), так и моделей с textRole
-            text: control.textRole ? model[control.textRole] : (modelData ?? "")
+            text: {
+                // Если задан textRole, используем его
+                if (control.textRole && control.textRole.length > 0) {
+                    var value = model[control.textRole]
+                    return value !== undefined ? value : ""
+                }
+                // Для простых строковых массивов используем modelData
+                return model.modelData !== undefined ? model.modelData : ""
+            }
             color: Theme.textColor
             font: Theme.defaultFont
             elide: Text.ElideRight
@@ -18,8 +28,7 @@ ComboBox {
         }
         highlighted: control.highlightedIndex === index
         background: Rectangle {
-            color: highlighted ? Theme.accentColor : "transparent"
-            opacity: 0.3
+            color: highlighted ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.3) : "transparent"
         }
     }
 
@@ -38,26 +47,38 @@ ComboBox {
         implicitWidth: 140
         implicitHeight: 40
         color: "white"
-        border.color: control.activeFocus ? Theme.accentColor : "#d0d0d0"
+        border.color: control.activeFocus ? Theme.accentColor : Theme.inputBorder
         border.width: control.activeFocus ? 2 : 1
         radius: Theme.defaultRadius
     }
 
     // --- Стрелочка ---
     indicator: Canvas {
+        id: indicatorCanvas
         x: control.width - width - control.rightPadding
         y: control.topPadding + (control.availableHeight - height) / 2
         width: 12
         height: 8
         contextType: "2d"
+
+        Connections {
+            target: control
+            function onPressedChanged() {
+                indicatorCanvas.requestPaint()
+            }
+        }
+
         onPaint: {
-            context.reset();
-            context.moveTo(0, 0);
-            context.lineTo(width, 0);
-            context.lineTo(width / 2, height);
-            context.closePath();
-            context.fillStyle = Theme.textSecondary;
-            context.fill();
+            var ctx = getContext("2d");
+            if (!ctx) return;
+
+            ctx.reset();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(width, 0);
+            ctx.lineTo(width / 2, height);
+            ctx.closePath();
+            ctx.fillStyle = Theme.textSecondary ? Theme.textSecondary.toString() : "#666666";
+            ctx.fill();
         }
     }
 }

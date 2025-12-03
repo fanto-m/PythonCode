@@ -1,8 +1,7 @@
-// qml/components/FilterPanel.qml
+// qml/components/panels/FilterPanel.qml
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQml
 import "../../styles"
 import "../common"
 
@@ -32,11 +31,12 @@ Rectangle {
             border.color: Theme.dividerColor
             radius: Theme.smallRadius
 
-            AppLabel {
+            Text {
                 id: dateTimeText
                 anchors.centerIn: parent
                 text: Qt.formatDateTime(new Date(), "dd.MM.yyyy HH:mm:ss")
-                level: "body"
+                font.family: Theme.defaultFont.family
+                font.pixelSize: Theme.defaultFont.pixelSize
                 font.bold: true
                 color: Theme.textSecondary
             }
@@ -52,19 +52,22 @@ Rectangle {
         }
 
         // Поле поиска
-        AppTextField {
+        TextField {
             id: filterField
             placeholderText: "Введите запрос для фильтрации..."
             Layout.fillWidth: true
             Layout.fillHeight: true
 
             onTextChanged: {
-                consoleHandler.log("Filter text changed to: " + text)
-                itemsModel.setFilterString(text)
+                if (typeof itemsModel !== "undefined" && itemsModel) {
+                    itemsModel.setFilterString(text)
+                }
             }
 
             Component.onCompleted: {
-                text = itemsModel.filterString
+                if (typeof itemsModel !== "undefined" && itemsModel && itemsModel.filterString) {
+                    text = itemsModel.filterString
+                }
             }
         }
 
@@ -100,12 +103,15 @@ Rectangle {
             }
 
             onCurrentValueChanged: {
-                consoleHandler.log("Filter field changed to: " + currentValue)
-                itemsModel.setFilterField(currentValue)
+                if (typeof itemsModel !== "undefined" && itemsModel) {
+                    itemsModel.setFilterField(currentValue)
+                }
             }
 
             Component.onCompleted: {
-                currentIndex = getIndexByValue(itemsModel.filterField)
+                if (typeof itemsModel !== "undefined" && itemsModel && itemsModel.filterField) {
+                    currentIndex = getIndexByValue(itemsModel.filterField)
+                }
             }
 
             function getIndexByValue(value) {
@@ -142,26 +148,29 @@ Rectangle {
             }
 
             onCurrentTextChanged: {
-                itemsModel.setStatusFilter(currentText)
+                if (typeof itemsModel !== "undefined" && itemsModel) {
+                    itemsModel.setStatusFilter(currentText)
+                }
             }
         }
 
         // Кнопка сортировки
-        AppButton {
+        Button {
             id: sortButton
             text: sortAscending ? "↑ Сортировать" : "↓ Сортировать"
-            btnColor: "white"
             Layout.preferredWidth: 150
             Layout.fillHeight: true
+            focusPolicy: Qt.NoFocus
 
             property bool sortAscending: true
 
             onClicked: {
-                let field = filterComboBox.currentValue
-                let order = sortAscending ? "ascending" : "descending"
-                consoleHandler.log("Sorting by " + field + " (" + order + ")")
-                itemsModel.setSort(field, order)
-                sortAscending = !sortAscending
+                if (typeof itemsModel !== "undefined" && itemsModel) {
+                    let field = filterComboBox.currentValue
+                    let order = sortAscending ? "ascending" : "descending"
+                    itemsModel.setSort(field, order)
+                    sortAscending = !sortAscending
+                }
             }
 
             background: Rectangle {
@@ -181,17 +190,17 @@ Rectangle {
         }
 
         // Кнопка очистки
-        AppButton {
+        Button {
             text: "Очистить"
-            btnColor: "white"
             Layout.preferredWidth: 100
             Layout.fillHeight: true
+            focusPolicy: Qt.NoFocus
             enabled: filterField.text !== "" || statusComboBox.currentIndex !== 0
 
             onClicked: {
                 filterField.text = ""
                 filterComboBox.currentIndex = 0
-                statusComboBox.currentIndex = 0  // Сбросить статус
+                statusComboBox.currentIndex = 0
             }
 
             background: Rectangle {

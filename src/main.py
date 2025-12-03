@@ -190,7 +190,8 @@ def main():
         engine.setOutputWarningsToStandardError(True)
 
         # Загрузка QML
-        qml_file = os.path.join(os.path.dirname(__file__), "main.qml")
+        #qml_file = os.path.join(os.path.dirname(__file__), "main.qml")
+        qml_file = os.path.join(os.path.dirname(__file__), "qml", "main.qml")
         engine.load(qml_file)
 
         if not engine.rootObjects():

@@ -7,6 +7,9 @@ import "../../styles"
 Button {
     id: control
 
+    // Убираем рамку фокуса
+    focusPolicy: Qt.NoFocus
+
     // Свойства внешнего вида
     property color btnColor: Theme.primaryColor
 
@@ -66,7 +69,7 @@ Button {
     }
 
     // --- ОСТАЛЬНОЙ КОД (Поведение при наведении/нажатии) ---
-    scale: control.enabled ? (control.down ? 0.95 : (control.hovered ? 1.05 : 1.0)) : 1.0
+    scale: control.enabled ? (control.down ? 0.95 : (control.hovered ? 1.02 : 1.0)) : 1.0
     Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
     contentItem: Text {
@@ -76,8 +79,7 @@ Button {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
-        opacity: control.enabled ? 1.0 : 0.6
-    }
+        opacity: control.enabled ? 1.0 : 0.6    }
 
     background: Rectangle {
         implicitWidth: 120

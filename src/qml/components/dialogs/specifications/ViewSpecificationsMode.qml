@@ -86,6 +86,7 @@ Rectangle {
                 Common.AppButton {
                     text: "← Главное меню"
                     btnColor: "transparent"
+                    implicitHeight: 40
                     animateEntry: false
                     onClicked: backToMain()
 
