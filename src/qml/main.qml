@@ -13,7 +13,7 @@ import "components/dialogs/system"
 import "components/dialogs/items"
 import "components/dialogs/specifications"
 import "components/panels"
-import "tables"
+import "components/tables"
 
 ApplicationWindow {
     id: mainWindow

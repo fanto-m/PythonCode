@@ -5,7 +5,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../../../styles"
 import "../../common"
-import "../../../tables" as Tables
+import "../../tables" as Tables
 import "../items" as ItemDialogs  // Для AddItemDialog
 import "../../common" as Common
 

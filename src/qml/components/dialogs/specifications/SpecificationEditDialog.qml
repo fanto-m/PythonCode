@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import "../../../styles"
 import "../../common" as Common
 import "../items" as ItemDialogs  // Для AddItemDialog
-import "../../../tables" as Tables  // Для SpecificationItemsTable
+import "../../tables" as Tables  // Для SpecificationItemsTable
 
 Dialog {
     id: editDialog

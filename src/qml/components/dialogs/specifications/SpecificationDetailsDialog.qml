@@ -5,7 +5,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../../../styles"
 import "../../common" as Common
-import "../../../tables" as Tables
+import "../../tables" as Tables
 
 Dialog {
     id: detailsDialog
