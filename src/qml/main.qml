@@ -1,4 +1,4 @@
-// main.qml - Главное окно приложения
+// main.qml - Главное окно приложения с авторизацией
 // Расположение: src/qml/
 import QtQuick
 import QtQuick.Window
@@ -12,8 +12,6 @@ import "components/dialogs/suppliers"
 import "components/dialogs/system"
 import "components/dialogs/items"
 import "components/dialogs/specifications"
-import "components/panels"
-import "components/tables"
 
 ApplicationWindow {
     id: mainWindow
@@ -23,16 +21,23 @@ ApplicationWindow {
     title: "Система управления складом"
     visibility: Window.Maximized
 
-    // === СВОЙСТВА ===
-    property string currentMode: "main"  // "main", "edit", "view", "create_spec", "view_spec"
+    // === РЕЖИМЫ ПРИЛОЖЕНИЯ ===
+    // "login"       - Авторизация
+    // "main"        - Главное меню
+    // "edit"        - Редактирование склада
+    // "view"        - Просмотр склада
+    // "create_spec" - Создание спецификации
+    // "view_spec"   - Просмотр спецификаций
+    property string currentMode: "login"  // Начинаем с авторизации
+
     property int defaultWidth: 1000
     property int defaultHeight: 700
 
-    // Shared properties
+    // Shared properties для диалогов
     property string selectedImagePath: ""
     property string selectedDocumentPath: ""
 
-    // === ОБРАБОТЧИКИ ===
+    // === ОБРАБОТЧИКИ ОКНА ===
     onVisibilityChanged: function(visibility) {
         if (visibility === Window.Windowed) {
             width = defaultWidth
@@ -55,345 +60,229 @@ ApplicationWindow {
         errorDialog.showError(message)
     }
 
+    // === ПРОВЕРКА ПРАВ ===
+    readonly property string currentRole: typeof authManager !== "undefined" && authManager
+                                          ? authManager.currentRole : ""
+    readonly property bool canEdit: currentRole === "admin" || currentRole === "manager"
+    readonly property bool canCreateSpec: currentRole === "admin" || currentRole === "manager"
+    readonly property bool canSettings: currentRole === "admin"
+
+    // === НАВИГАЦИЯ С ПРОВЕРКОЙ ПРАВ ===
+    function navigateTo(mode) {
+        // Проверка прав доступа
+        if (mode === "edit" && !canEdit) {
+            errorDialog.showError("У вас нет прав для редактирования склада")
+            return
+        }
+        if (mode === "create_spec" && !canCreateSpec) {
+            errorDialog.showError("У вас нет прав для создания спецификаций")
+            return
+        }
+        if (mode === "settings" && !canSettings) {
+            errorDialog.showError("У вас нет прав для доступа к настройкам")
+            return
+        }
+
+        currentMode = mode
+    }
+
+    // === ОТСЛЕЖИВАНИЕ АКТИВНОСТИ ПОЛЬЗОВАТЕЛЯ ===
+    MouseArea {
+        anchors.fill: parent
+        propagateComposedEvents: true
+        hoverEnabled: true
+
+        onPressed: function(mouse) {
+            resetInactivity()
+            mouse.accepted = false
+        }
+
+        onPositionChanged: function(mouse) {
+            resetInactivity()
+            mouse.accepted = false
+        }
+    }
+
+    // Отслеживание клавиатуры
+    Item {
+        focus: true
+        Keys.onPressed: function(event) {
+            resetInactivity()
+            event.accepted = false
+        }
+    }
+
+    function resetInactivity() {
+        if (typeof authManager !== "undefined" && authManager && authManager.isLoggedIn) {
+            authManager.resetInactivityTimer()
+        }
+    }
+
+    // === ПОДКЛЮЧЕНИЕ К AUTH MANAGER ===
+    Connections {
+        target: typeof authManager !== "undefined" ? authManager : null
+
+        function onLoginSuccessful(username, role) {
+            console.log("Login successful:", username, role)
+            navigateTo("main")
+        }
+
+        function onLoggedOut(reason) {
+            console.log("Logged out:", reason)
+            inactivityWarningDialog.close()
+            loginScreen.reset()
+            navigateTo("login")
+
+            if (reason === "timeout") {
+                errorDialog.showWarning("Сессия завершена из-за неактивности")
+            }
+        }
+
+        function onInactivityWarning(secondsLeft) {
+            inactivityWarningDialog.updateSeconds(secondsLeft)
+        }
+    }
+
     // === MAIN CONTENT SWITCHER ===
     StackLayout {
         anchors.fill: parent
         currentIndex: {
             switch (currentMode) {
-                case "main": return 0
-                case "edit": return 1
-                case "view": return 2
-                case "create_spec": return 3
-                case "view_spec": return 4
+                case "login": return 0
+                case "main": return 1
+                case "edit": return 2
+                case "view": return 3
+                case "create_spec": return 4
+                case "view_spec": return 5
+                case "settings": return 6
                 default: return 0
             }
         }
 
         // ========================================
-        // 0: MAIN MENU
+        // 0: LOGIN
+        // ========================================
+        LoginScreen {
+            id: loginScreen
+            onLoginSuccessful: navigateTo("main")
+        }
+
+        // ========================================
+        // 1: MAIN MENU
         // ========================================
         MainMenuScreen {
-            onEditWarehouseClicked: currentMode = "edit"
-            onViewWarehouseClicked: currentMode = "view"
-            onCreateSpecificationClicked: currentMode = "create_spec"
-            onViewSpecificationsClicked: currentMode = "view_spec"
+            onEditWarehouseClicked: navigateTo("edit")
+            onViewWarehouseClicked: navigateTo("view")
+            onCreateSpecificationClicked: navigateTo("create_spec")
+            onViewSpecificationsClicked: navigateTo("view_spec")
+            onSettingsClicked: navigateTo("settings")
         }
 
         // ========================================
-        // 1: EDIT WAREHOUSE MODE
+        // 2: EDIT WAREHOUSE MODE
         // ========================================
-        Item {
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 0
+        EditWarehouseScreen {
+            id: editScreen
+            onBackToMain: navigateTo("main")
 
-                // Header
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 60
-                    color: Theme.editModeColor
+            onSelectedImagePathChanged: mainWindow.selectedImagePath = selectedImagePath
+            onSelectedDocumentPathChanged: mainWindow.selectedDocumentPath = selectedDocumentPath
+        }
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 15
+        // ========================================
+        // 3: VIEW WAREHOUSE MODE
+        // ========================================
+        ViewWarehouseScreen {
+            id: viewScreen
+            isActive: currentMode === "view"
+            onBackToMain: navigateTo("main")
+        }
 
-                        AppButton {
-                            text: "← Главное меню"
-                            btnColor: "transparent"
-                            implicitHeight: 40
-                            enterDelay: 0
+        // ========================================
+        // 4: CREATE SPECIFICATION MODE
+        // ========================================
+        CreateSpecificationMode {
+            onBackToMain: navigateTo("main")
+        }
 
-                            background: Rectangle {
-                                color: parent.down ? Theme.editModeDark :
-                                       (parent.hovered ? Qt.lighter(Theme.editModeColor, 1.1) : "transparent")
-                                radius: Theme.smallRadius
-                                border.color: Theme.textOnPrimary
-                                border.width: 2
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                            }
+        // ========================================
+        // 5: VIEW SPECIFICATIONS MODE
+        // ========================================
+        ViewSpecificationsMode {
+            onBackToMain: navigateTo("main")
+        }
 
-                            onClicked: {
-                                controlPanel.clearFields()
-                                currentMode = "main"
-                            }
-                        }
+        // ========================================
+        // 6: SETTINGS (только для admin)
+        // ========================================
+        SettingsScreen {
+            onBackToMain: navigateTo("main")
+        }
+    }
 
-                        Text {
-                            text: "Редактирование склада"
-                            font: Theme.headerFont
-                            color: Theme.textOnPrimary
-                            Layout.fillWidth: true
-                        }
+    // ========================================
+    // HEADER С ИНФОРМАЦИЕЙ О ПОЛЬЗОВАТЕЛЕ
+    // ========================================
+    Rectangle {
+        id: userHeader
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 10
+        width: userHeaderContent.width + 20
+        height: 36
+        radius: Theme.smallRadius
+        color: Qt.rgba(0, 0, 0, 0.1)
+        visible: currentMode !== "login" && currentMode !== "settings" && (typeof authManager !== "undefined" && authManager && authManager.isLoggedIn)
+        z: 100
 
-                        Text {
-                            text: "✏️"
-                            font.pixelSize: 24
-                        }
-                    }
-                }
+        RowLayout {
+            id: userHeaderContent
+            anchors.centerIn: parent
+            spacing: 10
 
-                // Filter Panel
-                FilterPanel {}
-
-                // Main content
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    spacing: 5
-
-                    ItemList {
-                        id: itemList
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        model: itemsModel
-
-                        onItemSelected: function(itemData) {
-                            controlPanel.currentItemId = itemData.index
-                            controlPanel.currentArticle = itemData.article
-                            controlPanel.currentItemData = Object.assign({}, itemData)
-                            mainWindow.selectedImagePath = itemData.image_path
-                            mainWindow.selectedDocumentPath = itemData.document
-                        }
-
-                        onDeleteRequested: function(index, name, article) {
-                            deleteDialog.openFor(index, name, article)
-                        }
-                    }
-
-                    ControlPanel {
-                        id: controlPanel
-                        Layout.preferredWidth: 416
-
-                        onAddCategoryClicked: addCategoryDialog.open()
-
-                        onEditCategoryClicked: function(categoryData) {
-                            if (categoryData && categoryData.id !== undefined) {
-                                editCategoryDialog.openFor(categoryData)
-                            }
-                        }
-
-                        onDeleteCategoryClicked: function(categoryData) {
-                            deleteCategoryDialog.openFor(categoryData.id, categoryData.name)
-                        }
-
-                        onAddItemClicked: function(itemData) {
-                            var categoryId = categoryModel.getCategoryIdByName(itemData.category)
-                            var errorMessage = itemsModel.addItem(
-                                itemData.article,
-                                itemData.name,
-                                itemData.description,
-                                itemData.image_path,
-                                categoryId,
-                                itemData.price,
-                                itemData.stock,
-                                itemData.status,
-                                itemData.unit,
-                                itemData.manufacturer,
-                                itemData.document
-                            )
-                            if (errorMessage) {
-                                errorDialog.showError(errorMessage)
-                            } else {
-                                controlPanel.clearFields()
-                            }
-                        }
-
-                        onSaveItemClicked: function(itemIndex, itemData) {
-                            var categoryId = categoryModel.getCategoryIdByName(itemData.category)
-                            var errorMessage = itemsModel.updateItem(
-                                itemIndex,
-                                itemData.article,
-                                itemData.name,
-                                itemData.description,
-                                itemData.image_path,
-                                categoryId,
-                                itemData.price,
-                                itemData.stock,
-                                itemData.status,
-                                itemData.unit,
-                                itemData.manufacturer || "",
-                                itemData.document || ""
-                            )
-                            if (errorMessage) {
-                                errorDialog.showError(errorMessage)
-                            } else {
-                                controlPanel.clearFields()
-                            }
-                        }
-
-                        onCopyItemClicked: function(itemData) {
-                            console.log("QML: Копируем товар:", itemData.name, "из категории:", itemData.category)
-
-                            var categoryId = categoryModel.getCategoryIdByName(itemData.category)
-                            if (categoryId === undefined || categoryId === -1) {
-                                errorDialog.showError("Не удалось определить категорию для копирования")
-                                return
-                            }
-
-                            var newArticle = categoryModel.generateSkuForCategory(categoryId)
-                            if (!newArticle) {
-                                errorDialog.showError("Не удалось сгенерировать артикул для категории")
-                                return
-                            }
-
-                            var errorMessage = itemsModel.addItem(
-                                newArticle,
-                                itemData.name,
-                                itemData.description,
-                                itemData.image_path,
-                                categoryId,
-                                itemData.price,
-                                itemData.stock,
-                                itemData.status || "в наличии",
-                                itemData.unit || "шт.",
-                                itemData.manufacturer || "",
-                                itemData.document || ""
-                            )
-
-                            if (errorMessage) {
-                                errorDialog.showError(errorMessage)
-                            } else {
-                                console.log("Товар успешно скопирован с артикулом:", newArticle)
-                                controlPanel.clearFields()
-                            }
-                        }
-                    }
-                }
+            Text {
+                text: "👤"
+                font.pixelSize: 16
             }
-        }
 
-        // ========================================
-        // 2: VIEW WAREHOUSE MODE
-        // ========================================
-        Item {
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 0
-
-                // Header
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 60
-                    color: Theme.viewModeColor
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 15
-
-                        AppButton {
-                            text: "← Главное меню"
-                            btnColor: "transparent"
-                            implicitHeight: 40
-                            enterDelay: 0
-
-                            background: Rectangle {
-                                color: parent.down ? Theme.viewModeDark :
-                                       (parent.hovered ? Qt.lighter(Theme.viewModeColor, 1.1) : "transparent")
-                                radius: Theme.smallRadius
-                                border.color: Theme.textOnPrimary
-                                border.width: 2
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                            }
-
-                            onClicked: currentMode = "main"
-                        }
-
-                        Text {
-                            text: "Просмотр склада"
-                            font: Theme.headerFont
-                            color: Theme.textOnPrimary
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            text: "👁️"
-                            font.pixelSize: 24
-                        }
-                    }
-                }
-
-                // Filter Panel (simplified)
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 50
-                    Layout.topMargin: 5
-                    Layout.leftMargin: 5
-                    Layout.rightMargin: 5
-                    spacing: 10
-
-                    Text {
-                        id: dateTimeText
-                        text: Qt.formatDateTime(new Date(), "dd.MM.yyyy HH:mm:ss")
-                        font: Theme.defaultFont
-                        color: Theme.textSecondary
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Timer {
-                        interval: 1000
-                        repeat: true
-                        running: currentMode === "view"
-                        onTriggered: {
-                            dateTimeText.text = Qt.formatDateTime(new Date(), "dd.MM.yyyy HH:mm:ss")
-                        }
-                    }
-
-                    TextField {
-                        id: viewFilterField
-                        placeholderText: "Поиск по складу..."
-                        Layout.fillWidth: true
-                        onTextChanged: itemsModel.setFilterString(text)
-                    }
-
-                    ComboBox {
-                        id: viewFilterComboBox
-                        textRole: "display"
-                        valueRole: "value"
-                        model: [
-                            { display: "Название", value: "name" },
-                            { display: "Артикул", value: "article" },
-                            { display: "Описание", value: "description" },
-                            { display: "Категория", value: "category" },
-                            { display: "Цена", value: "price" },
-                            { display: "Остаток", value: "stock" }
-                        ]
-                        Layout.preferredWidth: 200
-                        currentIndex: 0
-                        onCurrentValueChanged: itemsModel.setFilterField(currentValue)
-                    }
-                }
-
-                // View-only items list
-                ItemList {
-                    id: viewItemList
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.margins: 5
-                    model: itemsModel
-                    readOnly: true
-                }
+            Text {
+                text: typeof authManager !== "undefined" && authManager ? authManager.currentUser : ""
+                font: Theme.defaultFont
+                color: Theme.textOnPrimary
             }
-        }
 
-        // ========================================
-        // 3: CREATE SPECIFICATION MODE
-        // ========================================
-        Item {
-            CreateSpecificationMode {
-                anchors.fill: parent
-                onBackToMain: currentMode = "main"
+            Text {
+                text: "(" + (typeof authManager !== "undefined" && authManager ? authManager.currentRole : "") + ")"
+                font.pixelSize: Theme.sizeCaption
+                color: Theme.textSubtitle
             }
-        }
 
-        // ========================================
-        // 4: VIEW SPECIFICATIONS MODE
-        // ========================================
-        Item {
-            ViewSpecificationsMode {
-                anchors.fill: parent
-                onBackToMain: currentMode = "main"
+            // Кнопка выхода
+            Button {
+                implicitWidth: 30
+                implicitHeight: 30
+                flat: true
+
+                background: Rectangle {
+                    radius: Theme.smallRadius
+                    color: parent.hovered ? Qt.rgba(255, 255, 255, 0.2) : "transparent"
+                }
+
+                contentItem: Text {
+                    text: "🚪"
+                    font.pixelSize: 14
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    if (typeof authManager !== "undefined" && authManager) {
+                        authManager.logout("manual")
+                    }
+                }
+
+                ToolTip.visible: hovered
+                ToolTip.text: "Выйти"
             }
         }
     }
@@ -402,7 +291,12 @@ ApplicationWindow {
     // SHARED DIALOGS
     // ========================================
 
-    // Диалог ошибок
+    // Диалог предупреждения о неактивности
+    InactivityWarningDialog {
+        id: inactivityWarningDialog
+    }
+
+    // Диалог ошибок/уведомлений
     NotificationDialog {
         id: errorDialog
     }
@@ -413,7 +307,9 @@ ApplicationWindow {
         onConfirmed: function(itemIndex) {
             if (itemIndex >= 0) {
                 itemsModel.deleteItem(itemIndex)
-                controlPanel.clearFields()
+                if (editScreen.controlPanel) {
+                    editScreen.controlPanel.clearFields()
+                }
             }
         }
     }
@@ -446,8 +342,8 @@ ApplicationWindow {
         onImageSelected: function(path) {
             var fileName = path.split("/").pop()
             mainWindow.selectedImagePath = "images/" + fileName
-            if (controlPanel && controlPanel.imageField) {
-                controlPanel.imageField.text = fileName
+            if (editScreen.controlPanel && editScreen.controlPanel.imageField) {
+                editScreen.controlPanel.imageField.text = fileName
             }
         }
     }
@@ -457,8 +353,8 @@ ApplicationWindow {
         onDocumentSelected: function(path) {
             var fileName = path.split("/").pop()
             mainWindow.selectedDocumentPath = "documents/" + fileName
-            if (controlPanel && controlPanel.documentField) {
-                controlPanel.documentField.text = fileName
+            if (editScreen.controlPanel && editScreen.controlPanel.documentField) {
+                editScreen.controlPanel.documentField.text = fileName
             }
         }
     }

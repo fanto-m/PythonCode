@@ -7,14 +7,13 @@ import "../styles"
 import "../components/common"
 import "../components/tables"
 
-Rectangle {
+Item {
     id: root
-    color: Theme.backgroundColor
 
     signal backToMain()
 
-    // Свойства для связи с внешними моделями
-    property var itemsModel
+    // Флаг активности экрана (для таймера)
+    property bool isActive: false
 
     ColumnLayout {
         anchors.fill: parent
@@ -28,29 +27,25 @@ Rectangle {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: Theme.defaultSpacing
+                anchors.margins: 10
                 spacing: 15
 
-                Button {
+                AppButton {
                     text: "← Главное меню"
-                    focusPolicy: Qt.NoFocus
-                    onClicked: root.backToMain()
+                    btnColor: "transparent"
+                    implicitHeight: 40
+                    enterDelay: 0
 
                     background: Rectangle {
-                        color: parent.down ? Theme.viewModeDark : (parent.hovered ? Theme.menuTitleColor : "transparent")
+                        color: parent.down ? Theme.viewModeDark :
+                               (parent.hovered ? Qt.lighter(Theme.viewModeColor, 1.1) : "transparent")
                         radius: Theme.smallRadius
                         border.color: Theme.textOnPrimary
                         border.width: 2
                         Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
-                    contentItem: Text {
-                        text: parent.text
-                        color: Theme.textOnPrimary
-                        font: Theme.defaultFont
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    onClicked: root.backToMain()
                 }
 
                 Text {
@@ -67,7 +62,7 @@ Rectangle {
             }
         }
 
-        // === FILTER PANEL ===
+        // === FILTER PANEL (Simplified) ===
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 50
@@ -88,27 +83,26 @@ Rectangle {
             Timer {
                 interval: 1000
                 repeat: true
-                running: root.visible
+                running: root.isActive
                 onTriggered: {
                     dateTimeText.text = Qt.formatDateTime(new Date(), "dd.MM.yyyy HH:mm:ss")
                 }
             }
 
-            // Поиск
-            AppTextField {
+            // Поле поиска
+            TextField {
                 id: viewFilterField
                 placeholderText: "Поиск по складу..."
                 Layout.fillWidth: true
-                enterDelay: 0
                 onTextChanged: {
-                    if (root.itemsModel) {
-                        root.itemsModel.setFilterString(text)
+                    if (typeof itemsModel !== "undefined" && itemsModel) {
+                        itemsModel.setFilterString(text)
                     }
                 }
             }
 
-            // Фильтр по полю
-            AppComboBox {
+            // Выбор поля фильтрации
+            ComboBox {
                 id: viewFilterComboBox
                 textRole: "display"
                 valueRole: "value"
@@ -121,11 +115,10 @@ Rectangle {
                     { display: "Остаток", value: "stock" }
                 ]
                 Layout.preferredWidth: 200
-                Layout.preferredHeight: 40
                 currentIndex: 0
                 onCurrentValueChanged: {
-                    if (root.itemsModel) {
-                        root.itemsModel.setFilterField(currentValue)
+                    if (typeof itemsModel !== "undefined" && itemsModel) {
+                        itemsModel.setFilterField(currentValue)
                     }
                 }
             }
@@ -137,7 +130,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.margins: 5
-            model: root.itemsModel
+            model: itemsModel
             readOnly: true
         }
     }

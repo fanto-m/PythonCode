@@ -8,36 +8,17 @@ import "../components/common"
 import "../components/panels"
 import "../components/tables"
 
-Rectangle {
+Item {
     id: root
-    color: Theme.backgroundColor
 
-    // Сигналы навигации
+    // Сигнал возврата в главное меню
     signal backToMain()
 
-    // Сигналы для диалогов категорий
-    signal addCategoryClicked()
-    signal editCategoryClicked(var categoryData)
-    signal deleteCategoryClicked(var categoryData)
-
-    // Сигналы для товаров
-    signal addItemClicked(var itemData)
-    signal saveItemClicked(int itemIndex, var itemData)
-    signal copyItemClicked(var itemData)
-    signal deleteItemRequested(int index, string name, string article)
-
-    // Свойства для связи с внешними моделями
-    property var itemsModel
-    property var categoryModel
-    property var suppliersTableModel
-    property var itemDocumentsModel
-    property var itemSuppliersModel
-
-    // Выбранные пути файлов
+    // Выбранные пути файлов (для связи с диалогами)
     property string selectedImagePath: ""
     property string selectedDocumentPath: ""
 
-    // Доступ к ControlPanel извне
+    // Доступ к ControlPanel извне (для диалогов)
     property alias controlPanel: controlPanel
 
     ColumnLayout {
@@ -52,31 +33,27 @@ Rectangle {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: Theme.defaultSpacing
+                anchors.margins: 10
                 spacing: 15
 
-                Button {
+                AppButton {
                     text: "← Главное меню"
-                    focusPolicy: Qt.NoFocus
-                    onClicked: {
-                        controlPanel.clearFields()
-                        root.backToMain()
-                    }
+                    btnColor: "transparent"
+                    implicitHeight: 40
+                    enterDelay: 0
 
                     background: Rectangle {
-                        color: parent.down ? Theme.editModeDark : (parent.hovered ? Theme.menuTitleColor : "transparent")
+                        color: parent.down ? Theme.editModeDark :
+                               (parent.hovered ? Qt.lighter(Theme.editModeColor, 1.1) : "transparent")
                         radius: Theme.smallRadius
                         border.color: Theme.textOnPrimary
                         border.width: 2
                         Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
-                    contentItem: Text {
-                        text: parent.text
-                        color: Theme.textOnPrimary
-                        font: Theme.defaultFont
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    onClicked: {
+                        controlPanel.clearFields()
+                        root.backToMain()
                     }
                 }
 
@@ -95,10 +72,7 @@ Rectangle {
         }
 
         // === FILTER PANEL ===
-        FilterPanel {
-            id: filterPanel
-            itemsModel: root.itemsModel
-        }
+        FilterPanel {}
 
         // === MAIN CONTENT ===
         RowLayout {
@@ -111,7 +85,7 @@ Rectangle {
                 id: itemList
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                model: root.itemsModel
+                model: itemsModel
 
                 onItemSelected: function(itemData) {
                     controlPanel.currentItemId = itemData.index
@@ -122,7 +96,7 @@ Rectangle {
                 }
 
                 onDeleteRequested: function(index, name, article) {
-                    root.deleteItemRequested(index, name, article)
+                    deleteDialog.openFor(index, name, article)
                 }
             }
 
@@ -131,28 +105,98 @@ Rectangle {
                 id: controlPanel
                 Layout.preferredWidth: 416
 
-                onAddCategoryClicked: root.addCategoryClicked()
+                onAddCategoryClicked: addCategoryDialog.open()
 
                 onEditCategoryClicked: function(categoryData) {
                     if (categoryData && categoryData.id !== undefined) {
-                        root.editCategoryClicked(categoryData)
+                        editCategoryDialog.openFor(categoryData)
                     }
                 }
 
                 onDeleteCategoryClicked: function(categoryData) {
-                    root.deleteCategoryClicked(categoryData)
+                    deleteCategoryDialog.openFor(categoryData.id, categoryData.name)
                 }
 
                 onAddItemClicked: function(itemData) {
-                    root.addItemClicked(itemData)
+                    var categoryId = categoryModel.getCategoryIdByName(itemData.category)
+                    var errorMessage = itemsModel.addItem(
+                        itemData.article,
+                        itemData.name,
+                        itemData.description,
+                        itemData.image_path,
+                        categoryId,
+                        itemData.price,
+                        itemData.stock,
+                        itemData.status,
+                        itemData.unit,
+                        itemData.manufacturer,
+                        itemData.document
+                    )
+                    if (errorMessage) {
+                        errorDialog.showError(errorMessage)
+                    } else {
+                        controlPanel.clearFields()
+                    }
                 }
 
                 onSaveItemClicked: function(itemIndex, itemData) {
-                    root.saveItemClicked(itemIndex, itemData)
+                    var categoryId = categoryModel.getCategoryIdByName(itemData.category)
+                    var errorMessage = itemsModel.updateItem(
+                        itemIndex,
+                        itemData.article,
+                        itemData.name,
+                        itemData.description,
+                        itemData.image_path,
+                        categoryId,
+                        itemData.price,
+                        itemData.stock,
+                        itemData.status,
+                        itemData.unit,
+                        itemData.manufacturer || "",
+                        itemData.document || ""
+                    )
+                    if (errorMessage) {
+                        errorDialog.showError(errorMessage)
+                    } else {
+                        controlPanel.clearFields()
+                    }
                 }
 
                 onCopyItemClicked: function(itemData) {
-                    root.copyItemClicked(itemData)
+                    console.log("QML: Копируем товар:", itemData.name, "из категории:", itemData.category)
+
+                    var categoryId = categoryModel.getCategoryIdByName(itemData.category)
+                    if (categoryId === undefined || categoryId === -1) {
+                        errorDialog.showError("Не удалось определить категорию для копирования")
+                        return
+                    }
+
+                    var newArticle = categoryModel.generateSkuForCategory(categoryId)
+                    if (!newArticle) {
+                        errorDialog.showError("Не удалось сгенерировать артикул для категории")
+                        return
+                    }
+
+                    var errorMessage = itemsModel.addItem(
+                        newArticle,
+                        itemData.name,
+                        itemData.description,
+                        itemData.image_path,
+                        categoryId,
+                        itemData.price,
+                        itemData.stock,
+                        itemData.status || "в наличии",
+                        itemData.unit || "шт.",
+                        itemData.manufacturer || "",
+                        itemData.document || ""
+                    )
+
+                    if (errorMessage) {
+                        errorDialog.showError(errorMessage)
+                    } else {
+                        console.log("Товар успешно скопирован с артикулом:", newArticle)
+                        controlPanel.clearFields()
+                    }
                 }
             }
         }

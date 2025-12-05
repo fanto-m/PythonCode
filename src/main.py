@@ -1,6 +1,6 @@
 """Точка входа приложения PythonCode - Inventory Management System
 
-Полная версия с Repository Pattern, Loguru и всеми компонентами
+Полная версия с Repository Pattern, Loguru, авторизацией и всеми компонентами
 """
 
 import sys
@@ -38,6 +38,7 @@ from item_documents_model import ItemDocumentsModel
 # Менеджеры
 from config_manager import ConfigManager
 from file_manager import FileManager
+from auth_manager import AuthManager  # ← НОВОЕ
 
 # Настраиваем логирование
 setup_logging(log_level="DEBUG")
@@ -106,9 +107,14 @@ def main():
         current_dir = QDir.currentPath()
         engine.rootContext().setContextProperty("applicationDirPath", current_dir)
 
-        # Unit of Work
+        # Unit of Work (основная БД)
         uow = UnitOfWork("items.db")
         logger.success("✅ Unit of Work created")
+
+        # === АВТОРИЗАЦИЯ ===
+        auth_manager = AuthManager("users.db")
+        engine.rootContext().setContextProperty("authManager", auth_manager)
+        logger.success("✅ AuthManager created")
 
         # Менеджеры
         config_manager = ConfigManager("config.json")
@@ -122,9 +128,7 @@ def main():
         logger.success("✅ Main models created")
 
         # Модели спецификаций
-        # Табличная модель для позиций (используется в QML)
         specificationItemsModel = SpecificationItemsTableModel()
-        # Модель для управления спецификациями (с Repository Pattern)
         specificationsModel = SpecificationsModel(uow.specifications, specificationItemsModel)
         logger.success("✅ Specification models created")
 
@@ -132,15 +136,12 @@ def main():
         proxyModel = FilterProxyModel()
         proxyModel.setSourceModel(itemsModel)
 
-        # SuppliersTableModel - обновленная с Repository Pattern
         suppliersTableModel = SuppliersTableModel(uow.suppliers)
         logger.success("✅ SuppliersTableModel created")
 
-        # ItemSuppliersModel - обновленная с Repository Pattern
         item_suppliers_model = ItemSuppliersModel(uow.suppliers)
         logger.success("✅ ItemSuppliersModel created")
 
-        # ItemDocumentsModel - обновленная версия с Repository Pattern
         itemDocumentsModel = ItemDocumentsModel(uow.documents)
         logger.success("✅ ItemDocumentsModel created")
 
@@ -190,7 +191,6 @@ def main():
         engine.setOutputWarningsToStandardError(True)
 
         # Загрузка QML
-        #qml_file = os.path.join(os.path.dirname(__file__), "main.qml")
         qml_file = os.path.join(os.path.dirname(__file__), "qml", "main.qml")
         engine.load(qml_file)
 

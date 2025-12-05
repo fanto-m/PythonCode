@@ -33,6 +33,10 @@
                     "name": "diodes",
                     "display_name": "Диоды"
                 },
+                "box": {
+                    "name": "box",
+                    "display_name": "Корпуса"
+                },
                 "transistors": {
                     "name": "transistors",
                     "display_name": "Транзисторы"

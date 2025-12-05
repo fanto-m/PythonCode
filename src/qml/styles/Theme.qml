@@ -32,6 +32,10 @@ QtObject {
     property color specViewColor: "#9b59b6"             // 🟣 Фиолетовый
     property color specViewDark: "#8e44ad"              // 🟣 Тёмно-фиолетовый
 
+    // Настройки (только admin)
+    property color settingsColor: "#7f8c8d"             // ⚙️ Серый
+    property color settingsDark: "#636e72"              // ⚙️ Тёмно-серый
+
     // =====================================================
     // ЦВЕТА ТЕКСТА
     // =====================================================
@@ -146,3 +150,4 @@ QtObject {
     property color dialogInputBackground: inputBackground
     property color previewTextColor: highlightColor
 }
+

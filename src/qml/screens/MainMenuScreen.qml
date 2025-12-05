@@ -12,6 +12,20 @@ Rectangle {
     signal viewWarehouseClicked()
     signal createSpecificationClicked()
     signal viewSpecificationsClicked()
+    signal settingsClicked()
+
+    // === ПРОВЕРКА РОЛЕЙ ===
+    readonly property string currentRole: typeof authManager !== "undefined" && authManager
+                                          ? authManager.currentRole : ""
+    readonly property bool isAdmin: currentRole === "admin"
+    readonly property bool isManager: currentRole === "manager"
+    readonly property bool isUser: currentRole === "user"
+
+    // Права доступа
+    readonly property bool canEdit: isAdmin || isManager        // Редактирование склада
+    readonly property bool canCreateSpec: isAdmin || isManager  // Создание спецификаций
+    readonly property bool canViewSpec: true                    // Все могут смотреть
+    readonly property bool canSettings: isAdmin                 // Только admin
 
     gradient: Gradient {
         GradientStop { position: 0.0; color: Theme.menuGradientTop }
@@ -48,10 +62,11 @@ Rectangle {
             Layout.bottomMargin: Theme.largeSpacing
         }
 
-        // === Кнопка "Редактировать склад" ===
+        // === Кнопка "Редактировать склад" (admin, manager) ===
         MenuButton {
             Layout.fillWidth: true
             Layout.preferredHeight: 80
+            visible: root.canEdit
             menuIcon: "✏️"
             title: "Редактировать склад"
             subtitle: "Добавление, редактирование и удаление товаров"
@@ -60,7 +75,7 @@ Rectangle {
             onClicked: root.editWarehouseClicked()
         }
 
-        // === Кнопка "Просмотр склада" ===
+        // === Кнопка "Просмотр склада" (все) ===
         MenuButton {
             Layout.fillWidth: true
             Layout.preferredHeight: 80
@@ -72,10 +87,11 @@ Rectangle {
             onClicked: root.viewWarehouseClicked()
         }
 
-        // === Кнопка "Создать спецификацию" ===
+        // === Кнопка "Создать спецификацию" (admin, manager) ===
         MenuButton {
             Layout.fillWidth: true
             Layout.preferredHeight: 80
+            visible: root.canCreateSpec
             menuIcon: "📝"
             title: "Создать спецификацию"
             subtitle: "Формирование новой спецификации товаров"
@@ -84,16 +100,30 @@ Rectangle {
             onClicked: root.createSpecificationClicked()
         }
 
-        // === Кнопка "Просмотр спецификаций" ===
+        // === Кнопка "Просмотр спецификаций" (все) ===
         MenuButton {
             Layout.fillWidth: true
             Layout.preferredHeight: 80
+            visible: root.canViewSpec
             menuIcon: "📋"
             title: "Просмотр спецификаций"
             subtitle: "Просмотр сохраненных спецификаций"
             baseColor: Theme.specViewColor
             darkColor: Theme.specViewDark
             onClicked: root.viewSpecificationsClicked()
+        }
+
+        // === Кнопка "Настройки" (только admin) ===
+        MenuButton {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 80
+            visible: root.canSettings
+            menuIcon: "⚙️"
+            title: "Настройки"
+            subtitle: "Управление пользователями и параметрами системы"
+            baseColor: Theme.settingsColor
+            darkColor: Theme.settingsDark
+            onClicked: root.settingsClicked()
         }
 
         // Нижний разделитель
@@ -157,7 +187,7 @@ Rectangle {
 
                 Text {
                     text: menuBtn.title
-                    font.pixelSize: Theme.sizeH2
+                    font.pixelSize: Theme.sizeH3
                     font.bold: true
                     font.family: Theme.defaultFont.family
                     color: Theme.textOnPrimary
@@ -180,3 +210,4 @@ Rectangle {
         }
     }
 }
+
