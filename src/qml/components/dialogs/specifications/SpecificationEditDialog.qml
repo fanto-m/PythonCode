@@ -518,6 +518,36 @@ Dialog {
             onClicked: editDialog.saveChanges()
         }
 
+
+//Добавили кнопку копирования спецификаций
+        Common.AppButton {
+            text: "Создать копию"
+            // Задаем цвет (например, синий или нейтральный, чтобы отличалась от "Сохранить")
+            btnColor: "#2980b9"
+
+            // Показываем кнопку только если мы редактируем существующую спецификацию,
+            // а не создаем новую с нуля (где specId = 0 или -1)
+            visible: specId > 0
+
+            onClicked: {
+                // Вызываем функцию копирования из Python
+                var newId = specificationsModel.copySpecification(specId)
+
+                if (newId > 0) {
+                    // 1. Уведомляем об успехе
+                    notificationDialog.showSuccess("Копия успешно создана!")
+
+                    // 2. Перезагружаем форму, чтобы сразу редактировать НОВУЮ копию
+                    openFor(newId)
+
+                    // Сигнал, чтобы список на заднем фоне тоже обновился
+                    specificationSaved()
+                } else {
+                    notificationDialog.showError("Ошибка копирования спецификации")
+                }
+            }
+}
+
         Common.AppButton {
             text: "❌ Отмена"
             btnColor: Theme.textSecondary

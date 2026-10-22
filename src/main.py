@@ -109,7 +109,7 @@ def main():
         # Инициализация Qt (ЕДИНСТВЕННЫЙ экземпляр)
         app = QGuiApplication(sys.argv)
 
-        # Определение пути к ресурсам (в исходниках или внутри _internal при сборке PyInstaller)
+        # Определение пути к ресурсам (в исходниках это папка src/, а в PyInstaller — _internal)
         if getattr(sys, "frozen", False):
             base_dir = Path(sys._MEIPASS)
         else:
@@ -126,21 +126,25 @@ def main():
         engine = QQmlApplicationEngine()
         logger.success("✅ Qt initialized")
 
-        # Текущая директория
-        current_dir = QDir.currentPath()
-        engine.rootContext().setContextProperty("applicationDirPath", current_dir)
+        # Указываем папку приложения
+        engine.rootContext().setContextProperty("applicationDirPath", str(base_dir))
+
+        # === ФОРМИРУЕМ ПОЛНЫЕ ПУТИ К БАЗАМ И КОНФИГУ ===
+        items_db_path = str(base_dir / "items.db")
+        users_db_path = str(base_dir / "users.db")
+        config_path = str(base_dir / "config.json")
 
         # Unit of Work (основная БД)
-        uow = UnitOfWork("items.db")
-        logger.success("✅ Unit of Work created")
+        uow = UnitOfWork(items_db_path)
+        logger.success(f"✅ Unit of Work created (DB: {items_db_path})")
 
         # === АВТОРИЗАЦИЯ ===
-        auth_manager = AuthManager("users.db")
+        auth_manager = AuthManager(users_db_path)
         engine.rootContext().setContextProperty("authManager", auth_manager)
-        logger.success("✅ AuthManager created")
+        logger.success(f"✅ AuthManager created (DB: {users_db_path})")
 
         # Менеджеры
-        config_manager = ConfigManager("config.json")
+        config_manager = ConfigManager(config_path)
         file_manager = FileManager(config_manager)
         logger.success("✅ Managers created")
 

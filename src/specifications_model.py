@@ -206,6 +206,33 @@ class SpecificationsModel(QObject):
             self.errorOccurred.emit(error_msg)
             return False
 
+    @Slot(int, result=int)
+    def copySpecification(self, original_spec_id: int) -> int:
+        """
+        Слот для QML: Создает копию спецификации.
+        Возвращает новый ID или -1 в случае ошибки.
+        """
+        try:
+            logger.info(f"📋 Запрос на копирование спецификации ID: {original_spec_id}")
+
+            # Вызываем метод репозитория
+            new_spec_id = self.repository.copy_specification(original_spec_id)
+
+            if new_spec_id > 0:
+                logger.success(f"✅ Спецификация успешно скопирована. Новый ID: {new_spec_id}")
+                # Вызываем сигнал, чтобы QML-список спецификаций обновился
+                self.specificationsLoaded.emit()
+                return new_spec_id
+            else:
+                self.errorOccurred.emit("Оригинальная спецификация не найдена")
+                return -1
+
+        except Exception as e:
+            error_msg = f"Ошибка при копировании спецификации: {str(e)}"
+            logger.exception(f"❌ {error_msg}")
+            self.errorOccurred.emit(error_msg)
+            return -1
+
     # ==================== Loading ====================
 
     @Slot(result="QVariantList")

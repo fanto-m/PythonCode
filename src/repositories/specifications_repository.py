@@ -19,6 +19,65 @@ class SpecificationsRepository(BaseRepository):
     - Расчета стоимости спецификаций
     """
 
+    def copy_specification(self, original_spec_id: int) -> int:
+        """
+        Создает копию спецификации и всех ее позиций,
+        используя штатные методы репозитория.
+        """
+        try:
+            # 1. Получаем оригинальную спецификацию
+            original = self.get_by_id(original_spec_id)
+            if not original:
+                return -1
+
+            # 2. Создаем DTO для новой спецификации
+            from models.dto import Specification, SpecificationItem
+            new_spec = Specification(
+                id=None,
+                name=f"{original.name} (Копия)",
+                description=original.description,
+                status="черновик",  # С маленькой буквы, как в вашем фильтре QML
+                labor_cost=original.labor_cost,
+                overhead_percentage=original.overhead_percentage,
+                final_price=original.final_price,
+                created_date=None,
+                modified_date=None
+            )
+
+            # Сохраняем шапку и получаем новый ID (этот метод у вас уже отлично работает!)
+            new_spec_id = self.add(new_spec)
+
+            # 3. Получаем позиции старой спецификации штатным методом
+            items = self.get_specification_items(original_spec_id)
+
+            # 4. Копируем каждую позицию штатным методом
+            for item in items:
+                # В вашем проекте get_specification_items возвращает кортеж (tuple) или объект DTO
+                if isinstance(item, (tuple, list)):
+                    # Судя по коду exportToPDF: индекс 2 - article, индекс 3 - quantity, индекс 10 - notes
+                    article = item[2]
+                    quantity = float(item[3] or 0)
+                    notes = item[10] if len(item) > 10 else ""
+                else:
+                    # Если возвращает DTO SpecificationItem
+                    article = item.article
+                    quantity = float(item.quantity)
+                    notes = getattr(item, 'notes', "") or ""
+
+                new_item = SpecificationItem(
+                    id=None,
+                    specification_id=new_spec_id,
+                    article=article,
+                    quantity=quantity,
+                    notes=notes
+                )
+                self.add_specification_item(new_item)
+
+            return new_spec_id
+
+        except Exception as e:
+            raise Exception(f"Ошибка при копировании спецификации: {e}")
+
     def create_table(self):
         """Создает таблицы specifications и specification_items если не существуют."""
         try:
