@@ -5,6 +5,7 @@
 
 import sys
 import os
+import ctypes
 from pathlib import Path
 
 # ДОБАВЛЯЕМ src/ в PYTHONPATH
@@ -13,7 +14,7 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from PySide6.QtCore import QObject, Slot, QDir
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterType
 
 # Repository Pattern
@@ -38,7 +39,7 @@ from item_documents_model import ItemDocumentsModel
 # Менеджеры
 from config_manager import ConfigManager
 from file_manager import FileManager
-from auth_manager import AuthManager  # ← НОВОЕ
+from auth_manager import AuthManager
 
 # Настраиваем логирование
 setup_logging(log_level="DEBUG")
@@ -98,8 +99,30 @@ def main():
         # Настройка стиля
         os.environ["QT_QUICK_CONTROLS_STYLE"] = "FluentWinUI3"
 
-        # Инициализация Qt
+        # Идентификатор приложения Windows (чтобы иконка корректно отображалась на панели задач)
+        try:
+            myappid = "mycompany.warehouse.inventory.1.0"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception as e:
+            logger.debug(f"Could not set AppUserModelID: {e}")
+
+        # Инициализация Qt (ЕДИНСТВЕННЫЙ экземпляр)
         app = QGuiApplication(sys.argv)
+
+        # Определение пути к ресурсам (в исходниках или внутри _internal при сборке PyInstaller)
+        if getattr(sys, "frozen", False):
+            base_dir = Path(sys._MEIPASS)
+        else:
+            base_dir = Path(__file__).resolve().parent
+
+        # Установка иконки приложения
+        icon_path = base_dir / "files" / "warehouse_app_icon.ico"
+        if icon_path.exists():
+            app.setWindowIcon(QIcon(str(icon_path)))
+            logger.success(f"✅ App icon loaded from: {icon_path}")
+        else:
+            logger.warning(f"⚠️ App icon not found at: {icon_path}")
+
         engine = QQmlApplicationEngine()
         logger.success("✅ Qt initialized")
 

@@ -3,9 +3,26 @@
 Работает с SpecificationItemsTableModel для отображения позиций
 С Repository Pattern и экспортом в PDF/Excel
 """
-
-from PySide6.QtCore import QObject, Signal, Slot
+import sys
+import os
+from pathlib import Path
+from PySide6.QtCore import QObject, Signal, Slot, QUrl
 from loguru import logger
+
+from repositories.specifications_repository import SpecificationsRepository
+from models.dto import Specification, SpecificationItem
+
+# Определение путей для обычной работы и для скомпилированной сборки PyInstaller
+if getattr(sys, 'frozen', False):
+    # В сборке PyInstaller ресурсы лежат в _internal (sys._MEIPASS)
+    BUNDLE_DIR = Path(sys._MEIPASS)
+    # Каталог, где лежит сам main.exe
+    EXE_DIR = Path(sys.executable).resolve().parent
+else:
+    # Запуск исходного кода из PyCharm
+    BUNDLE_DIR = Path(__file__).resolve().parent
+    EXE_DIR = BUNDLE_DIR
+
 
 from repositories.specifications_repository import SpecificationsRepository
 from models.dto import Specification, SpecificationItem
@@ -410,7 +427,7 @@ class SpecificationsModel(QObject):
             overhead_pct = float(spec.overhead_percentage or 0)
             overhead = materials_total * (overhead_pct / 100.0)
             grand_total = materials_total + work_cost + overhead
-            total_with_nds = grand_total * 1.20
+            total_with_nds = grand_total * 1.22
 
             # Метки в столбце D, значения в столбце F
             ws.cell(row=total_row, column=4, value="Материалы:").font = Font(bold=True)
@@ -434,7 +451,7 @@ class SpecificationsModel(QObject):
             total_val.font = Font(bold=True, size=12)
 
             # НДС
-            ws.cell(row=total_row + 4, column=4, value="ИТОГО с НДС (20%):").font = Font(bold=True, size=12)
+            ws.cell(row=total_row + 4, column=4, value="ИТОГО с НДС (22%):").font = Font(bold=True, size=12)
             total_nds_cell = ws.cell(row=total_row + 4, column=6, value=round(total_with_nds, 2))
             total_nds_cell.number_format = '0.00'
             total_nds_cell.font = Font(bold=True, size=12)
@@ -599,7 +616,95 @@ class SpecificationsModel(QObject):
 
                     self.restoreState()
 
+            # Вспомогательная функция для поиска файла на диске
+            def resolve_image_path(raw_path: str) -> str | None:
+                """Преобразует путь из БД / QML в существующий путь на диске"""
+                if not raw_path:
+                    return None
+
+                raw_path = str(raw_path).strip()
+
+                # Срезаем префикс file:///, если путь пришел из диалога выбора файлов QML
+                if raw_path.startswith("file:"):
+                    raw_path = QUrl(raw_path).toLocalFile()
+
+                # Если передан корректный абсолютный путь
+                if os.path.isabs(raw_path) and os.path.exists(raw_path):
+                    return raw_path
+
+                filename_only = Path(raw_path).name
+
+                # Варианты расположения картинок (включая папку _internal)
+                candidate_paths = [
+                    # Внутри папки сборки _internal:
+                    BUNDLE_DIR / raw_path,
+                    BUNDLE_DIR / "files" / raw_path,
+                    BUNDLE_DIR / "files" / "images" / raw_path,
+                    BUNDLE_DIR / "files" / "images" / filename_only,
+                    BUNDLE_DIR / "src" / "files" / "images" / filename_only,
+
+                    # Рядом с main.exe (если файлы добавлялись позже):
+                    EXE_DIR / raw_path,
+                    EXE_DIR / "files" / raw_path,
+                    EXE_DIR / "files" / "images" / raw_path,
+                    EXE_DIR / "files" / "images" / filename_only,
+
+                    # Относительно текущей рабочей директории
+                    Path(raw_path)
+                ]
+
+                for candidate in candidate_paths:
+                    if candidate.exists() and candidate.is_file():
+                        logger.debug(f"Found image for PDF: {candidate}")
+                        return str(candidate)
+
+                logger.warning(f"⚠️ Image not found. Raw path: '{raw_path}'")
+                return None
+
             # Функция для масштабирования изображений
+            def scale_image(image_path, max_width_mm=15, max_height_mm=15):
+                """Масштабирует изображение с сохранением пропорций"""
+                # Находим реальный абсолютный путь к файлу
+                real_path = resolve_image_path(image_path)
+                if not real_path:
+                    return None
+
+                try:
+                    with PILImage.open(real_path) as pil_img:
+                        orig_width, orig_height = pil_img.size
+
+                    max_width = max_width_mm * mm
+                    max_height = max_height_mm * mm
+
+                    aspect_ratio = orig_width / orig_height
+
+                    if aspect_ratio > 1:
+                        final_width = max_width
+                        final_height = max_width / aspect_ratio
+
+                        if final_height > max_height:
+                            final_height = max_height
+                            final_width = max_height * aspect_ratio
+                    else:
+                        final_height = max_height
+                        final_width = max_height * aspect_ratio
+
+                        if final_width > max_width:
+                            final_width = max_width
+                            final_height = max_width / aspect_ratio
+
+                    img = Image(real_path, width=final_width, height=final_height)
+                    img.hAlign = 'CENTER'
+
+                    logger.trace(
+                        f"Image scaled: {orig_width}x{orig_height} -> {final_width:.1f}x{final_height:.1f} pts")
+                    return img
+
+                except Exception as e:
+                    logger.warning(f"⚠️ Error processing image {real_path}: {e}")
+                    return None
+
+            '''# Функция для масштабирования изображений
             def scale_image(image_path, max_width_mm=15, max_height_mm=15):
                 """Масштабирует изображение с сохранением пропорций"""
                 import os
@@ -638,7 +743,7 @@ class SpecificationsModel(QObject):
 
                 except Exception as e:
                     logger.warning(f"⚠️ Error processing image {image_path}: {e}")
-                    return None
+                    return None '''
 
             # Функция для добавления шапки
             def add_header(canvas, doc):
@@ -818,14 +923,14 @@ class SpecificationsModel(QObject):
             # Итоги
             overhead = materials_total * (spec.overhead_percentage / 100)
             total = materials_total + spec.labor_cost + overhead
-            total_with_nds = total * 1.20
+            total_with_nds = total * 1.22
 
             totals_data = [
                 ['Материалы:', f"{materials_total:.2f} руб."],
                 ['Работа:', f"{spec.labor_cost:.2f} руб."],
                 [f'Накладные ({spec.overhead_percentage}%):', f"{overhead:.2f} руб."],
                 ['ИТОГО:', f"{total:.2f} руб."],
-                ['ИТОГО с НДС (20%):', f"{total_with_nds:.2f} руб."]
+                ['ИТОГО с НДС (22%):', f"{total_with_nds:.2f} руб."]
             ]
 
             # Адаптивная ширина таблицы итогов

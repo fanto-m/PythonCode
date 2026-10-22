@@ -10,7 +10,7 @@ Dialog {
     id: addItemDialog
     title: "Добавить позицию из склада"
     modal: true
-    width: 700
+    width: 900
     height: 500
     anchors.centerIn: parent
 

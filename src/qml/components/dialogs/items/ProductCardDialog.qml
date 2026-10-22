@@ -313,7 +313,7 @@ Dialog {
 
                         ScrollView {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 80
+                            Layout.preferredHeight: 150
 
                             AppTextArea {
                                 id: descriptionField

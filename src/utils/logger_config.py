@@ -23,29 +23,38 @@ def setup_logging(
         retention: Как долго хранить старые логи.
         compression: Сжимать ли старые логи.
     """
-    # Создаем директорию для логов
-    log_path = Path(log_dir)
-    log_path.mkdir(exist_ok=True)
+    # Определяем базовую директорию:
+    # В сборке PyInstaller — рядом с main.exe, в PyCharm — в корне проекта
+    if getattr(sys, "frozen", False):
+        base_dir = Path(sys.executable).resolve().parent
+    else:
+        # src/utils -> поднимаемся на уровень корня проекта
+        base_dir = Path(__file__).resolve().parent.parent.parent
 
-    # Удаляем стандартный handler (вывод в stderr)
+    # Создаем директорию для логов
+    log_path = base_dir / log_dir
+    log_path.mkdir(parents=True, exist_ok=True)
+
+    # Удаляем стандартный handler
     logger.remove()
 
-    # 1. Консольный вывод (красивый и цветной)
-    logger.add(
-        sys.stderr,
-        level=log_level,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-        colorize=True
-    )
+    # 1. Консольный вывод (только если консоль существует)
+    if sys.stderr is not None:
+        logger.add(
+            sys.stderr,
+            level=log_level,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            colorize=True
+        )
 
     # 2. Основной файл логов (с ротацией)
     logger.add(
         log_path / "app.log",
         level="DEBUG",
         format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-        rotation=rotation,  # Новый файл каждые 10 MB
-        retention=retention,  # Хранить логи 1 неделю
-        compression=compression,  # Сжимать старые логи
+        rotation=rotation,
+        retention=retention,
+        compression=compression,
         encoding="utf-8"
     )
 
@@ -54,8 +63,8 @@ def setup_logging(
         log_path / "errors.log",
         level="ERROR",
         format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-        rotation="1 day",  # Новый файл каждый день
-        retention="30 days",  # Хранить ошибки 30 дней
+        rotation="1 day",
+        retention="30 days",
         compression="zip",
         encoding="utf-8"
     )
@@ -68,7 +77,7 @@ def setup_logging(
         rotation="1 day",
         retention="7 days",
         compression="zip",
-        serialize=True,  # JSON формат!
+        serialize=True,
         encoding="utf-8"
     )
 

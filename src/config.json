@@ -1,6 +1,6 @@
 {
     "vat_included": true,
-    "vat_rate": 20.0,
+    "vat_rate": 22.0,
     "default_currency": "RUB",
     "decimal_places": 2,
     "theme": "light",
@@ -52,6 +52,10 @@
                 "electrics": {
                     "name": "electrics",
                     "display_name": "Электрика"
+                },
+                "cables": {
+                    "name": "cables",
+                    "display_name": "Кабели"
                 },
                 "materials": {
                     "name": "materials",

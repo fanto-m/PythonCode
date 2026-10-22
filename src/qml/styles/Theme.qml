@@ -96,7 +96,7 @@ QtObject {
     property int sizeH3: 16
     property int sizeBody: 14
     property int sizeCaption: 12
-    property int sizeSmall: 10
+    property int sizeSmall: 12
 
     // =====================================================
     // РАДИУСЫ И ОТСТУПЫ

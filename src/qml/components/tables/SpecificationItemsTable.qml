@@ -454,7 +454,7 @@ Rectangle {
         Text {
             readonly property var data: parent.itemData || {}
             text: data.name || ""
-            font: Theme.boldFont
+            font: Theme.smallFont
             color: Theme.textColor
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
