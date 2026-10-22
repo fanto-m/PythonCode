@@ -10,20 +10,17 @@ Dialog {
     id: addItemDialog
     title: "Добавить позицию из склада"
     modal: true
-    width: 900
-    height: 500
+    width: 700
+    height: 600 // Немного увеличим высоту для удобства
     anchors.centerIn: parent
 
-    // Сигнал, который вызывается при выборе товара
     signal itemSelected(string article, string name, real quantity, string unit, real price, string imagePath, string category, string status)
 
-    // Функция для открытия диалога
     function openDialog() {
         searchField.text = ""
         open()
     }
 
-    // === ФОН ДИАЛОГА ===
     background: Rectangle {
         color: "white"
         border.color: Theme.accentColor
@@ -31,11 +28,10 @@ Dialog {
         radius: Theme.defaultRadius
     }
 
-    // === ЗАГОЛОВОК ===
     header: Rectangle {
         width: parent.width
         height: 50
-        color: "#9b59b6"  // Фиолетовый для спецификаций
+        color: "#9b59b6"
         radius: Theme.defaultRadius
 
         Rectangle {
@@ -55,7 +51,6 @@ Dialog {
             color: Theme.textOnPrimary
         }
 
-        // Область для перетаскивания
         MouseArea {
             anchors.fill: parent
             property point clickPos: Qt.point(0, 0)
@@ -75,7 +70,7 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: 10
 
-        // Поле поиска
+        // Поле поиска (поле количества отсюда убрали)
         Common.AppTextField {
             id: searchField
             Layout.fillWidth: true
@@ -93,52 +88,23 @@ Dialog {
             Layout.fillHeight: true
             clip: true
             model: itemsModel
+            spacing: 5
 
             delegate: Rectangle {
                 id: itemDelegate
                 width: warehouseListView.width
                 height: 80
-                color: itemMouseArea.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.1) : "white"
+                color: "white"
                 border.color: Theme.inputBorder
                 border.width: 1
-
-                MouseArea {
-                    id: itemMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-
-                    onClicked: {
-                        let articleValue = model.article || ""
-                        let nameValue = model.name || ""
-                        let unitValue = model.unit || "шт."
-                        let priceValue = (model.price !== undefined && model.price !== null) ? parseFloat(model.price) : 0.0
-                        let imageValue = model.image_path || ""
-                        let categoryValue = model.category || ""
-                        let statusValue = model.status || "active"
-
-                        addItemDialog.itemSelected(
-                            articleValue,
-                            nameValue,
-                            1.0,
-                            unitValue,
-                            priceValue,
-                            imageValue,
-                            categoryValue,
-                            statusValue
-                        )
-
-                        addItemDialog.close()
-                        searchField.text = ""
-                    }
-                }
+                radius: Theme.smallRadius
 
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 10
                     spacing: 10
 
-                    // Миниатюра изображения
+                    // 1. Миниатюра изображения
                     Rectangle {
                         Layout.preferredWidth: 60
                         Layout.preferredHeight: 60
@@ -155,12 +121,6 @@ Dialog {
                             fillMode: Image.PreserveAspectFit
                             smooth: true
                             visible: model.image_path && model.image_path !== "" && status === Image.Ready
-
-                            onStatusChanged: {
-                                if (status === Image.Error) {
-                                    console.warn("Failed to load image:", model.image_path)
-                                }
-                            }
                         }
 
                         Text {
@@ -172,7 +132,7 @@ Dialog {
                         }
                     }
 
-                    // Информация о товаре
+                    // 2. Информация о товаре
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -196,36 +156,78 @@ Dialog {
                         }
 
                         Text {
-                            text: "Категория: " + (model.category || "Не указана")
+                            text: "Цена: " + (model.price !== undefined ? model.price.toFixed(2) : "0.00") + " ₽"
                             font.pixelSize: Theme.sizeSmall
                             font.family: Theme.defaultFont.family
-                            color: Theme.inputBorder
-                            visible: model.category !== undefined
+                            color: Theme.successColor
+                            font.bold: true
                         }
                     }
 
-                    // Цена
-                    Rectangle {
-                        Layout.preferredWidth: 100
-                        Layout.preferredHeight: 40
-                        color: Qt.rgba(Theme.successColor.r, Theme.successColor.g, Theme.successColor.b, 0.1)
-                        border.color: Theme.successColor
-                        border.width: 1
-                        radius: Theme.smallRadius
+                    // 3. Блок ввода количества и кнопки добавления
+                    RowLayout {
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        spacing: 8
 
-                        Text {
-                            anchors.centerIn: parent
-                            text: (model.price !== undefined ? model.price.toFixed(2) : "0.00") + " ₽"
-                            font.pixelSize: Theme.sizeBody
-                            font.bold: true
-                            font.family: Theme.defaultFont.family
-                            color: Theme.successColor
+                        Common.AppTextField {
+                            id: cardQuantityField
+                            Layout.preferredWidth: 70
+                            text: "1"
+                            placeholderText: "Кол-во"
+
+                            validator: DoubleValidator {
+                                bottom: 0.001
+                                decimals: 3
+                                notation: DoubleValidator.StandardNotation
+                            }
+                        }
+
+                        Common.AppButton {
+                            text: "Добавить"
+                            Layout.preferredWidth: 100
+                            btnColor: Theme.accentColor
+
+                            onClicked: {
+                                let articleValue = model.article || ""
+                                let nameValue = model.name || ""
+                                let unitValue = model.unit || "шт."
+                                let priceValue = (model.price !== undefined && model.price !== null) ? parseFloat(model.price) : 0.0
+                                let imageValue = model.image_path || ""
+                                let categoryValue = model.category || ""
+                                let statusValue = model.status || "active"
+
+                                let qtyStr = cardQuantityField.text.replace(',', '.');
+                                let quantityValue = parseFloat(qtyStr);
+
+                                if (isNaN(quantityValue) || quantityValue <= 0) {
+                                    quantityValue = 1.0;
+                                }
+
+                                // Эмитим сигнал добавления
+                                addItemDialog.itemSelected(
+                                    articleValue,
+                                    nameValue,
+                                    quantityValue,
+                                    unitValue,
+                                    priceValue,
+                                    imageValue,
+                                    categoryValue,
+                                    statusValue
+                                )
+
+                                // Опционально: сбрасываем счетчик после добавления, но НЕ закрываем окно,
+                                // чтобы пользователь мог добавить еще позиции
+                                cardQuantityField.text = "1"
+
+                                if (typeof notificationDialog !== "undefined") {
+                                    notificationDialog.showSuccess("Товар добавлен!")
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Пустой список
             Text {
                 anchors.centerIn: parent
                 visible: warehouseListView.count === 0
@@ -257,21 +259,6 @@ Dialog {
                 addItemDialog.close()
                 searchField.text = ""
             }
-        }
-    }
-
-    // === АНИМАЦИИ ===
-    enter: Transition {
-        ParallelAnimation {
-            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 250; easing.type: Easing.OutCubic }
-            NumberAnimation { property: "scale"; from: 0.9; to: 1; duration: 250; easing.type: Easing.OutBack }
-        }
-    }
-
-    exit: Transition {
-        ParallelAnimation {
-            NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 150; easing.type: Easing.InCubic }
-            NumberAnimation { property: "scale"; from: 1; to: 0.95; duration: 150; easing.type: Easing.InCubic }
         }
     }
 }

@@ -546,7 +546,9 @@ Dialog {
                     notificationDialog.showError("Ошибка копирования спецификации")
                 }
             }
-}
+        }
+
+
 
         Common.AppButton {
             text: "❌ Отмена"

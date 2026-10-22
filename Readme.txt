@@ -16,3 +16,4 @@ Heroicons: https://heroicons.com/
 Bootstrap Icons: https://icons.getbootstrap.com/
 
 Выделите таблицу материалов (itemsListView) в отдельный QML-компонент для улучшения читаемости и повторного использования.
+

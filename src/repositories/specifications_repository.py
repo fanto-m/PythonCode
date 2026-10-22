@@ -18,6 +18,9 @@ class SpecificationsRepository(BaseRepository):
     - Управления позициями в спецификациях
     - Расчета стоимости спецификаций
     """
+    '---------------------------------ИЗМ---------------------------------'
+
+
 
     def copy_specification(self, original_spec_id: int) -> int:
         """

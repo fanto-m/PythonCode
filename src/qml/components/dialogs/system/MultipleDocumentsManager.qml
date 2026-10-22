@@ -1,5 +1,6 @@
 // MultipleDocumentsManager.qml - Компонент для управления документами товара
 // РЕФАКТОРИНГ: Использует Theme для стилизации
+// ИСПРАВЛЕНО: Проблема с неактивной кнопкой удаления при одном документе
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -50,9 +51,15 @@ GroupBox {
         function onDocumentsLoaded(count) {
             console.log("=== onDocumentsLoaded ===")
             console.log("count:", count)
-            // НЕ выбираем автоматически - пользователь сам выберет что удалять
-            // currentIndex остаётся -1, кнопка удалить заблокирована
-            canDelete = false
+
+            // ИСПРАВЛЕНИЕ: Принудительно сбрасываем ComboBox ПОСЛЕ загрузки
+            // Используем Qt.callLater чтобы дать модели время обновиться
+            Qt.callLater(function() {
+                documentsComboBox.currentIndex = -1
+                canDelete = false
+                console.log("ComboBox reset to -1, canDelete = false")
+            })
+
             console.log("Documents loaded, waiting for user selection")
             console.log("======================")
         }
@@ -62,8 +69,12 @@ GroupBox {
             console.log("=== onDocumentAdded ===")
             // После добавления выбираем добавленный документ
             if (documentsModel && documentsModel.count() > 0) {
-                documentsComboBox.currentIndex = documentsModel.count() - 1
-                // canDelete установится автоматически в onCurrentIndexChanged
+                // Используем Qt.callLater для корректной установки после обновления модели
+                Qt.callLater(function() {
+                    documentsComboBox.currentIndex = documentsModel.count() - 1
+                    canDelete = true  // Явно устанавливаем, т.к. выбрали документ
+                    console.log("Selected newly added document at index:", documentsModel.count() - 1)
+                })
             }
             console.log("======================")
         }
@@ -75,8 +86,11 @@ GroupBox {
             console.log("Remaining documents:", count)
 
             // После удаления сбрасываем выбор - пользователь должен выбрать снова
-            documentsComboBox.currentIndex = -1
-            // canDelete установится автоматически в onCurrentIndexChanged (= false)
+            Qt.callLater(function() {
+                documentsComboBox.currentIndex = -1
+                canDelete = false
+                console.log("After delete: ComboBox reset to -1, canDelete = false")
+            })
             console.log("======================")
         }
     }
@@ -162,7 +176,7 @@ GroupBox {
                 onClicked: deleteConfirmDialog.close()
 
                 background: Rectangle {
-                    color: parent.down ? "#e0e0e0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
+                    color: parent.down ? "#d0d0d0" : (parent.hovered ? "#eeeeee" : "#f5f5f5")
                     border.color: Theme.inputBorder
                     border.width: 1
                     radius: Theme.smallRadius
@@ -203,10 +217,13 @@ GroupBox {
                 // Когда пользователь выбирает документ - разблокируем кнопку удаления
                 onCurrentIndexChanged: {
                     console.log(">>> ComboBox onCurrentIndexChanged:", currentIndex)
-                    if (currentIndex >= 0) {
+                    // ИСПРАВЛЕНИЕ: Проверяем что индекс валидный И модель не пустая
+                    if (currentIndex >= 0 && documentsModel && documentsModel.count() > 0) {
                         canDelete = true
+                        console.log("canDelete set to TRUE")
                     } else {
                         canDelete = false
+                        console.log("canDelete set to FALSE")
                     }
                 }
 
@@ -275,8 +292,11 @@ GroupBox {
 
                 onClicked: {
                     console.log("Delete clicked, currentIndex:", documentsComboBox.currentIndex)
-                    deleteConfirmDialog.documentIndex = documentsComboBox.currentIndex
-                    deleteConfirmDialog.open()
+                    console.log("canDelete:", canDelete)
+                    if (documentsComboBox.currentIndex >= 0) {
+                        deleteConfirmDialog.documentIndex = documentsComboBox.currentIndex
+                        deleteConfirmDialog.open()
+                    }
                 }
 
                 // Явно задаём белый цвет текста для видимости на красном фоне
@@ -331,9 +351,10 @@ GroupBox {
                             cursorShape: Qt.PointingHandCursor
 
                             onClicked: {
-                                // Выбираем этот документ в ComboBox
+                                // ИСПРАВЛЕНИЕ: Явно устанавливаем canDelete при клике на элемент списка
                                 documentsComboBox.currentIndex = index
-                                console.log("ListView item clicked, set currentIndex:", index)
+                                canDelete = true  // Явно активируем кнопку удаления
+                                console.log("ListView item clicked, set currentIndex:", index, "canDelete:", true)
                             }
 
                             onDoubleClicked: {
@@ -403,7 +424,10 @@ GroupBox {
         console.log("article:", article)
 
         currentArticle = article
+
+        // ИСПРАВЛЕНИЕ: Сбрасываем состояние ДО загрузки
         canDelete = false
+        documentsComboBox.currentIndex = -1
 
         if (documentsModel) {
             documentsModel.loadDocuments(article)
