@@ -28,6 +28,7 @@ class FilterProxyModel(QSortFilterProxyModel):
         self._filter_string = ""     # Строка фильтра по умолчанию
         self._status_filter = "Все"
         self._settings = QSettings("ООО ОЗТМ", "Склад-0.1")
+        self._category_filter = "Все"  # <-- ДОБАВЛЕНО: фильтр по категории
 
         # Загрузка сохраненных настроек
         self._loadSettings()
@@ -117,6 +118,13 @@ class FilterProxyModel(QSortFilterProxyModel):
         self._saveSettings()
         logger.debug(f"Status filter: '{status}'")
 
+    @Slot(str)
+    def setCategoryFilter(self, category: str):
+        """Установка фильтра по категории товара."""
+        self._category_filter = category
+        self.invalidateFilter()
+        logger.debug(f"Category filter set to: '{category}'")
+
     @Slot(str, str)
     def setSort(self, role_name: str, order: str = "ascending"):
         """
@@ -161,7 +169,8 @@ class FilterProxyModel(QSortFilterProxyModel):
 
         Фильтрует по:
         1. Текстовому полю (_filter_field: name, article, description, etc.)
-        2. Статусу (_status_filter: "Все", "в наличии", "под заказ", etc.)
+        2. Категории товара (_category_filter: "Все" или название категории)
+        3. Статусу (_status_filter: "Все", "в наличии", "под заказ", etc.)
 
         Args:
             sourceRow: Индекс строки в исходной модели.
@@ -179,7 +188,6 @@ class FilterProxyModel(QSortFilterProxyModel):
 
         # 1. Фильтр по текстовому полю
         if self._filter_string:
-            # Маппинг полей на роли
             role_map = {
                 "article": ItemsModel.ArticleRole,
                 "name": ItemsModel.NameRole,
@@ -197,12 +205,15 @@ class FilterProxyModel(QSortFilterProxyModel):
             if self._filter_string not in value_str:
                 return False  # Не прошел текстовый фильтр
 
-        # 2. Фильтр по статусу
+        # 2. Фильтр по категории товара
+        if self._category_filter and self._category_filter != "Все":
+            cat_value = self.sourceModel().data(index, ItemsModel.CategoryRole)
+            if cat_value != self._category_filter:
+                return False  # Не прошел фильтр по категории
+
+        # 3. Фильтр по статусу
         if self._status_filter and self._status_filter != "Все":
             status_value = self.sourceModel().data(index, ItemsModel.StatusRole)
-            if status_value != self._status_filter:
-                return False  # Не прошел фильтр по статусу
-            # ← ДОБАВИТЬ ЛОГИРОВАНИЕ
             logger.debug(
                 f"Row {sourceRow}: comparing status_value='{status_value}' "
                 f"with filter='{self._status_filter}'"
@@ -210,15 +221,16 @@ class FilterProxyModel(QSortFilterProxyModel):
 
             if status_value != self._status_filter:
                 logger.debug(f"Row {sourceRow}: REJECTED by status filter")
-                return False
+                return False  # Не прошел фильтр по статусу
 
             logger.debug(f"Row {sourceRow}: PASSED status filter")
+
         # Прошел все фильтры
         if logger.level("TRACE").no >= logger._core.min_level:
             logger.trace(
                 f"Row {sourceRow} PASSED filters: "
                 f"field={self._filter_field}, filter='{self._filter_string}', "
-                f"status='{self._status_filter}'"
+                f"category='{self._category_filter}', status='{self._status_filter}'"
             )
 
         return True

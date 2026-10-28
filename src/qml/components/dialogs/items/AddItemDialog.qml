@@ -10,15 +10,47 @@ Dialog {
     id: addItemDialog
     title: "Добавить позицию из склада"
     modal: true
-    width: 700
-    height: 600 // Немного увеличим высоту для удобства
+    width: 720
+    height: 640
     anchors.centerIn: parent
 
     signal itemSelected(string article, string name, real quantity, string unit, real price, string imagePath, string category, string status)
 
+    // Список категорий для первого ComboBox
+    property var categoryFilterList: ["Все"]
+
+    // Сбор категорий из categoryModel
+    function updateCategoriesList() {
+        let list = ["Все"]
+        if (typeof categoryModel !== "undefined" && categoryModel) {
+            let count = categoryModel.rowCount ? categoryModel.rowCount() : (categoryModel.count || 0)
+            for (let i = 0; i < count; i++) {
+                let item = categoryModel.get ? categoryModel.get(i) : null
+                if (item && item.name) {
+                    list.push(item.name)
+                }
+            }
+        }
+        categoryFilterList = list
+    }
+
     function openDialog() {
+        updateCategoriesList()
         searchField.text = ""
+        categoryComboBox.currentIndex = 0
+        searchFieldComboBox.currentIndex = 0
+        itemsModel.setCategoryFilter("Все")
+        itemsModel.setFilterField("name")
+        itemsModel.setFilterString("")
         open()
+    }
+
+    Component.onCompleted: {
+        updateCategoriesList()
+    }
+
+    onOpened: {
+        updateCategoriesList()
     }
 
     background: Rectangle {
@@ -70,18 +102,79 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: 10
 
-        // Поле поиска (поле количества отсюда убрали)
+        // === ВЕРХНИЙ РЯД: 2 COMBOBOX ВЫШЕ СТРОКИ ПОИСКА ===
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 12
+
+            // 1. Выбор категории товара
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+
+                Text {
+                    text: "Категория:"
+                    font.pixelSize: Theme.sizeCaption
+                    font.bold: true
+                    font.family: Theme.defaultFont.family
+                    color: Theme.textSecondary
+                }
+
+                Common.AppComboBox {
+                    id: categoryComboBox
+                    Layout.fillWidth: true
+                    model: addItemDialog.categoryFilterList
+
+                    onActivated: {
+                        itemsModel.setCategoryFilter(currentText)
+                    }
+                }
+            }
+
+            // 2. Выбор поля для поиска
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+
+                Text {
+                    text: "Искать по полю:"
+                    font.pixelSize: Theme.sizeCaption
+                    font.bold: true
+                    font.family: Theme.defaultFont.family
+                    color: Theme.textSecondary
+                }
+
+                Common.AppComboBox {
+                    id: searchFieldComboBox
+                    Layout.fillWidth: true
+                    textRole: "text"
+                    valueRole: "value"
+                    model: [
+                        { text: "По названию", value: "name" },
+                        { text: "По артикулу", value: "article" },
+                        { text: "По производителю", value: "manufacturer" },
+                        { text: "По описанию", value: "description" }
+                    ]
+
+                    onActivated: {
+                        itemsModel.setFilterField(currentValue)
+                    }
+                }
+            }
+        }
+
+        // === СТРОКА ПОИСКА ===
         Common.AppTextField {
             id: searchField
             Layout.fillWidth: true
-            placeholderText: "🔍 Поиск товара по названию или артикулу..."
+            placeholderText: "🔍 Введите текст для поиска (" + searchFieldComboBox.currentText.toLowerCase() + ")..."
             enterDelay: 0
             onTextChanged: {
                 itemsModel.setFilterString(text)
             }
         }
 
-        // Список товаров
+        // === СПИСОК ТОВАРОВ ===
         ListView {
             id: warehouseListView
             Layout.fillWidth: true
@@ -196,14 +289,13 @@ Dialog {
                                 let categoryValue = model.category || ""
                                 let statusValue = model.status || "active"
 
-                                let qtyStr = cardQuantityField.text.replace(',', '.');
-                                let quantityValue = parseFloat(qtyStr);
+                                let qtyStr = cardQuantityField.text.replace(',', '.')
+                                let quantityValue = parseFloat(qtyStr)
 
                                 if (isNaN(quantityValue) || quantityValue <= 0) {
-                                    quantityValue = 1.0;
+                                    quantityValue = 1.0
                                 }
 
-                                // Эмитим сигнал добавления
                                 addItemDialog.itemSelected(
                                     articleValue,
                                     nameValue,
@@ -215,8 +307,6 @@ Dialog {
                                     statusValue
                                 )
 
-                                // Опционально: сбрасываем счетчик после добавления, но НЕ закрываем окно,
-                                // чтобы пользователь мог добавить еще позиции
                                 cardQuantityField.text = "1"
 
                                 if (typeof notificationDialog !== "undefined") {
@@ -258,6 +348,8 @@ Dialog {
             onClicked: {
                 addItemDialog.close()
                 searchField.text = ""
+                itemsModel.setFilterString("")
+                itemsModel.setCategoryFilter("Все")
             }
         }
     }
