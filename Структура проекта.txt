@@ -7,6 +7,9 @@ PythonCode
     users.db
     
     |-qml
+        | -assets
+            |- icons
+            |- images
         |-components
             |-common
                 |-AppButton.qml
@@ -17,6 +20,7 @@ PythonCode
                 |-AppTextField.qml
                 |-NotificationDialog.qml- стандартный диалог для подтверждения/ предупреждения/ошибки
             |-dialogs
+                ExportSettingsDialog.qml - форма настройки экспорта в excel
                 |-categories
                     |-AddCategoryDialog.qml- диалог для создания новой категории
                     |-DeleteCategoryDialog.qml- диалог удаления категорий

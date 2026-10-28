@@ -4,8 +4,9 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../../styles"
-import "../common"
+import "../common" as Common
 import "../dialogs/items"
+import "../dialogs"
 
 Rectangle {
     id: root
@@ -159,7 +160,7 @@ Rectangle {
             Item { Layout.preferredHeight: contentPadding }
 
             // --- Кнопка "Добавить товар" ---
-            AppButton {
+            Common.AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 text: "➕ Добавить товар"
@@ -170,7 +171,7 @@ Rectangle {
             }
 
             // --- Кнопка "Редактировать товар" ---
-            AppButton {
+            Common.AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 text: "✏️ Редактировать товар"
@@ -192,7 +193,7 @@ Rectangle {
             }
 
             // --- Кнопка "Копировать товар" ---
-            AppButton {
+            Common.AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 text: "📋 Копировать товар"
@@ -212,7 +213,7 @@ Rectangle {
                 Layout.fillWidth: true
                 title: "Категория"
 
-                label: AppLabel {
+                label: Common.AppLabel {
                     text: parent.title
                     level: "body"
                     font.bold: true
@@ -223,14 +224,14 @@ Rectangle {
                     color: Theme.backgroundColor
                     border.color: Theme.inputBorder
                     radius: Theme.smallRadius
-                    y: parent.topPadding - parent.bottomPadding
+                    y: parent.topPadding
                 }
 
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 6
 
-                    AppComboBox {
+                    Common.AppComboBox {
                         id: categoryComboBox
                         Layout.fillWidth: true
                         Layout.preferredHeight: 40
@@ -242,7 +243,7 @@ Rectangle {
                         Layout.fillWidth: true
                         spacing: 6
 
-                        AppButton {
+                        Common.AppButton {
                             text: "➕"
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
@@ -254,7 +255,7 @@ Rectangle {
                             onClicked: addCategoryClicked()
                         }
 
-                        AppButton {
+                        Common.AppButton {
                             text: "✏️"
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
@@ -272,7 +273,7 @@ Rectangle {
                             }
                         }
 
-                        AppButton {
+                        Common.AppButton {
                             text: "🗑️"
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
@@ -300,7 +301,7 @@ Rectangle {
                 Layout.fillWidth: true
                 title: "Поставщики"
 
-                label: AppLabel {
+                label: Common.AppLabel {
                     text: parent.title
                     level: "body"
                     font.bold: true
@@ -311,14 +312,14 @@ Rectangle {
                     color: Theme.backgroundColor
                     border.color: Theme.inputBorder
                     radius: Theme.smallRadius
-                    y: parent.topPadding - parent.bottomPadding
+                    y: parent.topPadding
                 }
 
                 RowLayout {
                     anchors.fill: parent
                     spacing: 6
 
-                    AppButton {
+                    Common.AppButton {
                         text: "📋 Список"
                         Layout.fillWidth: true
                         Layout.preferredHeight: 36
@@ -330,7 +331,7 @@ Rectangle {
                         }
                     }
 
-                    AppButton {
+                    Common.AppButton {
                         text: "🔗 Привязать"
                         Layout.fillWidth: true
                         Layout.preferredHeight: 36
@@ -342,14 +343,34 @@ Rectangle {
                             suppliersManagerDialog.openForBinding(currentArticle)
                         }
                     }
+
                 }
             }
 
-            // Spacer
+
+            // Spacer (прижимает кнопку экспорта к самому низу панели)
             Item { Layout.fillHeight: true }
+
+            // --- Кнопка "Экспорт в Excel" (на всю ширину внизу панели) ---
+            Common.AppButton {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                text: "📊 Экспорт в Excel"
+                btnColor: "#27ae60"
+                enterDelay: 0
+
+                onClicked: {
+                    exportDialog.open()
+                }
+            }
 
             // Нижний отступ
             Item { Layout.preferredHeight: contentPadding }
         }
+    }
+
+    // ВАЖНО: Экземпляр диалога должен находиться строго ВНУТРИ корневого элемента (Rectangle)
+    ExportSettingsDialog {
+        id: exportDialog
     }
 }
